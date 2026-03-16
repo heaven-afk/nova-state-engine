@@ -20,6 +20,23 @@ export function initApp(pageId) {
         }
     });
 
+    // Mobile Hamburger Menu 
+    const mobileBtn = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    if (mobileBtn && sidebar) {
+        mobileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('open');
+        });
+        
+        // Auto-close on click outside
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== mobileBtn) {
+                sidebar.classList.remove('open');
+            }
+        });
+    }
+
     // 2. Apply Role Permissions
     applyRolePermissions();
 

@@ -458,3 +458,82 @@ a { color: inherit; text-decoration: none; }
 .text-cyan { color: var(--accent-cyan); }
 .font-mono { font-family: 'Space Grotesk', monospace; }
 .font-bold { font-weight: 700; }
+
+/* -------------------------------------
+   RESPONSIVENESS & MOBILE
+-------------------------------------- */
+@media (max-width: 1024px) {
+    .split-layout {
+        grid-template-columns: 1fr;
+    }
+    .metric-value { 
+        font-size: 1.25rem; 
+    }
+}
+
+@media (max-width: 768px) {
+    /* Base spacing adjustments */
+    :root {
+        --space-xl: 1rem;
+        --space-lg: 1rem;
+    }
+
+    /* Sidebar - Hidden by default on mobile, can be toggled via JS */
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        box-shadow: var(--shadow-md);
+    }
+    .sidebar.open {
+        left: 0;
+    }
+
+    /* Hamburger Menu Button (visible only on mobile) */
+    .mobile-menu-btn {
+        display: flex;
+    }
+
+    /* Topbar styling for smaller constraint */
+    .topbar {
+        padding: 0 var(--space-md);
+    }
+    .page-title {
+        font-size: 0.95rem;
+    }
+    .user-info {
+        display: none; /* Hide name/role on mobile leaving only avatar */
+    }
+
+    /* Page Content Padding */
+    .page-content {
+        padding: var(--space-md);
+    }
+
+    /* Data Table scrolling */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .data-table th, .data-table td {
+        padding: var(--space-sm) var(--space-md);
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    .avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+}
