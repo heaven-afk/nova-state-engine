@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — Nova Scrims Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .settings-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) 2fr;
+            gap: var(--space-xl);
+        }
+        .settings-nav {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+        .settings-nav-item {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .settings-nav-item:hover {
+            background: rgba(255,255,255,0.03);
+            color: var(--text-primary);
+        }
+        .settings-nav-item.active {
+            background: linear-gradient(90deg, rgba(138,43,226,0.1), transparent);
+            border-left: 3px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-strong);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            transition: border-color var(--transition-fast);
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        input[type=range] {
+            flex: 1;
+            accent-color: var(--accent-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation (Same as Dashboard, simplified for brevity in this file structure, normally would use a component or script injection) -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">N</div>
+                <span class="brand-text">NOVA SCRIMS</span>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <a href="/sessions.html" class="nav-item"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+                <div class="nav-section">ANALYSIS</div>
+                <a href="/ocr-review.html" class="nav-item"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
+                <a href="/leaderboards.html" class="nav-item"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
+                <a href="/exports.html" class="nav-item"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
+                <div class="nav-section admin-only">ADMINISTRATION</div>
+                <a href="/users.html" class="nav-item admin-only"><iconify-icon icon="lucide:users" class="nav-icon"></iconify-icon><span>Users</span></a>
+                <a href="/settings.html" class="nav-item active admin-only"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-left"><h1 class="page-title">Platform Settings</h1></div>
+                <div class="topbar-right">
+                    <div class="user-profile">
+                        <div class="avatar">A</div>
+                        <div class="user-info">
+                            <span class="user-name">Admin User</span>
+                            <span class="user-role">Admin</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <div class="settings-grid">
+                    
+                    <!-- Settings Nav -->
+                    <div class="settings-nav">
+                        <div class="settings-nav-item active">OCR Engine Configuration</div>
+                        <div class="settings-nav-item">Leaderboard Defaults</div>
+                        <div class="settings-nav-item">Platform Data</div>
+                    </div>
+
+                    <!-- Settings Panel -->
+                    <div class="card panel" style="padding: var(--space-xl);">
+                        <h2 class="panel-title" style="margin-bottom: var(--space-xl); border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">OCR Engine Configuration</h2>
+                        
+                        <div class="form-group">
+                            <label class="form-label">OCR Sensitivity (Fuzzy Name Matching)</label>
+                            <div class="slider-container">
+                                <input type="range" id="setting-ocr-sense" min="0.4" max="1.0" step="0.05" value="0.75">
+                                <span id="ocr-sense-val" class="font-mono text-cyan">0.75</span>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Lower values try harder to match misread names, but may increase false positives.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Duplicate Detection Strategy</label>
+                            <select class="form-select">
+                                <option>Strict (Require identical Kill count + Same Lobby)</option>
+                                <option>Moderate (Allow +/- 1 Kill difference)</option>
+                                <option>Manual Review Only</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Default Week Size</label>
+                            <select class="form-select">
+                                <option value="5">5 Days (Mon-Fri)</option>
+                                <option value="7" selected>7 Days (Full Week)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-top: var(--space-xl);">
+                            <button class="btn btn-primary" onclick="window.router.showToast('Settings saved successfully!', 'success');">Save Configurations</button>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+    <script type="module">
+        import * as router from '/src/router.js';
+        window.router = router;
+        router.initApp('settings');
+
+        const sSlider = document.getElementById('setting-ocr-sense');
+        const sVal = document.getElementById('ocr-sense-val');
+        sSlider.addEventListener('input', e => sVal.textContent = parseFloat(e.target.value).toFixed(2));
+    </script>
+</body>
+</html>

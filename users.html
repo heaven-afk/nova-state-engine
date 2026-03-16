@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management — Nova Scrims Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .user-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .user-card:last-child { border-bottom: none; }
+        .u-info { display: flex; align-items: center; gap: var(--space-md); }
+        .u-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-heading); font-size: 1.2rem;
+        }
+        .badge {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase;
+        }
+        .badge-admin { background: rgba(138,43,226,0.2); color: #d896ff; border: 1px solid rgba(138,43,226,0.5); }
+        .badge-mod { background: rgba(0,255,136,0.1); color: var(--accent-cyan); border: 1px solid rgba(0,255,136,0.3); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA SCRIMS</span></div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <a href="/sessions.html" class="nav-item"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+                <div class="nav-section">ANALYSIS</div>
+                <a href="/ocr-review.html" class="nav-item"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
+                <a href="/leaderboards.html" class="nav-item"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
+                <a href="/exports.html" class="nav-item"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
+                <div class="nav-section admin-only">ADMINISTRATION</div>
+                <a href="/users.html" class="nav-item active admin-only"><iconify-icon icon="lucide:users" class="nav-icon"></iconify-icon><span>Users</span></a>
+                <a href="/settings.html" class="nav-item admin-only"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-left"><h1 class="page-title">User Management</h1></div>
+                <div class="topbar-right">
+                    <button class="btn btn-primary"><iconify-icon icon="lucide:user-plus"></iconify-icon> Add User</button>
+                    <div class="user-profile"><div class="avatar">A</div><div class="user-info"><span class="user-name">Admin User</span><span class="user-role">Admin</span></div></div>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <div class="card panel">
+                    <div class="user-card">
+                        <div class="u-info">
+                            <div class="u-avatar">A</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.1rem;">Head Admin</div>
+                                <div style="color: var(--text-muted); font-size: 0.85rem;">admin@novagaming.com</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center" style="gap: var(--space-xl);">
+                            <span class="badge badge-admin">Admin</span>
+                            <button class="btn btn-secondary btn-sm" disabled>System Root</button>
+                        </div>
+                    </div>
+
+                    <div class="user-card">
+                        <div class="u-info">
+                            <div class="u-avatar">M</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.1rem;">Data Moderator 1</div>
+                                <div style="color: var(--text-muted); font-size: 0.85rem;">mod1@novagaming.com</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center" style="gap: var(--space-xl);">
+                            <span class="badge badge-mod">Moderator</span>
+                            <button class="btn btn-secondary btn-sm">Edit Role</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script type="module">
+        import { initApp } from '/src/router.js';
+        initApp('users');
+    </script>
+</body>
+</html>

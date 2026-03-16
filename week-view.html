@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week Detail — Nova Scrims Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .page-header-expanded {
+            background: linear-gradient(135deg, rgba(26,27,38,0.8), rgba(10,10,15,0.9));
+            border-bottom: 1px solid var(--border-subtle);
+            padding: var(--space-xl) var(--space-xl);
+        }
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-lg);
+            padding: var(--space-xl);
+        }
+        .day-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            transition: all var(--transition-fast);
+            display: flex;
+            flex-direction: column;
+        }
+        .day-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        .d-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .d-title { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; }
+        
+        .status-badge {
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase; padding: 4px 10px; border-radius: 12px;
+        }
+        .status-pending { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+        .status-reviewing { background: rgba(255,215,0,0.1); color: #FFD700; }
+        .status-completed { background: rgba(0,255,136,0.1); color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA SCRIMS</span></div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item active"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <a href="/sessions.html" class="nav-item"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-left flex" style="display:flex; align-items:center; gap:var(--space-md);">
+                    <a href="/weeks.html" class="btn-icon"><iconify-icon icon="lucide:arrow-left"></iconify-icon></a>
+                    <h1 class="page-title">Back to Weeks</h1>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-profile"><div class="avatar">A</div><div class="user-info"><span class="user-name">Admin User</span></div></div>
+                </div>
+            </header>
+
+            <main class="page-content" style="padding: 0;">
+                <div class="page-header-expanded">
+                    <div style="font-size: 0.85rem; color: var(--accent-cyan); letter-spacing: 0.1em; font-weight:600; margin-bottom: 4px;">ACTIVE WEEK</div>
+                    <h1 id="week-title" style="font-size: 2.2rem; margin-bottom: var(--space-sm);">Loading...</h1>
+                    <div style="display: flex; gap: var(--space-xl); margin-top: var(--space-md);">
+                        <div><div style="color:var(--text-muted); font-size:0.8rem;">Total Days</div><div id="stat-days" style="font-weight:600; font-size:1.1rem;">-</div></div>
+                        <div><div style="color:var(--text-muted); font-size:0.8rem;">Status</div><div id="stat-status" style="font-weight:600; font-size:1.1rem; color:var(--accent-cyan);">In Progress</div></div>
+                    </div>
+                </div>
+                
+                <div class="days-grid" id="days-container">
+                    <!-- Day Cards -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initApp } from '/src/router.js';
+        import { getWeek, getDaysByWeek, getLobbiesByDay } from '/src/db.js';
+
+        initApp('weeks');
+
+        const params = new URLSearchParams(window.location.search);
+        const weekId = params.get('id');
+
+        async function loadWeekView() {
+            if (!weekId) { window.location.href = '/weeks.html'; return; }
+            
+            const week = await getWeek(weekId);
+            if (!week) { window.location.href = '/weeks.html'; return; }
+
+            document.getElementById('week-title').textContent = week.name;
+            document.getElementById('stat-days').textContent = week.totalDays;
+            
+            const days = await getDaysByWeek(weekId);
+            const container = document.getElementById('days-container');
+            container.innerHTML = '';
+
+            for (const d of days) {
+                // Determine cumulative lobby status (for UI flavor)
+                const lobbies = await getLobbiesByDay(d.id);
+                const approvedCount = lobbies.filter(l => l.status === 'approved').length;
+                const processingCount = lobbies.filter(l => l.status === 'reviewing').length;
+                
+                let sClass = 'status-pending';
+                let sText = 'Not Started';
+                
+                if (d.status === 'completed') {
+                    sClass = 'status-completed';
+                    sText = 'Completed';
+                } else if (approvedCount > 0 || processingCount > 0) {
+                    sClass = 'status-reviewing';
+                    sText = `${approvedCount}/3 Lobbies Saved`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                card.innerHTML = `
+                    <div class="d-header">
+                        <div class="d-title">Day ${d.dayNumber}</div>
+                        <div class="status-badge ${sClass}">${sText}</div>
+                    </div>
+                    
+                    <div style="flex: 1; margin: var(--space-md) 0; font-size: 0.85rem; color: var(--text-muted);">
+                        <ul style="list-style-type: none; padding: 0;">
+                            ${lobbies.map(l => `
+                                <li style="margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                                    <iconify-icon icon="lucide:${l.status === 'approved' ? 'check-circle-2' : (l.status === 'reviewing' ? 'loader-2' : 'circle')}" 
+                                        style="color: ${l.status === 'approved' ? 'var(--accent-cyan)' : (l.status === 'reviewing' ? '#FFD700' : 'var(--text-muted)')}"></iconify-icon>
+                                    Lobby ${l.lobbyNumber}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <a href="/day-view.html?id=${d.id}" class="btn ${d.status === 'completed' ? 'btn-secondary' : 'btn-primary'}" style="width: 100%;">
+                        ${d.status === 'completed' ? 'View Results' : 'Open Session'}
+                    </a>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        loadWeekView();
+    </script>
+</body>
+</html>

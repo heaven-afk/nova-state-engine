@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exports Hub — Nova Scrims Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .export-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-xl);
+        }
+        .export-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+        }
+        .export-title {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            margin-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: var(--space-sm);
+            display: flex; align-items: center; gap: var(--space-sm);
+        }
+        
+        .template-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: var(--space-md);
+            margin: var(--space-lg) 0;
+        }
+        .tpl-card {
+            border: 2px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            padding: var(--space-sm);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .tpl-card:hover { border-color: var(--text-muted); }
+        .tpl-card.active { border-color: var(--accent-cyan); background: rgba(0,255,136,0.05); }
+        .tpl-icon { font-size: 2rem; color: var(--text-muted); margin-bottom: 8px; }
+        .tpl-card.active .tpl-icon { color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA SCRIMS</span></div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <a href="/sessions.html" class="nav-item"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+                <div class="nav-section">ANALYSIS</div>
+                <a href="/ocr-review.html" class="nav-item"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
+                <a href="/leaderboards.html" class="nav-item"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
+                <a href="/exports.html" class="nav-item active"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-left"><h1 class="page-title">Export Hub</h1></div>
+                <div class="topbar-right">
+                    <div class="user-profile"><div class="avatar">A</div><div class="user-info"><span class="user-name">Admin User</span></div></div>
+                </div>
+            </header>
+
+            <main class="page-content">
+                
+                <div style="margin-bottom: var(--space-xl); display: flex; gap: var(--space-md); align-items: flex-end;">
+                    <div style="flex: 1; max-width: 300px;">
+                        <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">Target Week</label>
+                        <select class="form-select" style="width:100%; padding:10px; background:var(--bg-surface); border:1px solid var(--border-strong); color:white;">
+                            <option>March Week 2</option>
+                            <option>March Week 1</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="export-grid">
+                    
+                    <!-- Daily Exports -->
+                    <div class="export-section">
+                        <div class="export-title"><iconify-icon icon="lucide:calendar"></iconify-icon> Daily Exports</div>
+                        
+                        <div style="margin-bottom: var(--space-lg);">
+                            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">Select Day</label>
+                            <select class="form-select" id="ex-day-select" style="width:100%; padding:10px; background:var(--bg-elevated); border:1px solid var(--border-strong); color:white;">
+                                <option value="1">Day 1</option>
+                                <option value="2">Day 2</option>
+                                <option value="3">Day 3</option>
+                                <option value="4" selected>Day 4</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: var(--space-lg);">
+                            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">Leaderboard Graphic Template</label>
+                            <div class="template-selector" id="daily-tpl">
+                                <div class="tpl-card active" data-id="elite"><iconify-icon icon="lucide:sword" class="tpl-icon"></iconify-icon><div style="font-size:0.75rem;">Elite</div></div>
+                                <div class="tpl-card" data-id="cyber"><iconify-icon icon="lucide:cpu" class="tpl-icon"></iconify-icon><div style="font-size:0.75rem;">Cyber</div></div>
+                                <div class="tpl-card" data-id="minimal"><iconify-icon icon="lucide:layout" class="tpl-icon"></iconify-icon><div style="font-size:0.75rem;">Minimal</div></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap: var(--space-md); flex-wrap: wrap;">
+                            <button class="btn btn-secondary" id="btn-csv-daily" style="flex:1;"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Download CSV</button>
+                            <button class="btn btn-primary" id="btn-img-daily" style="flex:2;"><iconify-icon icon="lucide:image"></iconify-icon> Generate Top 15 Graphic</button>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Exports -->
+                    <div class="export-section">
+                        <div class="export-title"><iconify-icon icon="lucide:trophy"></iconify-icon> Weekly Summary Exports</div>
+                        
+                        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:var(--space-lg);">
+                            Generates aggregated data covering all completed days in the selected week. Ranks based on total weekly kills.
+                        </p>
+
+                        <div style="margin-bottom: var(--space-lg);">
+                            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;">Leaderboard Graphic Template</label>
+                            <div class="template-selector" id="weekly-tpl">
+                                <div class="tpl-card" data-id="tourney"><iconify-icon icon="lucide:monitor-play" class="tpl-icon"></iconify-icon><div style="font-size:0.75rem;">Tournament</div></div>
+                                <div class="tpl-card active" data-id="card"><iconify-icon icon="lucide:layout-grid" class="tpl-icon"></iconify-icon><div style="font-size:0.75rem;">Card Grid</div></div>
+                                <div class="tpl-card" data-id="elite"><iconify-icon icon="lucide:sword" class="tpl-icon"></iconify-icon><div style="font-size:0.75rem;">Elite</div></div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap: var(--space-md); flex-wrap: wrap;">
+                            <button class="btn btn-secondary" id="btn-csv-weekly" style="flex:1;"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Download CSV</button>
+                            <button class="btn btn-primary" id="btn-img-weekly" style="flex:2;"><iconify-icon icon="lucide:image"></iconify-icon> Generate Top 15 Graphic</button>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Hidden Export Templates (Used by HTML2Canvas) -->
+    <div id="render-target" style="position: absolute; top: -9999px; left: -9999px;"></div>
+
+    <script type="module">
+        import { initApp, showToast } from '/src/router.js';
+        import { exportDailyCSV, exportWeeklyCSV, generateLeaderboardImage } from '/src/export-engine.js';
+        
+        initApp('exports');
+
+        // Template selector logic
+        document.querySelectorAll('.tpl-card').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const parent = e.currentTarget.parentNode;
+                parent.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            });
+        });
+
+        // Trigger Exports
+        document.getElementById('btn-csv-daily').addEventListener('click', () => {
+            const dayNum = document.getElementById('ex-day-select').value;
+            exportDailyCSV('test', 'test', dayNum);
+            showToast('Daily CSV Export Downloaded', 'info');
+        });
+
+        document.getElementById('btn-csv-weekly').addEventListener('click', () => {
+            exportWeeklyCSV('test', 'March Week 2');
+            showToast('Weekly CSV Export Downloaded', 'info');
+        });
+
+        // Image Gen logic (mocking the heavy canvas render)
+        const handleImgGen = async (btnId, type) => {
+            const btn = document.getElementById(btnId);
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Generating Graphic...';
+            btn.disabled = true;
+
+            await generateLeaderboardImage();
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showToast(`Top 15 ${type} Graphic successfully generated and downloaded!`, 'success');
+        };
+
+        document.getElementById('btn-img-daily').addEventListener('click', () => handleImgGen('btn-img-daily', 'Daily'));
+        document.getElementById('btn-img-weekly').addEventListener('click', () => handleImgGen('btn-img-weekly', 'Weekly'));
+
+    </script>
+</body>
+</html>

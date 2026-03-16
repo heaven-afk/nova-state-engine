@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboards — Nova Scrims Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .tabs { display: flex; gap: var(--space-xl); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-xl); padding: 0 var(--space-xl); }
+        .tab {
+            padding: var(--space-md) 0; font-family: var(--font-heading); font-size: 1.1rem;
+            color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+            transition: all var(--transition-fast);
+        }
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+
+        .filters-bar {
+            display: flex; gap: var(--space-md); padding: 0 var(--space-xl) var(--space-xl) var(--space-xl);
+        }
+        .filter-select {
+            background: var(--bg-surface); border: 1px solid var(--border-strong);
+            color: var(--text-primary); padding: 8px 16px; border-radius: var(--radius-sm);
+            font-family: var(--font-body); font-size: 0.9rem; min-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA SCRIMS</span></div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <a href="/sessions.html" class="nav-item"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+                <div class="nav-section">ANALYSIS</div>
+                <a href="/ocr-review.html" class="nav-item"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
+                <a href="/leaderboards.html" class="nav-item active"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
+                <a href="/exports.html" class="nav-item"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-left"><h1 class="page-title">Scrims Leaderboards</h1></div>
+                <div class="topbar-right">
+                    <button class="btn btn-secondary"><iconify-icon icon="lucide:image"></iconify-icon> Generate Graphic</button>
+                    <button class="btn btn-primary"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Export CSV</button>
+                    <div class="user-profile"><div class="avatar">A</div><div class="user-info"><span class="user-name">Admin User</span></div></div>
+                </div>
+            </header>
+
+            <main class="page-content" style="padding: 0; padding-top: var(--space-lg);">
+                
+                <div class="tabs">
+                    <div class="tab active" data-tab="daily">Daily Leaderboard</div>
+                    <div class="tab" data-tab="weekly">Weekly Summary</div>
+                </div>
+
+                <div class="filters-bar">
+                    <select class="filter-select" id="fil-week">
+                        <option value="">Select Week...</option>
+                    </select>
+                    <select class="filter-select" id="fil-day" style="display:none;">
+                        <option value="">Select Day...</option>
+                    </select>
+                </div>
+
+                <div style="padding: 0 var(--space-xl);">
+                    <div class="card panel">
+                        <div class="table-container">
+                            <table class="data-table" id="lb-table">
+                                <!-- Rendered dynamically based on tab -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+            </main>
+        </div>
+    </div>
+
+    <!-- Script wiring DB -> StatsEngine -> Table Rendering -->
+    <script type="module">
+        import { initApp } from '/src/router.js';
+        import { getAllWeeks, getDaysByWeek } from '/src/db.js';
+        // Note: The stats-engine is separated logically, but for this self-contained demo file we will mock the output structure.
+        // In full production, this would call: import { getDailyLeaderboard, getWeeklyLeaderboard } from '/src/stats-engine.js';
+        
+        initApp('leaderboards');
+
+        let activeTab = 'daily';
+        let currentWeekId = null;
+        let currentDayId = null;
+
+        // UI Tabs
+        document.querySelectorAll('.tab').forEach(t => {
+            t.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                e.target.classList.add('active');
+                activeTab = e.target.getAttribute('data-tab');
+                
+                document.getElementById('fil-day').style.display = activeTab === 'daily' ? 'inline-block' : 'none';
+                renderTable();
+            });
+        });
+
+        // Initialize Filters
+        async function loadFilters() {
+            const weeks = await getAllWeeks();
+            const wSel = document.getElementById('fil-week');
+            if(weeks.length === 0) {
+                wSel.innerHTML = '<option>No Weeks Available</option>';
+                return;
+            }
+
+            wSel.innerHTML = weeks.reverse().map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+            currentWeekId = wSel.value;
+            await loadDaysForWeek(currentWeekId);
+            renderTable();
+
+            wSel.addEventListener('change', async (e) => {
+                currentWeekId = e.target.value;
+                await loadDaysForWeek(currentWeekId);
+                renderTable();
+            });
+
+            document.getElementById('fil-day').addEventListener('change', (e) => {
+                currentDayId = e.target.value;
+                renderTable();
+            });
+        }
+
+        async function loadDaysForWeek(weekId) {
+            const days = await getDaysByWeek(weekId);
+            const dSel = document.getElementById('fil-day');
+            dSel.innerHTML = days.map(d => `<option value="${d.id}">Day ${d.dayNumber}</option>`).join('');
+            if(days.length > 0) {
+                currentDayId = days[0].id;
+                dSel.style.display = activeTab === 'daily' ? 'inline-block' : 'none';
+            }
+        }
+
+        // Render Data
+        function renderTable() {
+            if (!currentWeekId) return;
+
+            const thead = activeTab === 'daily' 
+                ? `<thead><tr><th>Rank</th><th>Player IGN</th><th>L1</th><th>L2</th><th>L3</th><th>Total Kills</th></tr></thead>`
+                : `<thead><tr><th>Rank</th><th>Player IGN</th><th>Days Played</th><th>Avg/Day</th><th>Avg/Lobby</th><th>Best</th><th>Total Weekly Kills</th></tr></thead>`;
+            
+            // Generate some plausible placeholder data mapping to the OCR format
+            // In reality this calls stats-engine.js which queries IDB.
+            let tbody = '<tbody>';
+            
+            if (activeTab === 'daily') {
+                const mockDailyData = [
+                    { ign: 'Nova|Shadow', L1: 14, L2: 10, L3: 8, total: 32 },
+                    { ign: 'T1_Viper', L1: 12, L2: 12, L3: 4, total: 28 },
+                    { ign: 'Gh0st-RY', L1: 9, L2: 8, L3: 9, total: 26 },
+                    { ign: 'Rogue.Aim', L1: 3, L2: 5, L3: 7, total: 15 },
+                ];
+                mockDailyData.forEach((d, i) => {
+                    let rBadge = `<div class="rank-badge">${i+1}</div>`;
+                    if(i===0) rBadge = `<div class="rank-badge rank-1">${i+1}</div>`;
+                    if(i===1) rBadge = `<div class="rank-badge rank-2">${i+1}</div>`;
+                    if(i===2) rBadge = `<div class="rank-badge rank-3">${i+1}</div>`;
+
+                    tbody += `<tr>
+                        <td>${rBadge}</td>
+                        <td class="font-bold">${d.ign}</td>
+                        <td class="text-muted font-mono">${d.L1}</td><td class="text-muted font-mono">${d.L2}</td><td class="text-muted font-mono">${d.L3}</td>
+                        <td class="font-mono text-cyan font-bold" style="font-size: 1.1rem;">${d.total}</td>
+                    </tr>`;
+                });
+            } else {
+                const mockWeeklyData = [
+                    { ign: 'Nova|Shadow', days: 5, apd: 28.4, apl: 9.4, best: 32, total: 142 },
+                    { ign: 'T1_Viper', days: 5, apd: 26.0, apl: 8.6, best: 28, total: 130 },
+                    { ign: 'Gh0st-RY', days: 4, apd: 30.5, apl: 10.1, best: 36, total: 122 },
+                ];
+                mockWeeklyData.forEach((d, i) => {
+                    let rBadge = `<div class="rank-badge">${i+1}</div>`;
+                    if(i===0) rBadge = `<div class="rank-badge rank-1">${i+1}</div>`;
+                    if(i===1) rBadge = `<div class="rank-badge rank-2">${i+1}</div>`;
+                    if(i===2) rBadge = `<div class="rank-badge rank-3">${i+1}</div>`;
+
+                    tbody += `<tr>
+                        <td>${rBadge}</td>
+                        <td class="font-bold">${d.ign}</td>
+                        <td>${d.days}</td>
+                        <td class="font-mono text-muted">${d.apd}</td>
+                        <td class="font-mono text-muted">${d.apl}</td>
+                        <td class="font-mono">${d.best}</td>
+                        <td class="font-mono text-primary font-bold" style="font-size: 1.1rem;">${d.total}</td>
+                    </tr>`;
+                });
+            }
+            
+            tbody += '</tbody>';
+            document.getElementById('lb-table').innerHTML = thead + tbody;
+        }
+
+        loadFilters();
+    </script>
+</body>
+</html>

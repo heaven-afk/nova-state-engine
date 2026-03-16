@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Session — Nova Scrims Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .split-layout-sessions {
+            display: grid;
+            grid-template-columns: minmax(350px, 1fr) 2fr;
+            gap: var(--space-xl);
+            padding: var(--space-xl);
+            height: calc(100vh - 70px);
+        }
+
+        /* Lobby Selection Side */
+        .lobby-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            overflow-y: auto;
+        }
+        .lobby-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+        .lobby-card:hover { border-color: var(--accent-blue); background: var(--bg-surface-hover); }
+        .lobby-card.active { border-color: var(--accent-primary); box-shadow: 0 0 0 1px var(--accent-primary); background: linear-gradient(135deg, rgba(138,43,226,0.05), transparent); }
+        .l-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .l-title { font-size: 1.1rem; font-family: var(--font-heading); font-weight: 700; color: var(--text-primary); }
+        
+        /* Dropzone Side */
+        .dropzone-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+            height: auto; 
+            max-height: 100%;
+        }
+        .dropzone {
+            flex: 1;
+            min-height: 250px;
+            border: 2px dashed var(--border-strong);
+            border-radius: var(--radius-lg);
+            background: rgba(255,255,255,0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-lg);
+            transition: all var(--transition-fast);
+            color: var(--text-muted);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .dropzone.drag-active {
+            border-color: var(--accent-cyan);
+            background: rgba(0,255,136,0.05);
+            color: var(--accent-cyan);
+        }
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 8px;
+            color: inherit;
+        }
+
+        /* Preview Grid */
+        .preview-grid {
+            position: absolute; inset: 0; padding: var(--space-md);
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: var(--space-md);
+            background: var(--bg-surface);
+            overflow-y: auto; z-index: 10;
+        }
+        .preview-item {
+            position: relative; border-radius: var(--radius-sm); overflow: hidden;
+            aspect-ratio: 16/9; background: #000; border: 1px solid var(--border-subtle);
+        }
+        .preview-img { width: 100%; height: 100%; object-fit: contain; }
+        .btn-remove {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%;
+            width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            padding: var(--space-lg); background: var(--bg-surface);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        /* Progress States */
+        #ocr-progress { display: none; margin-top: 16px; }
+        .steps { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        .step.done { color: var(--accent-cyan); }
+        .step.active { color: var(--accent-primary); font-weight: 600; }
+        .lds-dual-ring {
+            display: inline-block; width: 16px; height: 16px;
+        }
+        .lds-dual-ring:after {
+            content: " "; display: block; width: 12px; height: 12px;
+            border-radius: 50%; border: 2px solid var(--accent-primary); border-color: var(--accent-primary) transparent var(--accent-primary) transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
+        @keyframes lds-dual-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Status colors */
+        .status-badge { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; }
+        .s-pending { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+        .s-reviewing { background: rgba(255,215,0,0.1); color: #FFD700; }
+        .s-approved { background: rgba(0,255,136,0.1); color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA SCRIMS</span></div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <a href="/sessions.html" class="nav-item active"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="topbar-left flex" style="display:flex; align-items:center; gap:var(--space-md);">
+                    <button class="btn-icon" id="btn-back"><iconify-icon icon="lucide:arrow-left"></iconify-icon></button>
+                    <h1 class="page-title" id="page-header">Session / Loading...</h1>
+                </div>
+                <!-- Nav Actions -->
+                <div class="topbar-right">
+                    <button class="btn btn-secondary" onclick="window.location.href='/leaderboards.html'">View Daily Leaderboard</button>
+                    <div class="user-profile"><div class="avatar">M</div><div class="user-info"><span class="user-name">Moderator Player</span></div></div>
+                </div>
+            </header>
+
+            <main class="split-layout-sessions">
+                
+                <!-- Left: Lobbies List -->
+                <div class="lobby-list" id="lobby-list">
+                    <!-- Dynamic rendering -->
+                </div>
+
+                <!-- Right: Dropzone & Upload Panel -->
+                <div class="dropzone-container" id="upload-panel" style="display:none;">
+                    <div class="card" style="padding: var(--space-md); display: flex; align-items:center; justify-content:space-between; border-left: 3px solid var(--accent-primary);">
+                        <div>
+                            <h2 style="font-family: var(--font-heading); font-size:1.2rem;" id="active-lobby-title">Lobby X</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Attach all result screenshots from this lobby below. They will be merged automatically.</p>
+                        </div>
+                        <span id="active-lobby-status" class="status-badge s-pending">Pending</span>
+                    </div>
+
+                    <!-- DROPZONE -->
+                    <div class="dropzone" id="dropzone">
+                        <iconify-icon icon="lucide:image-plus" class="upload-icon"></iconify-icon>
+                        <div style="font-size: 1.1rem; font-weight: 500; font-family: var(--font-heading);">Drag & Drop Scrim Results</div>
+                        <div style="font-size: 0.85rem;">or click to browse files</div>
+                        <input type="file" id="fileInp" multiple accept="image/*" style="display:none;">
+                        
+                        <div class="preview-grid" id="preview-grid" style="display: none;">
+                            <!-- Image thumbnails go here -->
+                        </div>
+                    </div>
+
+                    <!-- ACTION BAR -->
+                    <div class="action-bar">
+                        <div class="flex items-center gap-2">
+                            <span id="file-count" style="font-size:0.9rem; font-weight:500;">0 files attached</span>
+                        </div>
+                        <button class="btn btn-primary" id="btn-run-ocr" disabled>
+                            <iconify-icon icon="lucide:scan-line"></iconify-icon> Extract Players (OCR)
+                        </button>
+                    </div>
+
+                    <!-- OCR PIPELINE PROGRESS -->
+                    <div class="card panel" id="ocr-progress">
+                        <div class="panel-header"><h3 style="font-size:0.95rem;">Extraction Engine Pipeline</h3></div>
+                        <div style="padding: var(--space-lg);">
+                            <div class="steps" id="ocr-steps">
+                                <div class="step" id="step1"><iconify-icon icon="lucide:circle"></iconify-icon> Preprocessing Images</div>
+                                <iconify-icon icon="lucide:chevron-right" style="color:var(--border-strong)"></iconify-icon>
+                                <div class="step" id="step2"><iconify-icon icon="lucide:circle"></iconify-icon> Extracting Teams & IGNs</div>
+                                <iconify-icon icon="lucide:chevron-right" style="color:var(--border-strong)"></iconify-icon>
+                                <div class="step" id="step3"><iconify-icon icon="lucide:circle"></iconify-icon> Resolving Duplicates</div>
+                                <iconify-icon icon="lucide:chevron-right" style="color:var(--border-strong)"></iconify-icon>
+                                <div class="step" id="step4"><iconify-icon icon="lucide:circle"></iconify-icon> Ready for Human Review</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- DB/logic wiring -->
+    <script type="module">
+        import { initApp, showToast } from '/src/router.js';
+        import { getLobbiesByDay, updateLobbyImages } from '/src/db.js';
+
+        initApp('sessions');
+
+        const params = new URLSearchParams(window.location.search);
+        const dayId = params.get('id');
+        let lobbiesData = [];
+        let activeLobbyId = null;
+        let attachedFiles = [];
+
+        // DOM elements
+        const listEl = document.getElementById('lobby-list');
+        const uploadPanel = document.getElementById('upload-panel');
+        const dropzone = document.getElementById('dropzone');
+        const fileInp = document.getElementById('fileInp');
+        const grid = document.getElementById('preview-grid');
+        const runBtn = document.getElementById('btn-run-ocr');
+        const countSpan = document.getElementById('file-count');
+        const backBtn = document.getElementById('btn-back');
+
+        // Nav logic
+        backBtn.addEventListener('click', () => {
+            if (dayId && dayId.includes('_day_')) {
+                const weekId = dayId.split('_day_')[0];
+                window.location.href = `/week-view.html?id=${weekId}`;
+            } else {
+                window.location.href = '/weeks.html';
+            }
+        });
+
+        async function initPage() {
+            if (!dayId) return window.location.href = '/weeks.html';
+            document.getElementById('page-header').textContent = `Day ${dayId.split('_').pop()}`;
+
+            lobbiesData = await getLobbiesByDay(dayId);
+            renderLobbies();
+        }
+
+        function renderLobbies() {
+            listEl.innerHTML = '';
+            lobbiesData.forEach((l, idx) => {
+                const isApproved = l.status === 'approved';
+                const isReview = l.status === 'reviewing';
+                
+                const sClass = isApproved ? 's-approved' : (isReview ? 's-reviewing' : 's-pending');
+                const sText = isApproved ? 'Approved' : (isReview ? 'Needs Review' : 'Pending');
+
+                const el = document.createElement('div');
+                el.className = `lobby-card ${activeLobbyId === l.id ? 'active' : ''}`;
+                el.onclick = () => selectLobby(l);
+                
+                // Content
+                el.innerHTML = `
+                    <div class="l-header">
+                        <span class="l-title">Lobby ${l.lobbyNumber}</span>
+                        <span class="status-badge ${sClass}">${sText}</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; justify-content:space-between;">
+                        <span><iconify-icon icon="lucide:image"></iconify-icon> ${l.images?.length || 0} Screenshots</span>
+                        ${isReview ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.location.href='/ocr-review.html?lobby=${l.id}'">Open Review</button>` : ''}
+                        ${isApproved ? `<span style="color:var(--accent-cyan)"><iconify-icon icon="lucide:check"></iconify-icon> Extracted</span>` : ''}
+                    </div>
+                `;
+                listEl.appendChild(el);
+
+                // Auto select first
+                if (idx === 0 && !activeLobbyId) selectLobby(l);
+            });
+        }
+
+        function selectLobby(lobby) {
+            activeLobbyId = lobby.id;
+            
+            // Clear dropzone state
+            attachedFiles = [];
+            grid.innerHTML = '';
+            grid.style.display = 'none';
+            updateActionState();
+            hideProgress();
+
+            document.getElementById('active-lobby-title').textContent = `Lobby ${lobby.lobbyNumber} Screenshots`;
+            document.getElementById('active-lobby-status').className = `status-badge ${lobby.status === 'approved' ? 's-approved' : (lobby.status === 'reviewing' ? 's-reviewing' : 's-pending')}`;
+            document.getElementById('active-lobby-status').textContent = lobby.status === 'approved' ? 'Approved' : (lobby.status === 'reviewing' ? 'Needs Review' : 'Pending');
+            
+            uploadPanel.style.display = 'flex';
+            renderLobbies(); // trigger active styling updates
+        }
+
+        // Dropzone Logic
+        dropzone.addEventListener('click', () => { if(!grid.contains(event.target)) fileInp.click(); });
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-active'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-active'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropzone.classList.remove('drag-active');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInp.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        function handleFiles(files) {
+            Array.from(files).forEach(f => {
+                if (f.type.startsWith('image/')) {
+                    attachedFiles.push({ file: f, url: URL.createObjectURL(f) });
+                }
+            });
+            renderPreviews();
+            updateActionState();
+        }
+
+        function renderPreviews() {
+            if (attachedFiles.length > 0) {
+                grid.style.display = 'grid';
+                grid.innerHTML = attachedFiles.map((f, i) => `
+                    <div class="preview-item">
+                        <img src="${f.url}" class="preview-img">
+                        <button class="btn-remove" onclick="window.removeFile(${i})"><iconify-icon icon="lucide:x"></iconify-icon></button>
+                    </div>
+                `).join('');
+            } else {
+                grid.style.display = 'none';
+            }
+        }
+
+        window.removeFile = (idx) => {
+            event.stopPropagation();
+            URL.revokeObjectURL(attachedFiles[idx].url);
+            attachedFiles.splice(idx, 1);
+            renderPreviews();
+            updateActionState();
+        };
+
+        function updateActionState() {
+            countSpan.textContent = `${attachedFiles.length} files attached`;
+            if (attachedFiles.length > 0) {
+                runBtn.disabled = false;
+                countSpan.style.color = 'var(--text-primary)';
+            } else {
+                runBtn.disabled = true;
+                countSpan.style.color = 'var(--text-muted)';
+            }
+        }
+
+        // Mocking the OCR trigger that leads to the Review page
+        runBtn.addEventListener('click', async () => {
+            runBtn.disabled = true;
+            document.getElementById('ocr-progress').style.display = 'block';
+            
+            // Convert files to base64
+            const base64Images = await Promise.all(attachedFiles.map(af => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(af.file);
+                });
+            }));
+            
+            // Save to DB
+            if (activeLobbyId) {
+                await updateLobbyImages(activeLobbyId, base64Images);
+            }
+
+            const steps = [
+                {id: 'step1', time: 1000, activeMsg: 'Preprocessing Images <div class="lds-dual-ring"></div>'},
+                {id: 'step2', time: 2000, activeMsg: 'Extracting Teams & IGNs <div class="lds-dual-ring"></div>'},
+                {id: 'step3', time: 1000, activeMsg: 'Resolving Duplicates <div class="lds-dual-ring"></div>'},
+                {id: 'step4', time: 500,  activeMsg: '<iconify-icon icon="lucide:check-circle"></iconify-icon> Ready for Human Review'}
+            ];
+
+            // Animate through pipeline UI
+            for(let i=0; i<steps.length; i++) {
+                const el = document.getElementById(steps[i].id);
+                const originalText = el.innerText;
+                
+                // Active state
+                el.className = 'step active';
+                el.innerHTML = steps[i].activeMsg;
+                await new Promise(r => setTimeout(r, steps[i].time));
+                
+                // Done state
+                if (i !== steps.length -1) {
+                    el.className = 'step done';
+                    el.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon> ' + originalText;
+                }
+            }
+
+            showToast('Extraction complete! Sending to Moderation Review.', 'success');
+            
+            // Note: we'll build the REAL engine later, for now we pretend success and jump to review
+            setTimeout(() => {
+                window.location.href = `/ocr-review.html?lobby=${activeLobbyId}`;
+            }, 1000);
+        });
+
+        function hideProgress() {
+            document.getElementById('ocr-progress').style.display = 'none';
+            ['step1','step2','step3','step4'].forEach(id => {
+               const el = document.getElementById(id);
+               el.className = 'step'; 
+               // Reset text content roughly
+               if(id==='step1') el.innerHTML = '<iconify-icon icon="lucide:circle"></iconify-icon> Preprocessing Images';
+               if(id==='step2') el.innerHTML = '<iconify-icon icon="lucide:circle"></iconify-icon> Extracting Teams & IGNs';
+               if(id==='step3') el.innerHTML = '<iconify-icon icon="lucide:circle"></iconify-icon> Resolving Duplicates';
+               if(id==='step4') el.innerHTML = '<iconify-icon icon="lucide:circle"></iconify-icon> Ready for Human Review';
+            });
+        }
+
+        initPage();
+    </script>
+</body>
+</html>

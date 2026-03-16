@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nova Gaming - Scrims Analytics Platform">
+    <title>Nova Scrims Analytics</title>
+    <!-- Fonts: Space Grotesk (Headings) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Iconify Component -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">N</div>
+                <span class="brand-text">NOVA SCRIMS</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item active">
+                    <iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/weeks.html" class="nav-item">
+                    <iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon>
+                    <span>Weeks</span>
+                </a>
+                <a href="/sessions.html" class="nav-item">
+                    <iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon>
+                    <span>Daily Sessions</span>
+                </a>
+
+                <div class="nav-section">ANALYSIS</div>
+                <a href="/ocr-review.html" class="nav-item">
+                    <iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon>
+                    <span>OCR Review</span>
+                </a>
+                <a href="/leaderboards.html" class="nav-item">
+                    <iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon>
+                    <span>Leaderboards</span>
+                </a>
+                <a href="/exports.html" class="nav-item">
+                    <iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon>
+                    <span>Exports</span>
+                </a>
+
+                <div class="nav-section admin-only">ADMINISTRATION</div>
+                <a href="/users.html" class="nav-item admin-only">
+                    <iconify-icon icon="lucide:users" class="nav-icon"></iconify-icon>
+                    <span>Users</span>
+                </a>
+                <a href="/settings.html" class="nav-item admin-only">
+                    <iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button id="toggle-sidebar" class="btn-icon">
+                    <iconify-icon icon="lucide:panel-left-close"></iconify-icon>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-wrapper">
+            <!-- Top Navigation Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="page-title">Nova Gaming — Scrims Analytics</h1>
+                </div>
+                
+                <div class="topbar-right">
+                    <!-- Quick Actions -->
+                    <div class="dropdown">
+                        <button class="btn btn-primary" id="btn-quick-action">
+                            <iconify-icon icon="lucide:plus"></iconify-icon>
+                            Quick Actions
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="/weeks.html?action=new" class="dropdown-item">Create Week</a>
+                            <a href="/sessions.html?upload=true" class="dropdown-item">Upload Screenshots</a>
+                            <a href="/exports.html" class="dropdown-item">Export Weekly Data</a>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <button class="btn-icon relative">
+                        <iconify-icon icon="lucide:bell"></iconify-icon>
+                        <span class="notification-dot"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="user-profile">
+                        <div class="avatar">A</div>
+                        <div class="user-info">
+                            <span class="user-name">Admin User</span>
+                            <span class="user-role">Administrator</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                
+                <!-- Dashboard Hero Metrics -->
+                <div class="dashboard-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon" style="color: var(--accent-cyan); background: rgba(0,255,136,0.1);">
+                            <iconify-icon icon="lucide:calendar-clock"></iconify-icon>
+                        </div>
+                        <div class="metric-info">
+                            <p class="metric-label">Current Week</p>
+                            <h3 class="metric-value">March Week 2</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon" style="color: var(--accent-purple); background: rgba(186,85,211,0.1);">
+                            <iconify-icon icon="lucide:layers"></iconify-icon>
+                        </div>
+                        <div class="metric-info">
+                            <p class="metric-label">Days Completed</p>
+                            <h3 class="metric-value">4 / 7</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon" style="color: var(--accent-blue); background: rgba(0,191,255,0.1);">
+                            <iconify-icon icon="lucide:users-2"></iconify-icon>
+                        </div>
+                        <div class="metric-info">
+                            <p class="metric-label">Total Players Tracked</p>
+                            <h3 class="metric-value">124</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon" style="color: var(--accent-pink); background: rgba(255,20,147,0.1);">
+                            <iconify-icon icon="lucide:gallery-horizontal-end"></iconify-icon>
+                        </div>
+                        <div class="metric-info">
+                            <p class="metric-label">Total Lobbies Processed</p>
+                            <h3 class="metric-value">12</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout: Top Players & Recent Days -->
+                <div class="split-layout">
+                    <!-- Top Players Week Preview -->
+                    <div class="card panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Top Players This Week</h2>
+                            <a href="/leaderboards.html" class="btn btn-secondary btn-sm">View Full Leaderboard</a>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Player IGN</th>
+                                        <th>Weekly Kills</th>
+                                        <th>Days Played</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><div class="rank-badge rank-1">1</div></td>
+                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> NVxShadow</div></td>
+                                        <td class="font-mono text-cyan font-bold">42</td>
+                                        <td>4</td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="rank-badge rank-2">2</div></td>
+                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> Ghost_RY</div></td>
+                                        <td class="font-mono font-bold">38</td>
+                                        <td>4</td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="rank-badge rank-3">3</div></td>
+                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> T1 | Viper</div></td>
+                                        <td class="font-mono font-bold">35</td>
+                                        <td>4</td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="rank-badge">4</div></td>
+                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> Alpha_Snipe</div></td>
+                                        <td class="font-mono">31</td>
+                                        <td>4</td>
+                                    </tr>
+                                    <tr>
+                                        <td><div class="rank-badge">5</div></td>
+                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> NVxPhantom</div></td>
+                                        <td class="font-mono">29</td>
+                                        <td>3</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Recent Daily Results -->
+                    <div class="card panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Recent Daily Results</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table clickable-rows">
+                                <thead>
+                                    <tr>
+                                        <th>Week</th>
+                                        <th>Day</th>
+                                        <th>Players Recorded</th>
+                                        <th>Top Player</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr onclick="window.location.href='/sessions.html'">
+                                        <td>Mar Wk 2</td>
+                                        <td>Day 4</td>
+                                        <td>88</td>
+                                        <td>NVxShadow (12)</td>
+                                    </tr>
+                                    <tr onclick="window.location.href='/sessions.html'">
+                                        <td>Mar Wk 2</td>
+                                        <td>Day 3</td>
+                                        <td>92</td>
+                                        <td>Ghost_RY (15)</td>
+                                    </tr>
+                                    <tr onclick="window.location.href='/sessions.html'">
+                                        <td>Mar Wk 2</td>
+                                        <td>Day 2</td>
+                                        <td>85</td>
+                                        <td>T1 | Viper (11)</td>
+                                    </tr>
+                                    <tr onclick="window.location.href='/sessions.html'">
+                                        <td>Mar Wk 2</td>
+                                        <td>Day 1</td>
+                                        <td>90</td>
+                                        <td>NVxShadow (14)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
