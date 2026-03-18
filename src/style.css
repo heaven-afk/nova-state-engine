@@ -459,6 +459,7 @@ a { color: inherit; text-decoration: none; }
 .font-mono { font-family: 'Space Grotesk', monospace; }
 .font-bold { font-weight: 700; }
 
+
 /* -------------------------------------
    RESPONSIVENESS & MOBILE
 -------------------------------------- */
@@ -475,41 +476,98 @@ a { color: inherit; text-decoration: none; }
     /* Base spacing adjustments */
     :root {
         --space-xl: 1rem;
-        --space-lg: 1rem;
+        --space-lg: 0.85rem;
     }
 
-    /* Sidebar - Hidden by default on mobile, can be toggled via JS */
+    /* App container - let main wrapper take full width */
+    .app-container {
+        position: relative;
+    }
+
+    /* Sidebar - slides in from left as an overlay */
     .sidebar {
         position: fixed;
-        left: -260px;
+        left: -280px;
         top: 0;
         bottom: 0;
+        width: 260px !important;
         z-index: 1000;
         box-shadow: var(--shadow-md);
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .sidebar.open {
         left: 0;
     }
 
-    /* Hamburger Menu Button (visible only on mobile) */
-    .mobile-menu-btn {
-        display: flex;
+    /* Dim overlay behind the sidebar on mobile */
+    .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 999;
+        backdrop-filter: blur(2px);
+    }
+    .sidebar-backdrop.active {
+        display: block;
     }
 
-    /* Topbar styling for smaller constraint */
+    /* Main wrapper takes full screen since sidebar is overlay */
+    .main-wrapper {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Hamburger Menu Button (visible only on mobile) */
+    .mobile-menu-btn {
+        display: flex !important;
+    }
+
+    /* Topbar */
     .topbar {
         padding: 0 var(--space-md);
     }
     .page-title {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
     .user-info {
-        display: none; /* Hide name/role on mobile leaving only avatar */
+        display: none;
     }
 
-    /* Page Content Padding */
+    /* Page Content */
     .page-content {
         padding: var(--space-md);
+    }
+
+    /* Stack grid/split layouts */
+    .split-layout,
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Sessions page split layout */
+    .split-layout-sessions {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* OCR Review split */
+    .split-review {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .image-viewer {
+        min-height: 280px;
+    }
+
+    /* FAB bar (action button bar on OCR review) */
+    .fab-bar {
+        left: var(--space-md) !important;
+        right: var(--space-md) !important;
+        bottom: var(--space-md) !important;
+        position: fixed !important;
     }
 
     /* Data Table scrolling */
@@ -520,6 +578,18 @@ a { color: inherit; text-decoration: none; }
     .data-table th, .data-table td {
         padding: var(--space-sm) var(--space-md);
         white-space: nowrap;
+    }
+
+    /* Header rows */
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+
+    /* Topbar right — just show avatar */
+    .topbar-right .btn {
+        display: none;
     }
 }
 
@@ -535,5 +605,15 @@ a { color: inherit; text-decoration: none; }
         width: 30px;
         height: 30px;
         font-size: 0.8rem;
+    }
+    /* OCR steps — stack vertically */
+    .steps {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    /* Hide the chevron separators on mobile */
+    .steps > iconify-icon {
+        display: none;
     }
 }

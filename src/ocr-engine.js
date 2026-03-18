@@ -1,132 +1,112 @@
 /**
  * ocr-engine.js
  * Core logic for processing scrim screenshots.
- * Handles Tesseract initialization, duplicate resolving, and confidence scoring.
+ * Uses Tesseract.js loaded from CDN (window.Tesseract).
  */
 
-const Tesseract = window.Tesseract;
+// string-similarity is bundled by Vite normally (pure JS, no Node deps)
 import stringSimilarity from 'string-similarity';
 
 // Thresholds for confidence
 const CONFIDENCE_HIGH = 85;
-const CONFIDENCE_MED = 60;
+const CONFIDENCE_MED  = 60;
 
 /**
  * Main OCR Extraction function.
  * Called from day-view.html after user drops screenshots.
- * 
- * In a real production app, this would use hidden `<canvas>` to crop out 
- * specific leaderboard blocks to improve Tesseract accuracy significantly. 
- * For this implementation, we run a full pass and normalize text into rows.
  */
 export async function runOCRExtraction(imageURIs) {
-    let allRecords = [];
-    
-    // Initialize a single worker for speed (or spawn multiple for parallel)
-    const worker = await Tesseract.createWorker('eng', 1, {
-        logger: m => console.log(m) // Can be hooked into UI progress bar
-    });
-    
-    // Setup whitelist to improve numeric read for kills
-    await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789|.-_[]',
-    });
+    // Safety check — CDN must be loaded
+    if (typeof window.Tesseract === 'undefined') {
+        throw new Error('Tesseract.js CDN not loaded. Check the <script> tag in day-view.html.');
+    }
 
+    const Tesseract = window.Tesseract;
+    let allRecords = [];
+
+    // Use the simpler one-shot `recognize()` per image to avoid worker lifecycle issues
     for (let i = 0; i < imageURIs.length; i++) {
-        const result = await worker.recognize(imageURIs[i]);
+        let result;
+        try {
+            result = await Tesseract.recognize(imageURIs[i], 'eng', {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        console.log(`[OCR] Image ${i + 1}: ${Math.round(m.progress * 100)}%`);
+                    }
+                }
+            });
+        } catch (err) {
+            console.error(`[OCR] Failed on image ${i + 1}:`, err);
+            continue; // skip this image, keep going with others
+        }
+
         const lines = result.data.lines;
-        
-        // --- 1. Structured Region Detection / Row Extraction Heuristics ---
-        // A naive heuristic for CODM Scrims: 
-        // We look for lines that contain a mix of letters (IGN) and a number at the end (Kills).
-        
+
         for (const line of lines) {
             const rawText = line.text.trim();
             if (!rawText || rawText.length < 3) continue;
-            
-            // Regex to find "PlayerName 12" or "Clan|Name 5"
-            // Captures group 1 as the name, group 2 as the kill count at the end
+
+            // Look for "PlayerName 12" — name then a 1-2 digit number at end
             const match = rawText.match(/^(.*?)[\t\s]+(\d{1,2})$/i);
-            
+
             if (match) {
-                const rawName = match[1].trim();
-                const rawKills = parseInt(match[2].trim(), 10);
-                
-                // Normalization (strip excessive spaces, lowercase for comparison later)
-                const normalizedName = rawName.replace(/\s+/g, ' ').trim();
-                
-                // Assign confidence based on Tesseract's word confidence + heuristic rules
+                const rawName   = match[1].trim();
+                const rawKills  = parseInt(match[2].trim(), 10);
+                const normName  = rawName.replace(/\s+/g, ' ').trim();
+
                 let confLevel = 'high';
-                if (line.confidence < CONFIDENCE_MED) confLevel = 'low';
+                if (line.confidence < CONFIDENCE_MED)  confLevel = 'low';
                 else if (line.confidence < CONFIDENCE_HIGH) confLevel = 'medium';
-                
-                // Penalize if kill count seems absurd (e.g., > 40 in a scrim lobby)
-                if (rawKills > 40) confLevel = 'low';
+                if (rawKills > 40) confLevel = 'low'; // Absurd kill count
 
                 allRecords.push({
-                    sourceImage: `Image_${i+1}`,
-                    rawPlayerName: rawName,
-                    normalizedName: normalizedName,
-                    rawKills: rawKills,
-                    normalizedKills: rawKills, // starts same as raw, editable by human
-                    teamSlot: 'Unknown', // In real prod, derived via geometric bounds
+                    sourceImage:    `Image_${i + 1}`,
+                    rawPlayerName:  rawName,
+                    normalizedName: normName,
+                    rawKills:       rawKills,
+                    normalizedKills: rawKills,
+                    teamSlot:       'Unknown',
                     confidenceLevel: confLevel,
-                    tesseractConf: line.confidence,
-                    isDuplicate: false
+                    tesseractConf:  line.confidence,
+                    isDuplicate:    false
                 });
             }
         }
     }
-    
-    await worker.terminate();
 
-    // --- 2. Smart Normalization / Duplicate Handling ---
-    const deduplicatedRecords = resolveDuplicates(allRecords);
-    
-    return deduplicatedRecords;
+    return resolveDuplicates(allRecords);
 }
 
 /**
- * Resolves overlapping players from multiple screenshots.
- * Rules based on user prompt: 
- * If same player appears multiple times in the same lobby, keep only one valid record.
- * Use string similarity to handle OCR variations.
+ * Deduplicates player records from multiple overlapping screenshots.
  */
 function resolveDuplicates(records) {
     const unique = [];
-    const flagged = [];
-    
-    // We get the admin sensitivity setting, default to 0.75
-    const sensitivityStr = localStorage.getItem('nova_setting_ocr_sense') || "0.75";
+    const sensitivityStr = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
     const THRESHOLD = parseFloat(sensitivityStr);
 
     records.forEach(current => {
-        // Compare current against everything already in the "unique" array
         let isMatch = false;
-        
+
         for (let i = 0; i < unique.length; i++) {
             const existing = unique[i];
-            
-            // 1. Check exact numeric match AND highly similar name
             const dist = stringSimilarity.compareTwoStrings(
-                current.normalizedName.toLowerCase(), 
+                current.normalizedName.toLowerCase(),
                 existing.normalizedName.toLowerCase()
             );
 
             if (dist >= THRESHOLD && current.rawKills === existing.rawKills) {
-                // It's the same player from overlapping screenshot. We skip adding it.
+                // Same player from overlapping screenshot — skip
                 isMatch = true;
                 break;
             } else if (dist >= THRESHOLD && current.rawKills !== existing.rawKills) {
-                // Name matches but kills differ? Flag for human review as conflict.
+                // Same name, different kills — flag as conflict
                 current.confidenceLevel = 'low';
-                current.isDuplicate = true; // Mark as conflicting duplicate
+                current.isDuplicate = true;
             }
         }
 
-        if (!isMatch) {
-            unique.push(current);
-        }
+        if (!isMatch) unique.push(current);
     });
 
     return unique;
