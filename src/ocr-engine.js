@@ -1,84 +1,142 @@
 /**
  * ocr-engine.js
- * Core logic for processing scrim screenshots.
- * Uses Tesseract.js loaded from CDN (window.Tesseract).
+ * Nova Scrims Analytics — OCR Pipeline using Google Gemini Flash Vision API
+ * 
+ * The API key is read from localStorage (set in settings.html).
+ * Images are sent as base64 to the Gemini multimodal endpoint.
  */
 
-// string-similarity is bundled by Vite normally (pure JS, no Node deps)
 import stringSimilarity from 'string-similarity';
 
-// Thresholds for confidence
-const CONFIDENCE_HIGH = 85;
-const CONFIDENCE_MED  = 60;
+const GEMINI_MODEL = 'gemini-2.0-flash';
+
+const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
+
+Your task: Extract every visible player entry from the scoreboard. Each row typically shows a player IGN (in-game name) and their kill count.
+
+Return ONLY a JSON array. No explanation, no markdown, no code fences. Example:
+[
+  {"name": "Nova|Shadow", "kills": 14},
+  {"name": "T1_Viper", "kills": 9}
+]
+
+Rules:
+- Include ALL visible player rows, even if confidence is low
+- Player names may contain: letters, numbers, symbols like | . _ - [ ] > < ~
+- Kills are always a small number (0–40). If a number looks wrong (e.g. >40), still include it but flag it.
+- If you cannot read a name clearly, include your best guess anyway
+- Do NOT include team names, headers, total scores, or place rankings — only individual player rows
+- If no valid players are found, return an empty array: []`;
 
 /**
- * Main OCR Extraction function.
- * Called from day-view.html after user drops screenshots.
+ * Main OCR Extraction — calls Gemini Flash with each screenshot.
  */
 export async function runOCRExtraction(imageURIs) {
-    // Safety check — CDN must be loaded
-    if (typeof window.Tesseract === 'undefined') {
-        throw new Error('Tesseract.js CDN not loaded. Check the <script> tag in day-view.html.');
+    const apiKey = localStorage.getItem('nova_gemini_api_key');
+    if (!apiKey || apiKey.trim() === '') {
+        throw new Error('No Gemini API key found. Please set your API key in Settings → OCR Engine.');
     }
 
-    const Tesseract = window.Tesseract;
     let allRecords = [];
 
-    // Use the simpler one-shot `recognize()` per image to avoid worker lifecycle issues
     for (let i = 0; i < imageURIs.length; i++) {
-        let result;
+        console.log(`[Gemini OCR] Processing image ${i + 1} of ${imageURIs.length}...`);
+        
         try {
-            result = await Tesseract.recognize(imageURIs[i], 'eng', {
-                logger: m => {
-                    if (m.status === 'recognizing text') {
-                        console.log(`[OCR] Image ${i + 1}: ${Math.round(m.progress * 100)}%`);
-                    }
-                }
-            });
+            const records = await extractFromImage(imageURIs[i], apiKey, i);
+            allRecords = allRecords.concat(records);
+            console.log(`[Gemini OCR] Image ${i + 1}: extracted ${records.length} players`);
         } catch (err) {
-            console.error(`[OCR] Failed on image ${i + 1}:`, err);
-            continue; // skip this image, keep going with others
+            console.error(`[Gemini OCR] Failed on image ${i + 1}:`, err.message);
+            // Continue with remaining images
         }
+    }
 
-        const lines = result.data.lines;
-
-        for (const line of lines) {
-            const rawText = line.text.trim();
-            if (!rawText || rawText.length < 3) continue;
-
-            // Look for "PlayerName 12" — name then a 1-2 digit number at end
-            const match = rawText.match(/^(.*?)[\t\s]+(\d{1,2})$/i);
-
-            if (match) {
-                const rawName   = match[1].trim();
-                const rawKills  = parseInt(match[2].trim(), 10);
-                const normName  = rawName.replace(/\s+/g, ' ').trim();
-
-                let confLevel = 'high';
-                if (line.confidence < CONFIDENCE_MED)  confLevel = 'low';
-                else if (line.confidence < CONFIDENCE_HIGH) confLevel = 'medium';
-                if (rawKills > 40) confLevel = 'low'; // Absurd kill count
-
-                allRecords.push({
-                    sourceImage:    `Image_${i + 1}`,
-                    rawPlayerName:  rawName,
-                    normalizedName: normName,
-                    rawKills:       rawKills,
-                    normalizedKills: rawKills,
-                    teamSlot:       'Unknown',
-                    confidenceLevel: confLevel,
-                    tesseractConf:  line.confidence,
-                    isDuplicate:    false
-                });
-            }
-        }
+    if (allRecords.length === 0) {
+        throw new Error('No player data could be extracted. Check your screenshots or verify your API key in Settings.');
     }
 
     return resolveDuplicates(allRecords);
 }
 
 /**
- * Deduplicates player records from multiple overlapping screenshots.
+ * Calls the Gemini API for a single image.
+ */
+async function extractFromImage(base64DataURI, apiKey, imageIndex) {
+    // Strip the data:image/...;base64, prefix
+    const base64Data = base64DataURI.split(',')[1];
+    const mimeType   = base64DataURI.split(';')[0].split(':')[1] || 'image/png';
+
+    const requestBody = {
+        contents: [{
+            parts: [
+                { text: OCR_PROMPT },
+                {
+                    inline_data: {
+                        mime_type: mimeType,
+                        data: base64Data
+                    }
+                }
+            ]
+        }],
+        generationConfig: {
+            temperature: 0.1,   // Low temperature = more deterministic/structured
+            maxOutputTokens: 2048
+        }
+    };
+
+    const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        }
+    );
+
+    if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        const errMsg  = errBody?.error?.message || resp.statusText;
+        throw new Error(`Gemini API error (${resp.status}): ${errMsg}`);
+    }
+
+    const data = await resp.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Parse JSON from Gemini's response
+    let parsed = [];
+    try {
+        // Handle cases where Gemini wraps response in ```json ... ```
+        const clean = rawText.replace(/```json\n?/gi, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(clean);
+        if (!Array.isArray(parsed)) parsed = [];
+    } catch (e) {
+        console.warn(`[Gemini OCR] Could not parse JSON from image ${imageIndex + 1}:`, rawText);
+        return [];
+    }
+
+    // Map to internal record format
+    return parsed.map(entry => {
+        const kills = parseInt(entry.kills, 10);
+        let confLevel = 'high';
+        if (isNaN(kills) || kills > 40) confLevel = 'low';
+
+        return {
+            sourceImage:    `Image_${imageIndex + 1}`,
+            rawPlayerName:  entry.name || 'Unknown',
+            normalizedName: (entry.name || '').trim(),
+            rawKills:       isNaN(kills) ? 0 : kills,
+            normalizedKills: isNaN(kills) ? 0 : kills,
+            teamSlot:       'Unknown',
+            confidenceLevel: confLevel,
+            tesseractConf:  confLevel === 'high' ? 95 : 50, // Approximate
+            isDuplicate:    false
+        };
+    }).filter(r => r.normalizedName.length > 0);
+}
+
+/**
+ * Deduplicate players across multiple screenshots.
  */
 function resolveDuplicates(records) {
     const unique = [];
@@ -96,11 +154,10 @@ function resolveDuplicates(records) {
             );
 
             if (dist >= THRESHOLD && current.rawKills === existing.rawKills) {
-                // Same player from overlapping screenshot — skip
-                isMatch = true;
+                isMatch = true; // Exact duplicate across screenshots
                 break;
             } else if (dist >= THRESHOLD && current.rawKills !== existing.rawKills) {
-                // Same name, different kills — flag as conflict
+                // Same player, different kills — flag for human review
                 current.confidenceLevel = 'low';
                 current.isDuplicate = true;
             }

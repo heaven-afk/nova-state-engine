@@ -126,6 +126,28 @@
                     <div class="card panel" style="padding: var(--space-xl);">
                         <h2 class="panel-title" style="margin-bottom: var(--space-xl); border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">OCR Engine Configuration</h2>
                         
+                        <!-- Gemini API Key -->
+                        <div class="form-group" style="background: linear-gradient(135deg,rgba(138,43,226,0.08),rgba(0,191,255,0.05)); border: 1px solid rgba(138,43,226,0.25); border-radius: var(--radius-md); padding: var(--space-lg); margin-bottom: var(--space-xl);">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom: var(--space-md);">
+                                <iconify-icon icon="simple-icons:googlegemini" style="color:var(--accent-blue); font-size:1.2rem;"></iconify-icon>
+                                <span style="font-weight:600; font-family:var(--font-heading);">Gemini Flash Vision API</span>
+                                <span id="api-status-badge" style="font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:12px; background:rgba(255,255,255,0.05); color:var(--text-muted); margin-left:auto;">Not Configured</span>
+                            </div>
+                            <label class="form-label">Google AI Studio API Key</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="password" class="form-input" id="gemini-api-key" placeholder="AIza..." style="flex:1; font-family:monospace;">
+                                <button class="btn btn-secondary" id="btn-toggle-key" style="white-space:nowrap; padding: 10px 14px;"><iconify-icon icon="lucide:eye"></iconify-icon></button>
+                            </div>
+                            <p style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">
+                                Get your free key at <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent-blue);">aistudio.google.com</a>. 
+                                Stored locally in your browser — never sent to any server.
+                            </p>
+                            <div style="display:flex; gap:var(--space-md); margin-top:var(--space-md);">
+                                <button class="btn btn-primary" id="btn-save-key"><iconify-icon icon="lucide:save"></iconify-icon> Save API Key</button>
+                                <button class="btn btn-secondary" id="btn-test-key"><iconify-icon icon="lucide:zap"></iconify-icon> Test Connection</button>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">OCR Sensitivity (Fuzzy Name Matching)</label>
                             <div class="slider-container">
@@ -153,7 +175,7 @@
                         </div>
 
                         <div class="form-group" style="margin-top: var(--space-xl);">
-                            <button class="btn btn-primary" onclick="window.router.showToast('Settings saved successfully!', 'success');">Save Configurations</button>
+                            <button class="btn btn-primary" id="btn-save-settings"><iconify-icon icon="lucide:save"></iconify-icon> Save Configurations</button>
                         </div>
                     </div>
 
@@ -166,9 +188,93 @@
         window.router = router;
         router.initApp('settings');
 
+        const { showToast } = router;
+
+        // OCR Sensitivity slider
         const sSlider = document.getElementById('setting-ocr-sense');
-        const sVal = document.getElementById('ocr-sense-val');
-        sSlider.addEventListener('input', e => sVal.textContent = parseFloat(e.target.value).toFixed(2));
+        const sVal    = document.getElementById('ocr-sense-val');
+        sSlider.value = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
+        sVal.textContent = parseFloat(sSlider.value).toFixed(2);
+        sSlider.addEventListener('input', e => {
+            sVal.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        // Gemini API Key management
+        const keyInput   = document.getElementById('gemini-api-key');
+        const statusBadge = document.getElementById('api-status-badge');
+        const toggleBtn  = document.getElementById('btn-toggle-key');
+        const saveKeyBtn = document.getElementById('btn-save-key');
+        const testKeyBtn = document.getElementById('btn-test-key');
+        const saveSettingsBtn = document.getElementById('btn-save-settings');
+
+        // Load saved key
+        const savedKey = localStorage.getItem('nova_gemini_api_key');
+        if (savedKey) {
+            keyInput.value = savedKey;
+            setStatusBadge('Configured', 'rgba(0,255,136,0.15)', 'var(--accent-cyan)');
+        }
+
+        function setStatusBadge(text, bg, color) {
+            statusBadge.textContent = text;
+            statusBadge.style.background = bg;
+            statusBadge.style.color = color;
+        }
+
+        // Toggle key visibility
+        toggleBtn.addEventListener('click', () => {
+            keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+            toggleBtn.innerHTML = keyInput.type === 'password'
+                ? '<iconify-icon icon="lucide:eye"></iconify-icon>'
+                : '<iconify-icon icon="lucide:eye-off"></iconify-icon>';
+        });
+
+        // Save key
+        saveKeyBtn.addEventListener('click', () => {
+            const key = keyInput.value.trim();
+            if (!key) { showToast('Please enter an API key', 'error'); return; }
+            localStorage.setItem('nova_gemini_api_key', key);
+            setStatusBadge('Configured', 'rgba(0,255,136,0.15)', 'var(--accent-cyan)');
+            showToast('Gemini API key saved!', 'success');
+        });
+
+        // Test connection
+        testKeyBtn.addEventListener('click', async () => {
+            const key = keyInput.value.trim();
+            if (!key) { showToast('Enter a key first', 'error'); return; }
+
+            testKeyBtn.disabled = true;
+            testKeyBtn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Testing...';
+
+            try {
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }] })
+                    }
+                );
+                if (res.ok) {
+                    setStatusBadge('✓ Connected', 'rgba(0,255,136,0.15)', 'var(--accent-cyan)');
+                    showToast('Gemini API: Connection successful!', 'success');
+                } else {
+                    const err = await res.json();
+                    throw new Error(err?.error?.message || 'Unknown error');
+                }
+            } catch (e) {
+                setStatusBadge('Error', 'rgba(255,51,102,0.15)', 'var(--accent-red)');
+                showToast('API Error: ' + e.message, 'error');
+            } finally {
+                testKeyBtn.disabled = false;
+                testKeyBtn.innerHTML = '<iconify-icon icon="lucide:zap"></iconify-icon> Test Connection';
+            }
+        });
+
+        // Save all settings
+        saveSettingsBtn.addEventListener('click', () => {
+            localStorage.setItem('nova_setting_ocr_sense', sSlider.value);
+            showToast('All settings saved!', 'success');
+        });
     </script>
 </body>
 </html>
