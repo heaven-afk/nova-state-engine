@@ -56,9 +56,8 @@ export function initApp(pageId) {
         });
     }
 
-    // 4. Sidebar Toggle (Mobile / Compact)
+    // 4. Sidebar Toggle (Desktop / Compact)
     const toggleBtn = document.getElementById('toggle-sidebar');
-    const sidebar = document.getElementById('sidebar');
     if (toggleBtn && sidebar) {
         toggleBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');

@@ -51,7 +51,10 @@
 
         <div class="main-wrapper">
             <header class="topbar">
-                <div class="topbar-left"><h1 class="page-title">User Management</h1></div>
+                <div class="topbar-left" style="display:flex; align-items:center; gap:var(--space-sm);">
+                    <button class="btn-icon mobile-menu-btn" style="display:none;" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
+                    <h1 class="page-title">User Management</h1>
+                </div>
                 <div class="topbar-right">
                     <button class="btn btn-primary"><iconify-icon icon="lucide:user-plus"></iconify-icon> Add User</button>
                     <div class="user-profile"><div class="avatar">A</div><div class="user-info"><span class="user-name">Admin User</span><span class="user-role">Admin</span></div></div>
