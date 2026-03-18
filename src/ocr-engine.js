@@ -8,7 +8,7 @@
 
 import stringSimilarity from 'string-similarity';
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 
 const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
 
