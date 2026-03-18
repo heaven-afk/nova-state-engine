@@ -4,7 +4,7 @@
  * Handles Tesseract initialization, duplicate resolving, and confidence scoring.
  */
 
-import Tesseract from 'tesseract.js';
+const Tesseract = window.Tesseract;
 import stringSimilarity from 'string-similarity';
 
 // Thresholds for confidence
