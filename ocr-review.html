@@ -190,21 +190,8 @@
                 }
             }
 
-            // We need to fetch the mock records from DB (since Day view didn't actually run real Tesseract on browser)
-            // For the sake of this interactive demo we will inject some mock data into DB right now if empty
+            // Fetch actual OCR records from DB
             records = await getOCRRecordsByLobby(lobbyId);
-            
-            if (records.length === 0) {
-                // Generate some highly realistic demo data reflecting the OCR engine output
-                records = [
-                    { id: '1', normalizedName: 'Nova|Shadow', normalizedKills: 14, confidenceLevel: 'high' },
-                    { id: '2', normalizedName: 'T1_Viper', normalizedKills: 12, confidenceLevel: 'high' },
-                    { id: '3', normalizedName: 'Gh0st-RY', normalizedKills: 9, confidenceLevel: 'medium' },
-                    { id: '4', normalizedName: 'Nv>Sniper', normalizedKills: 85, confidenceLevel: 'low', isDuplicate: true }, // Fake anomalous kill count
-                    { id: '5', normalizedName: 'Rogue.Aim', normalizedKills: 3, confidenceLevel: 'high' },
-                    { id: '6', normalizedName: 'Nva|Shdow', normalizedKills: 14, confidenceLevel: 'low', isDuplicate: true }, // Fake duplicate OCR read
-                ];
-            }
 
             // Reverse engineer week/day from lobbyId (e.g. wk_123_day_1_lobby_1)
             const parts = lobbyId.split('_');

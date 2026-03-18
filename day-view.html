@@ -210,7 +210,8 @@
     <!-- DB/logic wiring -->
     <script type="module">
         import { initApp, showToast } from '/src/router.js';
-        import { getLobbiesByDay, updateLobbyImages } from '/src/db.js';
+        import { getLobbiesByDay, updateLobbyImages, saveRawOCRRecords } from '/src/db.js';
+        import { runOCRExtraction } from '/src/ocr-engine.js';
 
         initApp('sessions');
 
@@ -351,10 +352,15 @@
             }
         }
 
-        // Mocking the OCR trigger that leads to the Review page
+        // Triggering REAL Tesseract OCR Engine
         runBtn.addEventListener('click', async () => {
             runBtn.disabled = true;
             document.getElementById('ocr-progress').style.display = 'block';
+            
+            // Mark step 1
+            const step1 = document.getElementById('step1');
+            step1.className = 'step active';
+            step1.innerHTML = 'Preprocessing Images <div class="lds-dual-ring"></div>';
             
             // Convert files to base64
             const base64Images = await Promise.all(attachedFiles.map(af => {
@@ -365,41 +371,56 @@
                 });
             }));
             
-            // Save to DB
+            // Save Images to DB
             if (activeLobbyId) {
                 await updateLobbyImages(activeLobbyId, base64Images);
             }
-
-            const steps = [
-                {id: 'step1', time: 1000, activeMsg: 'Preprocessing Images <div class="lds-dual-ring"></div>'},
-                {id: 'step2', time: 2000, activeMsg: 'Extracting Teams & IGNs <div class="lds-dual-ring"></div>'},
-                {id: 'step3', time: 1000, activeMsg: 'Resolving Duplicates <div class="lds-dual-ring"></div>'},
-                {id: 'step4', time: 500,  activeMsg: '<iconify-icon icon="lucide:check-circle"></iconify-icon> Ready for Human Review'}
-            ];
-
-            // Animate through pipeline UI
-            for(let i=0; i<steps.length; i++) {
-                const el = document.getElementById(steps[i].id);
-                const originalText = el.innerText;
-                
-                // Active state
-                el.className = 'step active';
-                el.innerHTML = steps[i].activeMsg;
-                await new Promise(r => setTimeout(r, steps[i].time));
-                
-                // Done state
-                if (i !== steps.length -1) {
-                    el.className = 'step done';
-                    el.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon> ' + originalText;
-                }
-            }
-
-            showToast('Extraction complete! Sending to Moderation Review.', 'success');
             
-            // Note: we'll build the REAL engine later, for now we pretend success and jump to review
-            setTimeout(() => {
-                window.location.href = `/ocr-review.html?lobby=${activeLobbyId}`;
-            }, 1000);
+            step1.className = 'step done';
+            step1.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon> Preprocessing Images';
+
+            try {
+                // Mark step 2
+                const step2 = document.getElementById('step2');
+                step2.className = 'step active';
+                step2.innerHTML = 'Extracting Teams & IGNs via Tesseract.js <div class="lds-dual-ring"></div>';
+
+                // RUN NATIVE OCR!
+                const extractedRecords = await runOCRExtraction(base64Images);
+
+                step2.className = 'step done';
+                step2.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon> Extracting Teams & IGNs';
+
+                // Mark step 3
+                const step3 = document.getElementById('step3');
+                step3.className = 'step active';
+                step3.innerHTML = 'Resolving Duplicates <div class="lds-dual-ring"></div>';
+                
+                // Save records to DB
+                if (activeLobbyId) {
+                    await saveRawOCRRecords(activeLobbyId, extractedRecords);
+                }
+                
+                step3.className = 'step done';
+                step3.innerHTML = '<iconify-icon icon="lucide:check"></iconify-icon> Resolving Duplicates';
+                
+                // Mark step 4
+                const step4 = document.getElementById('step4');
+                step4.className = 'step done';
+                step4.innerHTML = '<iconify-icon icon="lucide:check-circle"></iconify-icon> Ready for Human Review';
+
+                showToast(`Extraction complete! Found ${extractedRecords.length} unique players.`, 'success');
+                
+                setTimeout(() => {
+                    window.location.href = `/ocr-review.html?lobby=${activeLobbyId}`;
+                }, 1000);
+                
+            } catch (err) {
+                console.error("OCR Failed:", err);
+                showToast("OCR Extraction Failed. Check console.", "error");
+                runBtn.disabled = false;
+                hideProgress();
+            }
         });
 
         function hideProgress() {
