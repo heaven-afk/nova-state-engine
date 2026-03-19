@@ -3,6 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   build: {
+    target: 'esnext',   // enables top-level await support
     rollupOptions: {
       input: {
         main:         resolve(__dirname, 'index.html'),
