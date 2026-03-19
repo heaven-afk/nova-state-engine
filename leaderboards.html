@@ -90,7 +90,7 @@
     <!-- Script wiring DB -> StatsEngine -> Table Rendering -->
     <script type="module">
         import { initApp } from '/src/router.js';
-        import { getAllWeeks, getDaysByWeek } from '/src/db.js';
+        import { getAllWeeks, getDaysByWeek } from '/src/supabase-db.js';
         // Note: The stats-engine is separated logically, but for this self-contained demo file we will mock the output structure.
         // In full production, this would call: import { getDailyLeaderboard, getWeeklyLeaderboard } from '/src/stats-engine.js';
         
