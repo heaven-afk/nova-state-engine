@@ -1,16 +1,14 @@
 /**
  * auth.js
- * Nova Stat Engine — Supabase Authentication & Client
+ * Nova Stat Engine — Supabase Authentication
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL  = 'https://iafdpyeigkthdakksnih.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_n4n0dFU84gHjsLmHDVeHrA_cb4SFvUu';
+const SUPABASE_URL = 'https://iafdpyeigkthdakksnih.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_n4n0dFU84gHjsLmHDVeHrA_cb4SFvUu';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ─── Session Helpers ──────────────────────────────────────────────────────────
 
 export async function getSession() {
     const { data } = await supabase.auth.getSession();
@@ -28,27 +26,19 @@ export async function signIn(email, password) {
     return data;
 }
 
-export async function signUp(email, password, orgName, displayName) {
-    // 1. Create auth user
+export async function signUp(email, password, displayName) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
-    const userId = data.user.id;
 
-    // 2. Create organization
-    const { data: orgData, error: orgErr } = await supabase
-        .from('organizations')
-        .insert({ name: orgName })
-        .select()
-        .single();
-    if (orgErr) throw orgErr;
-
-    // 3. Create user profile as Owner
-    const { error: profileErr } = await supabase
-        .from('user_profiles')
-        .insert({ id: userId, org_id: orgData.id, role: 'owner', display_name: displayName || email });
-    if (profileErr) throw profileErr;
-
-    return { user: data.user, org: orgData };
+    // Create profile immediately (no org needed)
+    if (data.user) {
+        await supabase.from('user_profiles').insert({
+            id: data.user.id,
+            display_name: displayName || email.split('@')[0],
+            role: 'admin'
+        });
+    }
+    return data;
 }
 
 export async function signOut() {
@@ -56,25 +46,20 @@ export async function signOut() {
     window.location.href = '/login.html';
 }
 
-// ─── Profile & Org ────────────────────────────────────────────────────────────
-
 export async function getUserProfile() {
     const user = await getUser();
     if (!user) return null;
     const { data } = await supabase
         .from('user_profiles')
-        .select('*, organizations(*)')
+        .select('*')
         .eq('id', user.id)
         .single();
-    return data;
+    return { ...data, email: user.email };
 }
 
-// ─── Route Guard ─────────────────────────────────────────────────────────────
-
 /**
- * Call this at the top of every protected page's module script.
- * Redirects to /login.html if the user is not authenticated.
- * Returns the profile (with org) if authenticated.
+ * Route guard — redirect to login if not authenticated.
+ * Returns profile if authenticated.
  */
 export async function requireAuth() {
     const session = await getSession();
@@ -84,9 +69,14 @@ export async function requireAuth() {
     }
     const profile = await getUserProfile();
     if (!profile) {
-        // User authed but no profile yet (e.g. mid-signup) — sign out and redirect
-        await supabase.auth.signOut();
-        window.location.href = '/login.html';
+        // Auto-create profile for users who signed up before profile creation was added
+        const user = session.user;
+        if (user) {
+            const { data } = await supabase.from('user_profiles')
+                .insert({ id: user.id, display_name: user.email?.split('@')[0], role: 'admin' })
+                .select().single();
+            return { ...data, email: user.email };
+        }
         return null;
     }
     return profile;

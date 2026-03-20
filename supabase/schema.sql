@@ -1,72 +1,60 @@
 -- ============================================================
--- Nova Stat Engine — Supabase Schema
+-- Nova Stat Engine — Simplified Schema (User-Scoped)
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 
--- 1. Organizations
-CREATE TABLE IF NOT EXISTS organizations (
-    id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    name                TEXT NOT NULL,
-    logo_url            TEXT,
-    ocr_sensitivity     FLOAT DEFAULT 0.75,
-    default_week_length INT DEFAULT 7,
-    created_at          TIMESTAMPTZ DEFAULT NOW()
-);
+-- Step 1: Drop existing tables (clean slate)
+DROP TABLE IF EXISTS player_stats  CASCADE;
+DROP TABLE IF EXISTS ocr_records   CASCADE;
+DROP TABLE IF EXISTS lobbies       CASCADE;
+DROP TABLE IF EXISTS days          CASCADE;
+DROP TABLE IF EXISTS weeks         CASCADE;
+DROP TABLE IF EXISTS invitations   CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
+DROP TABLE IF EXISTS organizations CASCADE;
 
--- 2. User Profiles (extends auth.users)
-CREATE TABLE IF NOT EXISTS user_profiles (
+-- Step 2: User Profiles (no org, just display name + role)
+CREATE TABLE user_profiles (
     id           UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-    org_id       UUID REFERENCES organizations(id) ON DELETE SET NULL,
-    role         TEXT CHECK (role IN ('owner','admin','moderator')) DEFAULT 'moderator',
     display_name TEXT,
+    role         TEXT CHECK (role IN ('admin','moderator')) DEFAULT 'admin',
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Invitations
-CREATE TABLE IF NOT EXISTS invitations (
+-- Step 3: Weeks
+CREATE TABLE weeks (
     id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id     UUID REFERENCES organizations(id) ON DELETE CASCADE,
-    email      TEXT NOT NULL,
-    role       TEXT CHECK (role IN ('admin','moderator')) DEFAULT 'moderator',
-    token      TEXT UNIQUE DEFAULT gen_random_uuid()::TEXT,
-    accepted   BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. Weeks
-CREATE TABLE IF NOT EXISTS weeks (
-    id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id     UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+    user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     name       TEXT NOT NULL,
     total_days INT DEFAULT 7,
     status     TEXT DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Days
-CREATE TABLE IF NOT EXISTS days (
+-- Step 4: Days
+CREATE TABLE days (
     id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id     UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+    user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     week_id    UUID REFERENCES weeks(id) ON DELETE CASCADE,
     day_number INT NOT NULL,
     status     TEXT DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Lobbies
-CREATE TABLE IF NOT EXISTS lobbies (
+-- Step 5: Lobbies
+CREATE TABLE lobbies (
     id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id       UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+    user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     day_id       UUID REFERENCES days(id) ON DELETE CASCADE,
     lobby_number INT NOT NULL,
     status       TEXT DEFAULT 'pending',
     images       JSONB DEFAULT '[]'::JSONB
 );
 
--- 7. OCR Records
-CREATE TABLE IF NOT EXISTS ocr_records (
+-- Step 6: OCR Records
+CREATE TABLE ocr_records (
     id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id           UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+    user_id          UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     lobby_id         UUID REFERENCES lobbies(id) ON DELETE CASCADE,
     source_image     TEXT,
     raw_player_name  TEXT,
@@ -78,10 +66,10 @@ CREATE TABLE IF NOT EXISTS ocr_records (
     is_duplicate     BOOLEAN DEFAULT FALSE
 );
 
--- 8. Player Stats (post-approval)
-CREATE TABLE IF NOT EXISTS player_stats (
+-- Step 7: Player Stats
+CREATE TABLE player_stats (
     id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id     UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+    user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     week_id    UUID REFERENCES weeks(id) ON DELETE CASCADE,
     day_id     UUID REFERENCES days(id) ON DELETE CASCADE,
     lobby_id   UUID REFERENCES lobbies(id) ON DELETE CASCADE,
@@ -90,58 +78,18 @@ CREATE TABLE IF NOT EXISTS player_stats (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================================
--- Row Level Security
--- ============================================================
-
-ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+-- Step 8: Enable RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE invitations   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weeks         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE days          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lobbies       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ocr_records   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE player_stats  ENABLE ROW LEVEL SECURITY;
 
--- Helper: get current user's org_id
-CREATE OR REPLACE FUNCTION get_user_org_id()
-RETURNS UUID AS $$
-    SELECT org_id FROM user_profiles WHERE id = auth.uid()
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
-
--- Helper: get current user's role
-CREATE OR REPLACE FUNCTION get_user_role()
-RETURNS TEXT AS $$
-    SELECT role FROM user_profiles WHERE id = auth.uid()
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
-
--- organizations: read own org
-CREATE POLICY "org_select" ON organizations FOR SELECT USING (id = get_user_org_id());
-CREATE POLICY "org_update" ON organizations FOR UPDATE USING (id = get_user_org_id());
-
--- user_profiles: users see own profile
-CREATE POLICY "profile_select_own" ON user_profiles FOR SELECT USING (id = auth.uid());
-CREATE POLICY "profile_update_own" ON user_profiles FOR UPDATE USING (id = auth.uid());
-CREATE POLICY "profile_insert"     ON user_profiles FOR INSERT WITH CHECK (id = auth.uid());
--- admins/owners can see all profiles in their org
-CREATE POLICY "profile_select_org" ON user_profiles FOR SELECT USING (org_id = get_user_org_id());
-
--- invitations
-CREATE POLICY "invite_select" ON invitations FOR SELECT USING (org_id = get_user_org_id());
-CREATE POLICY "invite_insert" ON invitations FOR INSERT WITH CHECK (org_id = get_user_org_id());
-CREATE POLICY "invite_update" ON invitations FOR UPDATE USING (org_id = get_user_org_id());
-
--- weeks
-CREATE POLICY "weeks_all" ON weeks FOR ALL USING (org_id = get_user_org_id());
-
--- days
-CREATE POLICY "days_all" ON days FOR ALL USING (org_id = get_user_org_id());
-
--- lobbies
-CREATE POLICY "lobbies_all" ON lobbies FOR ALL USING (org_id = get_user_org_id());
-
--- ocr_records
-CREATE POLICY "ocr_all" ON ocr_records FOR ALL USING (org_id = get_user_org_id());
-
--- player_stats
-CREATE POLICY "stats_all" ON player_stats FOR ALL USING (org_id = get_user_org_id());
+-- Step 9: RLS Policies (users only see their own data)
+CREATE POLICY "profile_own" ON user_profiles FOR ALL USING (id = auth.uid());
+CREATE POLICY "weeks_own"   ON weeks         FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "days_own"    ON days          FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "lobbies_own" ON lobbies       FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "ocr_own"     ON ocr_records   FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "stats_own"   ON player_stats  FOR ALL USING (user_id = auth.uid());

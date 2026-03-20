@@ -410,8 +410,7 @@
                 
                 // Save records to Supabase
                 if (activeLobbyId) {
-                    const orgId = state.profile?.org_id;
-                    await saveRawOCRRecords(orgId, activeLobbyId, extractedRecords);
+                    await saveRawOCRRecords(activeLobbyId, extractedRecords);
                 }
                 
                 step3.className = 'step done';

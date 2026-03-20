@@ -305,16 +305,6 @@
         <div class="success-msg" id="success-msg"></div>
 
         <form id="auth-form">
-            <!-- Signup only -->
-            <div class="form-group signup-only" id="field-orgname">
-                <label class="form-label">Organization Name</label>
-                <input type="text" class="form-input" id="inp-orgname" placeholder="e.g. Nova Gaming, ABC Scrims">
-            </div>
-            <div class="form-group signup-only" id="field-displayname">
-                <label class="form-label">Your Display Name</label>
-                <input type="text" class="form-input" id="inp-displayname" placeholder="e.g. Commander Nova">
-            </div>
-
             <!-- Shared fields -->
             <div class="form-group">
                 <label class="form-label">Email Address</label>
@@ -392,10 +382,7 @@
                     await signIn(email, password);
                     window.location.href = '/';
                 } else {
-                    const orgName     = document.getElementById('inp-orgname').value.trim();
-                    const displayName = document.getElementById('inp-displayname').value.trim();
-                    if (!orgName) { showError('Please enter your organization name.'); return; }
-                    await signUp(email, password, orgName, displayName);
+                    await signUp(email, password);
                     showSuccess('Account created! Check your email to verify, then sign in.');
                     switchTab('login');
                 }
