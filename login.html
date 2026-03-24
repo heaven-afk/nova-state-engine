@@ -343,7 +343,10 @@
                 el.style.display = tab === 'signup' ? 'block' : 'none';
             });
             document.getElementById('forgot-wrap').style.display = tab === 'login' ? 'block' : 'none';
-            document.getElementById('btn-text').textContent = tab === 'login' ? 'Sign In' : 'Create Workspace';
+            
+            const btnText = document.getElementById('btn-text');
+            if (btnText) btnText.textContent = tab === 'login' ? 'Sign In' : 'Create Workspace';
+            
             document.querySelector('.form-title').textContent = tab === 'login' ? 'Welcome back' : 'Create your workspace';
             document.querySelector('.form-subtitle').textContent = tab === 'login' ? 'Sign in to your workspace' : 'Set up your organization';
 
