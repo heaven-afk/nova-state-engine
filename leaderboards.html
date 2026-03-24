@@ -31,7 +31,7 @@
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA SCRIMS</span></div>
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA STAT ENGINE</span></div>
             <nav class="sidebar-nav">
                 <div class="nav-section">MAIN</div>
                 <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
@@ -42,6 +42,10 @@
                 <a href="/leaderboards.html" class="nav-item active"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
                 <a href="/exports.html" class="nav-item"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
             </nav>
+            <div style="padding:var(--space-md) var(--space-lg); border-top:1px solid var(--border-subtle); margin-top:auto;">
+                <button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;width:100%;padding:6px 0;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button>
+                <div style="font-size:0.65rem;color:rgba(255,255,255,0.15);margin-top:8px;">Powered by Nova Gaming</div>
+            </div>
         </aside>
 
         <div class="main-wrapper">
@@ -53,7 +57,7 @@
                 <div class="topbar-right">
                     <button class="btn btn-secondary"><iconify-icon icon="lucide:image"></iconify-icon> Generate Graphic</button>
                     <button class="btn btn-primary"><iconify-icon icon="lucide:file-spreadsheet"></iconify-icon> Export CSV</button>
-                    <div class="user-profile"><div class="avatar">A</div><div class="user-info"><span class="user-name">Admin User</span></div></div>
+                    <div class="user-profile"><div class="avatar">U</div><div class="user-info"><span class="user-name">User</span><span class="user-role">Role</span></div></div>
                 </div>
             </header>
 
@@ -94,7 +98,7 @@
         // Note: The stats-engine is separated logically, but for this self-contained demo file we will mock the output structure.
         // In full production, this would call: import { getDailyLeaderboard, getWeeklyLeaderboard } from '/src/stats-engine.js';
         
-        initApp('leaderboards');
+        await initApp('leaderboards');
 
         let activeTab = 'daily';
         let currentWeekId = null;

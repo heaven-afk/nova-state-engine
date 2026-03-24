@@ -385,9 +385,13 @@
                     await signIn(email, password);
                     window.location.href = '/';
                 } else {
-                    await signUp(email, password);
-                    showSuccess('Account created! Check your email to verify, then sign in.');
-                    switchTab('login');
+                    const authData = await signUp(email, password);
+                    if (authData.session) {
+                        window.location.href = '/';
+                    } else {
+                        showSuccess('Account created! Check your email to verify, then sign in.');
+                        switchTab('login');
+                    }
                 }
             } catch (err) {
                 showError(err.message || 'An error occurred. Please try again.');

@@ -80,13 +80,17 @@
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar collapsed" id="sidebar" style="width: 70px;">
-            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text" style="display:none;">NOVA SCRIMS</span></div>
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA STAT ENGINE</span></div>
             <nav class="sidebar-nav">
                 <a href="/" class="nav-item" title="Dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon></a>
                 <a href="/weeks.html" class="nav-item" title="Weeks"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon></a>
                 <a href="/weeks.html" class="nav-item" title="Daily Sessions"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon></a>
                 <a href="/ocr-review.html" class="nav-item active" title="OCR Review"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon></a>
             </nav>
+            <div style="padding:var(--space-md) var(--space-lg); border-top:1px solid var(--border-subtle); margin-top:auto;">
+                <button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;width:100%;padding:6px 0;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button>
+                <div style="font-size:0.65rem;color:rgba(255,255,255,0.15);margin-top:8px;">Powered by Nova Gaming</div>
+            </div>
         </aside>
 
         <div class="main-wrapper" style="position: relative;">
@@ -163,7 +167,7 @@
         import { initApp, showToast } from '/src/router.js';
         import { getOCRRecordsByLobby, approveLobbyStats, getLobby } from '/src/supabase-db.js';
 
-        initApp('ocr-review');
+        await initApp('ocr-review');
         
         const params = new URLSearchParams(window.location.search);
         const lobbyId = params.get('lobby');

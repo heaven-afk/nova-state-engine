@@ -20,7 +20,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-logo">N</div>
-                <span class="brand-text">NOVA SCRIMS</span>
+                <span class="brand-text">NOVA STAT ENGINE</span>
             </div>
             
             <nav class="sidebar-nav">
@@ -122,8 +122,8 @@
                             <iconify-icon icon="lucide:calendar-clock"></iconify-icon>
                         </div>
                         <div class="metric-info">
-                            <p class="metric-label">Current Week</p>
-                            <h3 class="metric-value">March Week 2</h3>
+                            <p class="metric-label">Active Week</p>
+                            <h3 class="metric-value" id="dash-active-week">--</h3>
                         </div>
                     </div>
                     
@@ -133,7 +133,7 @@
                         </div>
                         <div class="metric-info">
                             <p class="metric-label">Days Completed</p>
-                            <h3 class="metric-value">4 / 7</h3>
+                            <h3 class="metric-value" id="dash-days">--</h3>
                         </div>
                     </div>
                     
@@ -143,7 +143,7 @@
                         </div>
                         <div class="metric-info">
                             <p class="metric-label">Total Players Tracked</p>
-                            <h3 class="metric-value">124</h3>
+                            <h3 class="metric-value" id="dash-players">--</h3>
                         </div>
                     </div>
                     
@@ -153,7 +153,7 @@
                         </div>
                         <div class="metric-info">
                             <p class="metric-label">Total Lobbies Processed</p>
-                            <h3 class="metric-value">12</h3>
+                            <h3 class="metric-value" id="dash-lobbies">--</h3>
                         </div>
                     </div>
                 </div>
@@ -176,37 +176,8 @@
                                         <th>Days Played</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><div class="rank-badge rank-1">1</div></td>
-                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> NVxShadow</div></td>
-                                        <td class="font-mono text-cyan font-bold">42</td>
-                                        <td>4</td>
-                                    </tr>
-                                    <tr>
-                                        <td><div class="rank-badge rank-2">2</div></td>
-                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> Ghost_RY</div></td>
-                                        <td class="font-mono font-bold">38</td>
-                                        <td>4</td>
-                                    </tr>
-                                    <tr>
-                                        <td><div class="rank-badge rank-3">3</div></td>
-                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> T1 | Viper</div></td>
-                                        <td class="font-mono font-bold">35</td>
-                                        <td>4</td>
-                                    </tr>
-                                    <tr>
-                                        <td><div class="rank-badge">4</div></td>
-                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> Alpha_Snipe</div></td>
-                                        <td class="font-mono">31</td>
-                                        <td>4</td>
-                                    </tr>
-                                    <tr>
-                                        <td><div class="rank-badge">5</div></td>
-                                        <td><div class="player-cell"><iconify-icon icon="lucide:user" class="text-muted"></iconify-icon> NVxPhantom</div></td>
-                                        <td class="font-mono">29</td>
-                                        <td>3</td>
-                                    </tr>
+                                <tbody id="dash-top-players">
+                                    <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem;">Data populating from Supabase...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -227,31 +198,8 @@
                                         <th>Top Player</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr onclick="window.location.href='/weeks.html'">
-                                        <td>Mar Wk 2</td>
-                                        <td>Day 4</td>
-                                        <td>88</td>
-                                        <td>NVxShadow (12)</td>
-                                    </tr>
-                                    <tr onclick="window.location.href='/weeks.html'">
-                                        <td>Mar Wk 2</td>
-                                        <td>Day 3</td>
-                                        <td>92</td>
-                                        <td>Ghost_RY (15)</td>
-                                    </tr>
-                                    <tr onclick="window.location.href='/weeks.html'">
-                                        <td>Mar Wk 2</td>
-                                        <td>Day 2</td>
-                                        <td>85</td>
-                                        <td>T1 | Viper (11)</td>
-                                    </tr>
-                                    <tr onclick="window.location.href='/weeks.html'">
-                                        <td>Mar Wk 2</td>
-                                        <td>Day 1</td>
-                                        <td>90</td>
-                                        <td>NVxShadow (14)</td>
-                                    </tr>
+                                <tbody id="dash-recent-days">
+                                    <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem;">No advanced days completed yet.</td></tr>
                                 </tbody>
                             </table>
                         </div>
