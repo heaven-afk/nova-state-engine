@@ -60,7 +60,7 @@
         <div class="main-wrapper">
             <header class="topbar">
                 <div class="topbar-left" style="display:flex; align-items:center; gap:var(--space-sm);">
-                    <button class="btn-icon mobile-menu-btn" style="display:none;" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
+                    <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
                     <h1 class="page-title">Weekly Management</h1>
                 </div>
                 <div class="topbar-right">
@@ -111,6 +111,14 @@
                 <button class="btn btn-primary" id="btn-save-week">Generate Week Structure</button>
             </div>
         </div>
+    </div>
+    
+    <!-- Mobile FAB -->
+    <div class="fab-container">
+        <button class="fab" onclick="document.getElementById('modal-create-week').style.display='flex'">
+            <iconify-icon icon="lucide:plus"></iconify-icon>
+            <span class="fab-label">Create Week</span>
+        </button>
     </div>
 
     <script type="module">

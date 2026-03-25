@@ -72,7 +72,7 @@
         <div class="main-wrapper">
             <header class="topbar">
                 <div class="topbar-left" style="display:flex; align-items:center; gap:var(--space-sm);">
-                    <button class="btn-icon mobile-menu-btn" style="display:none;" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
+                    <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
                     <h1 class="page-title">Export Hub</h1>
                 </div>
                 <div class="topbar-right">
@@ -149,6 +149,14 @@
                 </div>
             </main>
         </div>
+    </div>
+    
+    <!-- Mobile FAB -->
+    <div class="fab-container">
+        <button class="fab" onclick="document.getElementById('btn-img-daily').click()">
+            <iconify-icon icon="lucide:image"></iconify-icon>
+            <span class="fab-label">Generate Graphic</span>
+        </button>
     </div>
 
     <!-- Hidden Export Templates (Used by HTML2Canvas) -->

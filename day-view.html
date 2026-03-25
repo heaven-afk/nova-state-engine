@@ -148,7 +148,7 @@
         <div class="main-wrapper">
             <header class="topbar">
                 <div class="topbar-left flex" style="display:flex; align-items:center; gap:var(--space-md);">
-                    <button class="btn-icon mobile-menu-btn" style="display:none;" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
+                    <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
                     <button class="btn-icon" id="btn-back"><iconify-icon icon="lucide:arrow-left"></iconify-icon></button>
                     <h1 class="page-title" id="page-header">Session / Loading...</h1>
                 </div>
@@ -213,12 +213,20 @@
                             </div>
                         </div>
                     </div>
-
-                </div>
             </main>
         </div>
     </div>
+    
+    <!-- Mobile FAB -->
+    <div class="fab-container">
+        <button class="fab" onclick="document.getElementById('file-upload').click()">
+            <iconify-icon icon="lucide:upload-cloud"></iconify-icon>
+            <span class="fab-label">Upload Images</span>
+        </button>
+    </div>
 
+    <!-- Tesseract Worker logic -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- DB/logic wiring -->
     <script type="module">
         import { initApp, showToast, state } from '/src/router.js';

@@ -72,11 +72,13 @@ a { color: inherit; text-decoration: none; }
 
 .sidebar {
     width: 260px;
-    background-color: var(--bg-surface);
+    background-color: rgba(19, 20, 28, 0.85); /* Glassmorphism base */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
-    transition: width var(--transition-fast);
+    transition: width var(--transition-fast), left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 100;
 }
 
@@ -110,6 +112,7 @@ a { color: inherit; text-decoration: none; }
     letter-spacing: 0.05em;
     background: linear-gradient(90deg, #fff, var(--text-secondary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -177,13 +180,17 @@ a { color: inherit; text-decoration: none; }
 
 .topbar {
     height: 70px;
-    background-color: var(--bg-surface);
+    background-color: rgba(19, 20, 28, 0.75); /* Glassmorphism base */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--space-xl);
     z-index: 50;
+    position: sticky;
+    top: 0;
 }
 
 .page-title {
@@ -328,6 +335,58 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* -------------------------------------
+   FLOATING ACTION BUTTON (MOBILE)
+-------------------------------------- */
+.fab-container {
+    display: none; /* Hidden on desktop */
+    position: fixed;
+    bottom: var(--space-xl);
+    right: var(--space-xl);
+    z-index: 900;
+}
+
+.fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-blue));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 25px rgba(138, 43, 226, 0.5);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.fab:active {
+    transform: scale(0.92);
+}
+
+.fab-label {
+    position: absolute;
+    right: 70px;
+    background: var(--bg-elevated);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(10px);
+    transition: all 0.2s;
+    border: 1px solid var(--border-strong);
+}
+
+.fab:hover .fab-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* -------------------------------------
    PAGE CONTENT & CARDS
 -------------------------------------- */
 .page-content {
@@ -405,11 +464,24 @@ a { color: inherit; text-decoration: none; }
 /* -------------------------------------
    TABLES
 -------------------------------------- */
-.table-container { width: 100%; overflow-x: auto; }
+.table-container { 
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+    padding-bottom: 4px; /* subtle padding for custom scrollbars */
+}
+/* Custom Scrollbar for tables */
+.table-container::-webkit-scrollbar { height: 6px; }
+.table-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
+.table-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.table-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
 .data-table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
+    min-width: 600px; /* guarantees sideways scrolling heavily */
 }
 .data-table th {
     padding: var(--space-sm) var(--space-lg);
@@ -523,6 +595,12 @@ a { color: inherit; text-decoration: none; }
         display: flex !important;
     }
 
+    .fab-container {
+        display: flex; /* Show FAB on mobile */
+        flex-direction: column;
+        gap: 12px;
+    }
+
     /* Topbar */
     .topbar {
         padding: 0 var(--space-md);
@@ -572,12 +650,12 @@ a { color: inherit; text-decoration: none; }
 
     /* Data Table scrolling */
     .table-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        margin: 0 -var(--space-md);
+        padding: 0 var(--space-md) var(--space-sm) var(--space-md);
+        width: calc(100% + (var(--space-md) * 2));
     }
     .data-table th, .data-table td {
         padding: var(--space-sm) var(--space-md);
-        white-space: nowrap;
     }
 
     /* Header rows */
