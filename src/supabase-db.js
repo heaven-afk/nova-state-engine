@@ -90,10 +90,14 @@ export async function saveRawOCRRecords(lobbyId, records) {
 
     const rows = records.map(r => ({
         user_id: userId, lobby_id: lobbyId,
-        source_image: r.sourceImage, raw_player_name: r.rawPlayerName,
-        normalized_name: r.normalizedName, raw_kills: r.rawKills,
-        normalized_kills: r.normalizedKills, team_slot: r.teamSlot,
-        confidence_level: r.confidenceLevel, is_duplicate: r.isDuplicate || false
+        source_image: r.sourceImage, 
+        raw_player_name: r.rawPlayerName,
+        normalized_name: r.normalizedName, 
+        raw_kills: String(r.rawKills || '0'),
+        normalized_kills: parseInt(r.normalizedKills) || 0, 
+        team_slot: (r.teamSlot === 'Unknown' || isNaN(parseInt(r.teamSlot))) ? null : parseInt(r.teamSlot),
+        confidence_level: r.confidenceLevel === 'high' ? 0.95 : (r.confidenceLevel === 'low' ? 0.50 : parseFloat(r.confidenceLevel) || 0), 
+        is_duplicate: r.isDuplicate || false
     }));
 
     if (rows.length > 0) {

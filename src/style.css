@@ -615,6 +615,7 @@ a { color: inherit; text-decoration: none; }
     /* Page Content */
     .page-content {
         padding: var(--space-md);
+        padding-bottom: 90px; /* Space for FAB */
     }
 
     /* Stack grid/split layouts */
