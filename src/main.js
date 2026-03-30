@@ -69,6 +69,6 @@ function renderTopPlayers(players) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
-});
+// Call directly — modules are deferred, and DOMContentLoaded may have
+// already fired during the top-level await for initApp()
+loadDashboard();
