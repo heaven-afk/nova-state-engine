@@ -1,50 +1,74 @@
 import { initApp } from './router.js';
-import { getDashboardStats } from './supabase-db.js';
+import { getDashboardStats, getWeeklyStats, getAllWeeks } from './db.js';
+import { showToast } from './router.js';
 
 await initApp('dashboard');
 
 async function loadDashboard() {
     try {
         const stats = await getDashboardStats();
-        const activeWeekEl = document.getElementById('dash-active-week');
-        if (activeWeekEl) activeWeekEl.textContent = stats.activeWeek ? stats.activeWeek.name : 'No Active Week';
-        
-        const playersEl = document.getElementById('dash-players');
-        if (playersEl) playersEl.textContent = stats.totalPlayers || 0;
-        
-        const daysEl = document.getElementById('dash-days');
-        if (daysEl) daysEl.textContent = stats.totalDays || 0;
-        
-        const lobbiesEl = document.getElementById('dash-lobbies');
-        if (lobbiesEl) lobbiesEl.textContent = stats.totalLobbies || 0;
-        
+
+        setText('dash-active-week', stats.activeWeek?.name || 'No Active Week');
+        setText('dash-players', stats.totalPlayers || 0);
+        setText('dash-days', stats.totalDays || 0);
+        setText('dash-lobbies', stats.totalLobbies || 0);
+
+        // Load top players for active week
+        if (stats.activeWeek) {
+            const weekStats = await getWeeklyStats(stats.activeWeek.id);
+            const playerMap = {};
+            weekStats.forEach(s => {
+                if (!playerMap[s.player_ign]) playerMap[s.player_ign] = { name: s.player_ign, kills: 0 };
+                playerMap[s.player_ign].kills += s.kills;
+            });
+            const sorted = Object.values(playerMap).sort((a, b) => b.kills - a.kills).slice(0, 5);
+            renderTopPlayers(sorted);
+        }
     } catch (e) {
-        console.error('Error loading dashboard stats:', e);
+        console.error('Dashboard load error:', e);
     }
 }
 
-// Global logic for quick actions dropdown, etc.
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
-    
-    // Quick Actions Dropdown Toggle
-    const btnQuickAction = document.getElementById('btn-quick-action');
-    if (btnQuickAction) {
-        btnQuickAction.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const menu = btnQuickAction.nextElementSibling;
-            
-            // Close all other dropdowns
-            document.querySelectorAll('.dropdown-menu').forEach(m => {
-                if (m !== menu) m.classList.remove('show');
-            });
-            
-            menu.classList.toggle('show');
-        });
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function renderTopPlayers(players) {
+    const list = document.getElementById('dash-top-list');
+    const table = document.getElementById('dash-top-table');
+    if (!list) return;
+
+    if (players.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p class="text-muted">No player data yet</p></div>';
+        return;
     }
 
-    // Close dropdowns on outside click
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
-    });
+    // Mobile: card list
+    list.innerHTML = players.map((p, i) => {
+        const rankClass = i < 3 ? ` rank-${i + 1}` : '';
+        return `<div class="data-item">
+            <div class="data-item-rank${rankClass}">${i + 1}</div>
+            <div class="data-item-content">
+                <div class="data-item-title">${p.name}</div>
+            </div>
+            <div class="data-item-value">${p.kills}</div>
+        </div>`;
+    }).join('');
+
+    // Desktop: table
+    if (table) {
+        const tbody = table.querySelector('tbody');
+        if (tbody) {
+            tbody.innerHTML = players.map((p, i) => `<tr>
+                <td><div class="data-item-rank${i < 3 ? ` rank-${i + 1}` : ''}">${i + 1}</div></td>
+                <td>${p.name}</td>
+                <td class="font-mono font-bold text-cyan">${p.kills}</td>
+            </tr>`).join('');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
 });

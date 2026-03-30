@@ -3,7 +3,11 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/ocr.js": { "maxDuration": 30 }
+  },
   "routes": [
+    { "src": "/api/ocr", "dest": "/api/ocr.js" },
     { "src": "/sessions.html", "dest": "/week-view.html" },
     { "src": "/sessions", "dest": "/week-view.html" }
   ]

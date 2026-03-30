@@ -2,217 +2,113 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Stat Engine — Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Nova Stat Engine — Sign In</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', sans-serif;
             background: #07080f;
             color: #fff;
             min-height: 100vh;
-            display: flex;
-            overflow: hidden;
-        }
-
-        /* Left Branding Panel */
-        .brand-panel {
-            flex: 1;
-            background: linear-gradient(135deg, #0d0415 0%, #130d2a 40%, #0a1628 100%);
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 80px;
-            position: relative;
-            overflow: hidden;
         }
 
-        .brand-panel::before {
-            content: '';
-            position: absolute;
-            top: -200px; left: -200px;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(138,43,226,0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .brand-panel::after {
-            content: '';
-            position: absolute;
-            bottom: -100px; right: -100px;
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(0,191,255,0.1) 0%, transparent 70%);
-            pointer-events: none;
-        }
+        /* ── Mobile: Form only ─────────────────────── */
+        .brand-panel { display: none; }
 
-        .brand-logo-wrap {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 60px;
-        }
-        .brand-logo-icon {
-            width: 44px; height: 44px;
-            background: linear-gradient(135deg, #8a2be2, #00bfff);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700; font-size: 1.4rem;
-        }
-        .brand-logo-text {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700; font-size: 1.1rem;
-            letter-spacing: 0.08em;
-            background: linear-gradient(90deg, #fff, #a0a5b5);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .brand-headline {
-            font-family: 'Sora', sans-serif;
-            font-size: 3.2rem;
-            font-weight: 700;
-            line-height: 1.15;
-            letter-spacing: -0.03em;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .brand-tag {
-            font-size: 1rem;
-            color: rgba(255,255,255,0.45);
-            font-weight: 400;
-            margin-bottom: 56px;
-            letter-spacing: 0.02em;
-        }
-
-        .feature-list {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.92rem;
-            color: rgba(255,255,255,0.6);
-        }
-        .feature-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #8a2be2, #00bfff);
-            flex-shrink: 0;
-        }
-
-        .powered-by {
-            position: absolute;
-            bottom: 32px; left: 80px;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.25);
-            letter-spacing: 0.05em;
-        }
-        .powered-by span {
-            color: rgba(138,43,226,0.7);
-            font-weight: 600;
-        }
-
-        /* Right Form Panel */
         .form-panel {
-            width: 480px;
-            flex-shrink: 0;
-            background: #0d0e18;
-            border-left: 1px solid rgba(255,255,255,0.05);
+            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 60px 48px;
-            position: relative;
+            padding: 32px 24px;
+            max-width: 100%;
         }
 
-        .form-header {
+        .mobile-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 40px;
         }
+        .mobile-brand-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #8a2be2, #00bfff);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700; font-size: 1.2rem;
+        }
+        .mobile-brand-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700; font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.7);
+        }
+
         .form-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-size: 1.5rem; font-weight: 700;
+            margin-bottom: 6px;
         }
-        .form-subtitle {
-            font-size: 0.9rem;
-            color: rgba(255,255,255,0.45);
-        }
+        .form-subtitle { font-size: 0.88rem; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
 
         /* Tabs */
         .tab-row {
             display: flex;
-            gap: 0;
             background: rgba(255,255,255,0.04);
             border-radius: 8px;
             padding: 4px;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }
         .tab-btn {
             flex: 1;
-            padding: 8px;
+            padding: 10px;
             background: none;
             border: none;
-            color: rgba(255,255,255,0.45);
+            color: rgba(255,255,255,0.4);
             font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 500;
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.2s;
         }
-        .tab-btn.active {
-            background: rgba(138,43,226,0.2);
-            color: #fff;
-        }
+        .tab-btn.active { background: rgba(138,43,226,0.2); color: #fff; }
 
-        /* Form fields */
-        .form-group { margin-bottom: 20px; }
-        .form-label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 8px;
-        }
+        /* Fields */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 0.82rem; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
         .form-input {
             width: 100%;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.1);
             color: #fff;
-            padding: 12px 16px;
-            border-radius: 8px;
+            padding: 14px 16px;
+            border-radius: 10px;
             font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 1rem;
             outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-input:focus {
-            border-color: #8a2be2;
-            box-shadow: 0 0 0 3px rgba(138,43,226,0.15);
-        }
-        .form-input::placeholder { color: rgba(255,255,255,0.25); }
+        .form-input:focus { border-color: #8a2be2; box-shadow: 0 0 0 3px rgba(138,43,226,0.15); }
+        .form-input::placeholder { color: rgba(255,255,255,0.2); }
+
+        .signup-only { display: none; }
 
         .btn-submit {
             width: 100%;
-            padding: 13px;
+            padding: 14px;
             background: linear-gradient(135deg, #8a2be2, #6a1fc2);
             color: #fff;
             border: none;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
+            border-radius: 10px;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             margin-top: 8px;
@@ -222,103 +118,142 @@
             justify-content: center;
             gap: 8px;
         }
-        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(138,43,226,0.4); }
-        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-submit:hover { box-shadow: 0 6px 20px rgba(138,43,226,0.4); }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .forgot-link {
-            text-align: right;
-            margin-top: -12px;
-            margin-bottom: 20px;
-        }
-        .forgot-link a {
-            font-size: 0.82rem;
-            color: rgba(138,43,226,0.8);
-            text-decoration: none;
-        }
-
-        .error-msg {
-            background: rgba(255,51,102,0.1);
-            border: 1px solid rgba(255,51,102,0.3);
-            color: #ff6b8a;
-            padding: 10px 14px;
-            border-radius: 8px;
+        .msg-box {
+            padding: 12px 16px;
+            border-radius: 10px;
             font-size: 0.85rem;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             display: none;
         }
-        .success-msg {
-            background: rgba(0,255,136,0.1);
-            border: 1px solid rgba(0,255,136,0.3);
-            color: #00ff88;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            display: none;
-        }
+        .msg-error { background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.25); color: #ff6b8a; }
+        .msg-success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; }
 
-        /* Signup-only fields, hidden by default */
-        .signup-only { display: none; }
+        .forgot-link { text-align: right; margin-top: -8px; margin-bottom: 16px; }
+        .forgot-link a { font-size: 0.8rem; color: rgba(138,43,226,0.8); }
 
-        @media (max-width: 900px) {
-            .brand-panel { display: none; }
-            .form-panel { width: 100%; padding: 40px 28px; }
+        /* ── Desktop: Split layout ─────────────────── */
+        @media (min-width: 769px) {
+            body { flex-direction: row; overflow: hidden; }
+            .mobile-brand { display: none; }
+
+            .brand-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 80px;
+                background: linear-gradient(135deg, #0d0415 0%, #130d2a 40%, #0a1628 100%);
+                position: relative;
+                overflow: hidden;
+            }
+            .brand-panel::before {
+                content: '';
+                position: absolute;
+                top: -200px; left: -200px;
+                width: 600px; height: 600px;
+                background: radial-gradient(circle, rgba(138,43,226,0.12) 0%, transparent 70%);
+                pointer-events: none;
+            }
+            .brand-logo-wrap { display: flex; align-items: center; gap: 14px; margin-bottom: 60px; }
+            .brand-logo-icon {
+                width: 44px; height: 44px;
+                background: linear-gradient(135deg, #8a2be2, #00bfff);
+                border-radius: 10px;
+                display: flex; align-items: center; justify-content: center;
+                font-family: 'Space Grotesk', sans-serif;
+                font-weight: 700; font-size: 1.4rem;
+            }
+            .brand-logo-text {
+                font-family: 'Space Grotesk', sans-serif;
+                font-weight: 700; font-size: 1.05rem;
+                letter-spacing: 0.08em;
+                background: linear-gradient(90deg, #fff, #a0a5b5);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .brand-headline {
+                font-family: 'Sora', sans-serif;
+                font-size: 2.8rem;
+                font-weight: 700;
+                line-height: 1.15;
+                letter-spacing: -0.03em;
+                margin-bottom: 16px;
+                background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .brand-tag { font-size: 0.95rem; color: rgba(255,255,255,0.4); margin-bottom: 48px; }
+            .feature-list { display: flex; flex-direction: column; gap: 16px; }
+            .feature-item { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: rgba(255,255,255,0.55); }
+            .feature-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #8a2be2, #00bfff); flex-shrink: 0; }
+
+            .form-panel {
+                width: 460px;
+                flex-shrink: 0;
+                padding: 60px 48px;
+                border-left: 1px solid rgba(255,255,255,0.05);
+                background: #0d0e18;
+            }
         }
     </style>
 </head>
 <body>
-
-    <!-- Branding Panel -->
+    <!-- Brand Panel (Desktop only) -->
     <div class="brand-panel">
         <div class="brand-logo-wrap">
             <div class="brand-logo-icon">N</div>
             <span class="brand-logo-text">NOVA STAT ENGINE</span>
         </div>
-
         <div class="brand-headline">Scrim Analytics<br>Built for Champions</div>
         <div class="brand-tag">Professional Esports Analytics Platform</div>
-
         <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div> AI-powered screenshot OCR extraction</div>
-            <div class="feature-item"><div class="feature-dot"></div> Multi-organization workspace isolation</div>
+            <div class="feature-item"><div class="feature-dot"></div> AI-powered scoreboard OCR extraction</div>
             <div class="feature-item"><div class="feature-dot"></div> Automated leaderboard generation</div>
             <div class="feature-item"><div class="feature-dot"></div> Daily and weekly stat aggregation</div>
             <div class="feature-item"><div class="feature-dot"></div> Branded export graphics for teams</div>
         </div>
-
-        <div class="powered-by">Powered by <span>Nova Gaming</span></div>
     </div>
 
     <!-- Form Panel -->
     <div class="form-panel">
-        <div class="form-header">
-            <div class="form-title">Welcome back</div>
-            <div class="form-subtitle">Sign in to your workspace</div>
+        <div class="mobile-brand">
+            <div class="mobile-brand-icon">N</div>
+            <span class="mobile-brand-text">NOVA STAT ENGINE</span>
         </div>
+
+        <div class="form-title" id="form-title">Welcome back</div>
+        <div class="form-subtitle" id="form-subtitle">Sign in to your workspace</div>
 
         <div class="tab-row">
             <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
-            <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Workspace</button>
+            <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
         </div>
 
-        <div class="error-msg" id="error-msg"></div>
-        <div class="success-msg" id="success-msg"></div>
+        <div class="msg-box msg-error" id="msg-error"></div>
+        <div class="msg-box msg-success" id="msg-success"></div>
 
         <form id="auth-form">
-            <!-- Shared fields -->
+            <div class="form-group signup-only">
+                <label class="form-label">Display Name</label>
+                <input type="text" class="form-input" id="inp-name" placeholder="Your team name">
+            </div>
             <div class="form-group">
                 <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="inp-email" placeholder="you@organization.com" required>
+                <input type="email" class="form-input" id="inp-email" placeholder="you@team.com" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Password</label>
                 <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required>
             </div>
-
             <div class="forgot-link" id="forgot-wrap">
                 <a href="#" onclick="handleForgotPassword()">Forgot password?</a>
             </div>
-
             <button type="submit" class="btn-submit" id="btn-submit">
                 <iconify-icon icon="lucide:log-in"></iconify-icon>
                 <span id="btn-text">Sign In</span>
@@ -329,64 +264,44 @@
     <script type="module">
         import { signIn, signUp, getSession } from '/src/auth.js';
 
-        // Redirect if already logged in
         getSession().then(s => { if (s) window.location.href = '/'; });
 
-        let currentTab = 'login';
+        let mode = 'login';
 
         window.switchTab = function(tab) {
-            currentTab = tab;
+            mode = tab;
             document.getElementById('tab-login').classList.toggle('active', tab === 'login');
             document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
-
-            document.querySelectorAll('.signup-only').forEach(el => {
-                el.style.display = tab === 'signup' ? 'block' : 'none';
-            });
+            document.querySelectorAll('.signup-only').forEach(el => el.style.display = tab === 'signup' ? 'block' : 'none');
             document.getElementById('forgot-wrap').style.display = tab === 'login' ? 'block' : 'none';
-            
-            const btnText = document.getElementById('btn-text');
-            if (btnText) btnText.textContent = tab === 'login' ? 'Sign In' : 'Create Workspace';
-            
-            document.querySelector('.form-title').textContent = tab === 'login' ? 'Welcome back' : 'Create your workspace';
-            document.querySelector('.form-subtitle').textContent = tab === 'login' ? 'Sign in to your workspace' : 'Set up your organization';
-
-            clearMessages();
+            document.getElementById('btn-text').textContent = tab === 'login' ? 'Sign In' : 'Create Account';
+            document.getElementById('form-title').textContent = tab === 'login' ? 'Welcome back' : 'Create your account';
+            document.getElementById('form-subtitle').textContent = tab === 'login' ? 'Sign in to your workspace' : 'Set up your team workspace';
+            clearMsg();
         };
 
-        function showError(msg) {
-            const el = document.getElementById('error-msg');
-            el.textContent = msg;
-            el.style.display = 'block';
-            document.getElementById('success-msg').style.display = 'none';
-        }
-        function showSuccess(msg) {
-            const el = document.getElementById('success-msg');
-            el.textContent = msg;
-            el.style.display = 'block';
-            document.getElementById('error-msg').style.display = 'none';
-        }
-        function clearMessages() {
-            document.getElementById('error-msg').style.display = 'none';
-            document.getElementById('success-msg').style.display = 'none';
-        }
+        function showError(m) { const e = document.getElementById('msg-error'); e.textContent = m; e.style.display = 'block'; document.getElementById('msg-success').style.display = 'none'; }
+        function showSuccess(m) { const e = document.getElementById('msg-success'); e.textContent = m; e.style.display = 'block'; document.getElementById('msg-error').style.display = 'none'; }
+        function clearMsg() { document.getElementById('msg-error').style.display = 'none'; document.getElementById('msg-success').style.display = 'none'; }
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            clearMessages();
+            clearMsg();
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
-            btn.innerHTML = '<iconify-icon icon="lucide:loader-2"></iconify-icon> <span>Please wait...</span>';
+            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> <span>Please wait...</span>';
 
-            const email    = document.getElementById('inp-email').value.trim();
+            const email = document.getElementById('inp-email').value.trim();
             const password = document.getElementById('inp-password').value;
+            const name = document.getElementById('inp-name')?.value?.trim();
 
             try {
-                if (currentTab === 'login') {
+                if (mode === 'login') {
                     await signIn(email, password);
                     window.location.href = '/';
                 } else {
-                    const authData = await signUp(email, password);
-                    if (authData.session) {
+                    const result = await signUp(email, password, name);
+                    if (result.session) {
                         window.location.href = '/';
                     } else {
                         showSuccess('Account created! Check your email to verify, then sign in.');
@@ -394,20 +309,21 @@
                     }
                 }
             } catch (err) {
-                showError(err.message || 'An error occurred. Please try again.');
+                showError(err.message || 'An error occurred.');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<iconify-icon icon="lucide:log-in"></iconify-icon><span id="btn-text">${currentTab === 'login' ? 'Sign In' : 'Create Workspace'}</span>`;
+                btn.innerHTML = `<iconify-icon icon="lucide:log-in"></iconify-icon><span id="btn-text">${mode === 'login' ? 'Sign In' : 'Create Account'}</span>`;
             }
         });
 
         window.handleForgotPassword = async function() {
             const email = document.getElementById('inp-email').value.trim();
-            if (!email) { showError('Enter your email address first.'); return; }
+            if (!email) { showError('Enter your email first.'); return; }
             const { supabase } = await import('/src/auth.js');
             await supabase.auth.resetPasswordForEmail(email);
             showSuccess('Password reset email sent!');
         };
     </script>
+    <style>@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; display: inline-block; }</style>
 </body>
 </html>

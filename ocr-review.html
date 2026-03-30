@@ -2,326 +2,200 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCR Review — Nova Scrims</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>OCR Review — Nova Stat Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
-    <style>
-        .split-review {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            height: calc(100vh - 70px);
-            overflow: hidden;
-        }
-        
-        /* Left: Image Viewer */
-        .image-viewer {
-            background: #000;
-            border-right: 1px solid var(--border-subtle);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .viewer-controls {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(26,27,38,0.9); padding: 8px 16px; border-radius: var(--radius-lg);
-            border: 1px solid var(--border-strong); display: flex; gap: var(--space-md);
-            backdrop-filter: blur(10px); z-index: 10;
-        }
-
-        /* Right: Data Table */
-        .data-panel {
-            background: var(--bg-surface);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .data-header {
-            padding: var(--space-md) var(--space-xl);
-            border-bottom: 1px solid var(--border-subtle);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .table-scroll { flex: 1; overflow-y: auto; padding-bottom: 100px; }
-
-        /* Review Table Specifics */
-        .editable-cell {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-primary);
-            font-family: inherit;
-            padding: 4px 8px;
-            width: 100%;
-            border-radius: 4px;
-            transition: all var(--transition-fast);
-        }
-        .editable-cell:hover { background: rgba(255,255,255,0.05); }
-        .editable-cell:focus { background: var(--bg-elevated); border-color: var(--accent-cyan); outline: none; }
-        
-        .conf-indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-        .conf-high { background: var(--accent-cyan); box-shadow: 0 0 8px rgba(0,255,136,0.6); }
-        .conf-med { background: #FFD700; box-shadow: 0 0 8px rgba(255,215,0,0.6); }
-        .conf-low { background: var(--accent-red); box-shadow: 0 0 8px rgba(255,51,102,0.6); }
-
-        .row-warning { background: rgba(255,51,102,0.05) !important; border-left: 3px solid var(--accent-red); }
-
-        /* Bottom Floating Action Bar */
-        .fab-bar {
-            position: absolute; bottom: 20px; right: 20px; left: calc(50% + 20px);
-            background: var(--bg-elevated); border: 1px solid var(--border-strong);
-            padding: var(--space-md) var(--space-xl); border-radius: var(--radius-lg);
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: var(--shadow-md);
-        }
-    </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar collapsed" id="sidebar" style="width: 70px;">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA STAT ENGINE</span></div>
             <nav class="sidebar-nav">
-                <a href="/" class="nav-item" title="Dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon></a>
-                <a href="/weeks.html" class="nav-item" title="Weeks"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon></a>
-                <a href="/weeks.html" class="nav-item" title="Daily Sessions"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon></a>
-                <a href="/ocr-review.html" class="nav-item active" title="OCR Review"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon></a>
+                <div class="nav-section">MAIN</div>
+                <a href="/" class="nav-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
+                <div class="nav-section">ANALYSIS</div>
+                <a href="/ocr-review.html" class="nav-item active" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
+                <a href="/leaderboards.html" class="nav-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
+                <a href="/exports.html" class="nav-item" data-page="exports"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
+                <div class="nav-section">SYSTEM</div>
+                <a href="/settings.html" class="nav-item" data-page="settings"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
             </nav>
-            <div style="padding:var(--space-md) var(--space-lg); border-top:1px solid var(--border-subtle); margin-top:auto;">
-                <button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;width:100%;padding:6px 0;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button>
-                <div style="font-size:0.65rem;color:rgba(255,255,255,0.15);margin-top:8px;">Powered by Nova Gaming</div>
-            </div>
+            <div class="sidebar-footer"><button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button></div>
         </aside>
 
-        <div class="main-wrapper" style="position: relative;">
+        <div class="main-wrapper">
             <header class="topbar">
-                <div class="topbar-left flex" style="display:flex; align-items:center; gap:var(--space-md);">
-                    <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
-                    <button class="btn-icon" id="btn-back"><iconify-icon icon="lucide:arrow-left"></iconify-icon></button>
-                    <div>
-                        <h1 class="page-title">OCR Moderation Review</h1>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);" id="lobby-header-text">Lobby X - Pending Verification</span>
-                    </div>
+                <div class="topbar-left">
+                    <a class="btn-icon" id="back-btn" href="/weeks.html"><iconify-icon icon="lucide:arrow-left"></iconify-icon></a>
+                    <h1 class="page-title">OCR Review</h1>
+                </div>
+                <div class="topbar-right">
+                    <button class="btn btn-primary btn-sm" id="btn-approve" style="display:none;">
+                        <iconify-icon icon="lucide:check"></iconify-icon> Approve All
+                    </button>
+                    <div class="user-profile"><div class="avatar">U</div><div class="user-info"><span class="user-name">User</span><span class="user-role">Member</span></div></div>
                 </div>
             </header>
 
-            <main class="split-review">
-                <!-- Left: Viewer -->
-                <div class="image-viewer">
-                    <img src="" id="source-img" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                    <div class="viewer-controls">
-                        <button class="btn-icon" id="btn-prev-img"><iconify-icon icon="lucide:chevron-left"></iconify-icon></button>
-                        <span style="font-size: 0.85rem; font-weight:600; padding: 0 10px;" id="image-counter">No Images</span>
-                        <button class="btn-icon" id="btn-next-img"><iconify-icon icon="lucide:chevron-right"></iconify-icon></button>
-                        <div style="width:1px; background:var(--border-strong); margin: 0 10px;"></div>
-                        <button class="btn-icon"><iconify-icon icon="lucide:zoom-in"></iconify-icon></button>
-                    </div>
+            <main class="page-content">
+                <div id="no-lobby" class="empty-state">
+                    <iconify-icon icon="lucide:scan-eye"></iconify-icon>
+                    <h2>No Lobby Selected</h2>
+                    <p>Run OCR from a day view to review extracted data here.</p>
+                    <a href="/weeks.html" class="btn btn-primary">Go to Weeks</a>
                 </div>
 
-                <!-- Right: Extracted Table -->
-                <div class="data-panel">
-                    <div class="data-header">
-                        <div style="font-size: 0.9rem; font-weight:500;">
-                            Detected Players: <span id="p-count" class="text-cyan">0</span>
-                        </div>
-                        <div style="display:flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);">
-                            <span><div class="conf-indicator conf-high"></div> High Conf</span>
-                            <span><div class="conf-indicator conf-med"></div> Needs Check</span>
-                            <span><div class="conf-indicator conf-low"></div> Conflict/Low</span>
+                <div id="review-content" style="display:none;">
+                    <!-- Image preview -->
+                    <div class="card mb-md">
+                        <div class="card-header"><h2 class="card-title">Uploaded Screenshots</h2></div>
+                        <div class="card-body">
+                            <div class="thumb-grid" id="review-images"></div>
                         </div>
                     </div>
-                    
-                    <div class="table-scroll">
-                        <table class="data-table" id="review-table">
-                            <thead>
-                                <tr>
-                                    <th style="width:40px;">Conf</th>
-                                    <th>Player IGN</th>
-                                    <th style="width:80px;">Kills</th>
-                                    <th style="width:60px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Dinamic Rows -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
-                <!-- Action Bar -->
-                <div class="fab-bar">
-                    <div style="color:var(--text-muted); font-size:0.85rem;">
-                        <iconify-icon icon="lucide:alert-triangle" style="vertical-align:-2px; color:var(--accent-red); margin-right:4px; display:none;" id="warn-icon"></iconify-icon>
-                        <span id="warn-text">All conflicts resolved. Ready to save.</span>
+                    <!-- Extracted Records -->
+                    <div class="section-header">
+                        <h2 class="section-title">Extracted Players</h2>
+                        <span class="badge badge-reviewing" id="record-count">0 records</span>
                     </div>
-                    <div style="display:flex; gap:var(--space-md);">
-                        <button class="btn btn-secondary" onclick="window.history.back()">Discard</button>
-                        <button class="btn btn-primary" id="btn-approve">Approve Lobby Dataset</button>
-                    </div>
+
+                    <div id="records-list" class="flex flex-col gap-sm"></div>
+
+                    <!-- Approve Button (Mobile) -->
+                    <button class="btn btn-primary btn-block mt-lg" id="btn-approve-mobile" style="display:none;">
+                        <iconify-icon icon="lucide:check-check"></iconify-icon> Approve & Save Stats
+                    </button>
                 </div>
             </main>
         </div>
     </div>
-    
-    <!-- Mobile FAB -->
-    <div class="fab-container">
-        <button class="fab" onclick="document.getElementById('btn-save-ocr').click()">
-            <iconify-icon icon="lucide:save"></iconify-icon>
-            <span class="fab-label">Save Mappings</span>
-        </button>
-    </div>
+
+    <nav class="bottom-tabs">
+        <a href="/" class="tab-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon><span>Home</span></a>
+        <a href="/weeks.html" class="tab-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days"></iconify-icon><span>Weeks</span></a>
+        <a href="/ocr-review.html" class="tab-item active" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye"></iconify-icon><span>OCR</span></a>
+        <a href="/leaderboards.html" class="tab-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy"></iconify-icon><span>Ranks</span></a>
+        <a href="/settings.html" class="tab-item" data-page="settings"><iconify-icon icon="lucide:settings"></iconify-icon><span>More</span></a>
+    </nav>
 
     <script type="module">
         import { initApp, showToast } from '/src/router.js';
-        import { getOCRRecordsByLobby, approveLobbyStats, getLobby } from '/src/supabase-db.js';
+        import { getLobby, getOCRRecordsByLobby, updateOCRRecord, deleteOCRRecord, approveLobbyStats } from '/src/db.js';
 
         await initApp('ocr-review');
-        
+
         const params = new URLSearchParams(window.location.search);
-        const lobbyId = params.get('lobby');
-        let records = [];
-        let dayId = '';
-        let weekId = '';
-        let lobbyImages = [];
-        let currentImageIdx = 0;
+        const lobbyId = params.get('lobbyId');
+        const weekId = params.get('weekId');
+        const dayId = params.get('dayId');
 
-        document.getElementById('btn-back').addEventListener('click', () => {
-            if(dayId) window.location.href=`/day-view.html?id=${dayId}`;
-            else window.history.back();
-        });
+        if (!lobbyId) {
+            document.getElementById('no-lobby').style.display = 'block';
+        } else {
+            document.getElementById('no-lobby').style.display = 'none';
+            document.getElementById('review-content').style.display = 'block';
+            if (weekId) document.getElementById('back-btn').href = `/day-view.html?weekId=${weekId}&dayId=${dayId}`;
+            loadReview();
+        }
 
-        async function loadReviewData() {
-            if (!lobbyId) return;
+        async function loadReview() {
+            try {
+                const lobby = await getLobby(lobbyId);
+                const records = await getOCRRecordsByLobby(lobbyId);
 
-            // Fetch lobby data for images
-            const lobby = await getLobby(lobbyId);
-            if (lobby && lobby.images) {
-                lobbyImages = lobby.images;
-                if (lobbyImages.length > 0) {
-                    currentImageIdx = 0;
-                    updateImageViewer();
+                // Show images
+                const images = lobby.images || [];
+                document.getElementById('review-images').innerHTML = images.map((src, i) =>
+                    `<div class="thumb"><img src="${src}" alt="Screenshot ${i + 1}"></div>`
+                ).join('') || '<p class="text-muted">No images</p>';
+
+                // Show records
+                document.getElementById('record-count').textContent = `${records.length} records`;
+                renderRecords(records);
+
+                // Show approve buttons
+                if (records.length > 0) {
+                    document.getElementById('btn-approve').style.display = 'inline-flex';
+                    document.getElementById('btn-approve-mobile').style.display = 'flex';
                 }
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
             }
-
-            // Fetch actual OCR records from DB
-            records = await getOCRRecordsByLobby(lobbyId);
-
-            // Reverse engineer week/day from lobbyId (e.g. wk_123_day_1_lobby_1)
-            const parts = lobbyId.split('_');
-            weekId = `${parts[0]}_${parts[1]}`;
-            dayId = `${weekId}_day_${parts[3]}`;
-
-            document.getElementById('lobby-header-text').textContent = `Lobby ${parts[5]} - Pending Verification`;
-            document.getElementById('p-count').textContent = records.length;
-            
-            renderTable();
         }
 
-        function updateImageViewer() {
-            if (lobbyImages.length === 0) return;
-            const imgEl = document.getElementById('source-img');
-            imgEl.src = lobbyImages[currentImageIdx];
-            document.getElementById('image-counter').textContent = `Image ${currentImageIdx + 1} / ${lobbyImages.length}`;
-        }
+        function renderRecords(records) {
+            const list = document.getElementById('records-list');
+            list.innerHTML = records.map(r => {
+                const confClass = r.confidence < 0.7 ? 'low-confidence' : '';
+                const dupClass = r.isDuplicate ? 'duplicate' : '';
+                return `<div class="ocr-record ${confClass} ${dupClass}" id="rec-${r.id}">
+                    <div class="data-item-content" style="flex:1;">
+                        <input type="text" class="form-input" value="${r.normalizedName}" data-id="${r.id}" data-field="name"
+                            style="background:transparent;border:1px solid var(--border-subtle);padding:8px 12px;margin-bottom:6px;font-weight:600;">
+                        <div class="flex items-center gap-sm">
+                            <span class="text-muted" style="font-size:0.78rem;">Kills:</span>
+                            <input type="number" class="form-input" value="${r.normalizedKills}" data-id="${r.id}" data-field="kills"
+                                style="background:transparent;border:1px solid var(--border-subtle);padding:6px 10px;width:70px;font-family:var(--font-heading);font-weight:700;">
+                            <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">${r.sourceImage}</span>
+                        </div>
+                    </div>
+                    <button class="btn-icon" onclick="window.deleteRecord('${r.id}')" style="color:var(--accent-red);">
+                        <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                    </button>
+                </div>`;
+            }).join('');
 
-        document.getElementById('btn-prev-img').addEventListener('click', () => {
-            if (lobbyImages.length === 0) return;
-            currentImageIdx = (currentImageIdx - 1 + lobbyImages.length) % lobbyImages.length;
-            updateImageViewer();
-        });
-
-        document.getElementById('btn-next-img').addEventListener('click', () => {
-            if (lobbyImages.length === 0) return;
-            currentImageIdx = (currentImageIdx + 1) % lobbyImages.length;
-            updateImageViewer();
-        });
-
-        function renderTable() {
-            const tbody = document.querySelector('#review-table tbody');
-            tbody.innerHTML = '';
-            
-            let hasConflicts = false;
-
-            records.forEach(r => {
-                let confClass = 'conf-high';
-                if (r.confidenceLevel === 'medium') confClass = 'conf-med';
-                else if (r.confidenceLevel === 'low') { confClass = 'conf-low'; hasConflicts = true; }
-
-                const tr = document.createElement('tr');
-                if (r.isDuplicate || r.confidenceLevel === 'low') tr.className = 'row-warning';
-
-                tr.innerHTML = `
-                    <td style="text-align:center;"><div class="conf-indicator ${confClass}"></div></td>
-                    <td><input type="text" class="editable-cell font-mono" value="${r.normalizedName}" data-id="${r.id}" data-type="name"></td>
-                    <td><input type="number" class="editable-cell font-mono font-bold text-cyan" value="${r.normalizedKills}" data-id="${r.id}" data-type="kills" style="width:60px;"></td>
-                    <td>
-                        <button class="btn-icon" title="Delete Row" onclick="window.deleteRow('${r.id}')"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Update Action Bar warning
-            const warnIcon = document.getElementById('warn-icon');
-            const warnText = document.getElementById('warn-text');
-            if (hasConflicts) {
-                warnIcon.style.display = 'inline-block';
-                warnText.textContent = "Please verify red rows before saving. Check the image to the left.";
-                warnText.style.color = "var(--text-primary)";
-            } else {
-                warnIcon.style.display = 'none';
-                warnText.textContent = "All checks passed. Ready to save.";
-                warnText.style.color = "var(--text-muted)";
-            }
-
-            // Sync edits
-            document.querySelectorAll('.editable-cell').forEach(inp => {
-                inp.addEventListener('change', (e) => {
-                    const id = e.target.getAttribute('data-id');
-                    const field = e.target.getAttribute('data-type');
-                    const rec = records.find(x => x.id === id);
-                    if(rec) {
-                        if(field === 'name') rec.normalizedName = e.target.value;
-                        if(field === 'kills') rec.normalizedKills = parseInt(e.target.value, 10);
-                        
-                        // If they edit it, we assume they fixed the OCR error. Reset confidence visually.
-                        rec.confidenceLevel = 'high';
-                        rec.isDuplicate = false;
-                        renderTable(); // Re-render to clear red rows
+            // Inline edit handlers
+            list.querySelectorAll('input[data-id]').forEach(inp => {
+                inp.addEventListener('change', async () => {
+                    const id = inp.dataset.id;
+                    const field = inp.dataset.field;
+                    try {
+                        const updates = {};
+                        if (field === 'name') updates.normalizedName = inp.value;
+                        if (field === 'kills') updates.normalizedKills = parseInt(inp.value) || 0;
+                        await updateOCRRecord(id, updates);
+                    } catch (e) {
+                        showToast('Save error: ' + e.message, 'error');
                     }
                 });
             });
         }
 
-        window.deleteRow = (id) => {
-            records = records.filter(r => r.id !== id);
-            document.getElementById('p-count').textContent = records.length;
-            renderTable();
+        window.deleteRecord = async (id) => {
+            try {
+                await deleteOCRRecord(id);
+                document.getElementById(`rec-${id}`)?.remove();
+                showToast('Record removed', 'info');
+            } catch (e) {
+                showToast('Error: ' + e.message, 'error');
+            }
         };
 
-        document.getElementById('btn-approve').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-approve');
-            btn.disabled = true;
-            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Saving...';
-            
-            // Format for final Stats Schema -> { id, weekId, dayId, lobbyId, playerIgn, kills }
-            const finalStats = records.map(r => ({
-                playerIgn: r.normalizedName,
-                kills: r.normalizedKills
+        async function handleApprove() {
+            if (!weekId || !dayId) return showToast('Missing week/day context', 'error');
+
+            const records = await getOCRRecordsByLobby(lobbyId);
+            const players = records.map(r => ({
+                normalizedName: r.normalizedName,
+                normalizedKills: r.normalizedKills
             }));
 
             try {
-                await approveLobbyStats(weekId, dayId, lobbyId, finalStats);
-                showToast('Lobby Dataset Approved and Saved!', 'success');
-                setTimeout(() => window.location.href = `/day-view.html?id=${dayId}`, 1500);
+                await approveLobbyStats(weekId, dayId, lobbyId, players);
+                showToast('Stats approved and saved!', 'success');
+                setTimeout(() => window.location.href = `/day-view.html?weekId=${weekId}&dayId=${dayId}`, 1000);
             } catch (e) {
-                showToast('Database Error: ' + e.message, 'error');
-                btn.disabled = false;
-                btn.innerHTML = 'Approve Lobby Dataset';
+                showToast('Approve error: ' + e.message, 'error');
             }
-        });
+        }
 
-        loadReviewData();
+        document.getElementById('btn-approve').addEventListener('click', handleApprove);
+        document.getElementById('btn-approve-mobile').addEventListener('click', handleApprove);
     </script>
 </body>
 </html>

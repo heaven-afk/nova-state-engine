@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   build: {
-    target: 'esnext',   // enables top-level await support
+    target: 'esnext',
     rollupOptions: {
       input: {
         main:         resolve(__dirname, 'index.html'),
@@ -14,8 +14,7 @@ export default defineConfig({
         ocrReview:    resolve(__dirname, 'ocr-review.html'),
         leaderboards: resolve(__dirname, 'leaderboards.html'),
         exports:      resolve(__dirname, 'exports.html'),
-        settings:     resolve(__dirname, 'settings.html'),
-        users:        resolve(__dirname, 'users.html')
+        settings:     resolve(__dirname, 'settings.html')
       }
     }
   }

@@ -2,282 +2,118 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings — Nova Scrims Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Settings — Nova Stat Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
-    <style>
-        .settings-grid {
-            display: grid;
-            grid-template-columns: minmax(280px, 1fr) 2fr;
-            gap: var(--space-xl);
-        }
-        .settings-nav {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-sm);
-        }
-        .settings-nav-item {
-            padding: var(--space-md);
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            font-weight: 500;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-        .settings-nav-item:hover {
-            background: rgba(255,255,255,0.03);
-            color: var(--text-primary);
-        }
-        .settings-nav-item.active {
-            background: linear-gradient(90deg, rgba(138,43,226,0.1), transparent);
-            border-left: 3px solid var(--accent-primary);
-            color: var(--accent-primary);
-        }
-        
-        .form-group {
-            margin-bottom: var(--space-lg);
-        }
-        .form-label {
-            display: block;
-            margin-bottom: var(--space-sm);
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        .form-input, .form-select {
-            width: 100%;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-strong);
-            color: var(--text-primary);
-            padding: 10px 14px;
-            border-radius: var(--radius-sm);
-            font-family: var(--font-body);
-            font-size: 0.95rem;
-            transition: border-color var(--transition-fast);
-        }
-        .form-input:focus, .form-select:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-        }
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-        }
-        input[type=range] {
-            flex: 1;
-            accent-color: var(--accent-primary);
-        }
-    </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar Navigation (Same as Dashboard, simplified for brevity in this file structure, normally would use a component or script injection) -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <div class="brand-logo">N</div>
-                <span class="brand-text">NOVA STAT ENGINE</span>
-            </div>
+            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA STAT ENGINE</span></div>
             <nav class="sidebar-nav">
                 <div class="nav-section">MAIN</div>
-                <a href="/" class="nav-item"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
-                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
-                <a href="/weeks.html" class="nav-item"><iconify-icon icon="lucide:crosshair" class="nav-icon"></iconify-icon><span>Daily Sessions</span></a>
+                <a href="/" class="nav-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
+                <a href="/weeks.html" class="nav-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
                 <div class="nav-section">ANALYSIS</div>
-                <a href="/ocr-review.html" class="nav-item"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
-                <a href="/leaderboards.html" class="nav-item"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
-                <a href="/exports.html" class="nav-item"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
-                <div class="nav-section admin-only">ADMINISTRATION</div>
-                <a href="/users.html" class="nav-item admin-only"><iconify-icon icon="lucide:users" class="nav-icon"></iconify-icon><span>Users</span></a>
-                <a href="/settings.html" class="nav-item active admin-only"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
+                <a href="/ocr-review.html" class="nav-item" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
+                <a href="/leaderboards.html" class="nav-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
+                <a href="/exports.html" class="nav-item" data-page="exports"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
+                <div class="nav-section">SYSTEM</div>
+                <a href="/settings.html" class="nav-item active" data-page="settings"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
             </nav>
-            <div style="padding:var(--space-md) var(--space-lg); border-top:1px solid var(--border-subtle); margin-top:auto;">
-                <button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;width:100%;padding:6px 0;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button>
-                <div style="font-size:0.65rem;color:rgba(255,255,255,0.15);margin-top:8px;">Powered by Nova Gaming</div>
-            </div>
+            <div class="sidebar-footer"><button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button></div>
         </aside>
 
         <div class="main-wrapper">
             <header class="topbar">
-                <div class="topbar-left" style="display:flex; align-items:center; gap:var(--space-sm);">
+                <div class="topbar-left">
                     <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
-                    <h1 class="page-title">Platform Settings</h1>
+                    <h1 class="page-title">Settings</h1>
                 </div>
                 <div class="topbar-right">
-                    <div class="user-profile">
-                        <div class="avatar">U</div>
-                        <div class="user-info">
-                            <span class="user-name">User</span>
-                            <span class="user-role">Role</span>
-                        </div>
-                    </div>
+                    <div class="user-profile"><div class="avatar">U</div><div class="user-info"><span class="user-name">User</span><span class="user-role">Member</span></div></div>
                 </div>
             </header>
 
             <main class="page-content">
-                <div class="settings-grid">
-                    
-                    <!-- Settings Nav -->
-                    <div class="settings-nav">
-                        <div class="settings-nav-item active">OCR Engine Configuration</div>
-                        <div class="settings-nav-item">Leaderboard Defaults</div>
-                        <div class="settings-nav-item">Platform Data</div>
+                <!-- OCR Settings -->
+                <div class="card card-body mb-md">
+                    <div class="flex items-center gap-sm mb-md">
+                        <iconify-icon icon="lucide:scan-eye" style="font-size:1.3rem;color:var(--accent-blue);"></iconify-icon>
+                        <h2 class="card-title">OCR Engine</h2>
+                        <span class="badge badge-completed" style="margin-left:auto;">Server-Side</span>
                     </div>
+                    <p class="text-muted mb-md" style="font-size:0.85rem;">
+                        The OCR engine uses Gemini Flash Vision via a secure server-side proxy. No API key configuration needed — it's managed via Vercel environment variables.
+                    </p>
 
-                    <!-- Settings Panel -->
-                    <div class="card panel" style="padding: var(--space-xl);">
-                        <h2 class="panel-title" style="margin-bottom: var(--space-xl); border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">OCR Engine Configuration</h2>
-                        
-                        <!-- Gemini API Key -->
-                        <div class="form-group" style="background: linear-gradient(135deg,rgba(138,43,226,0.08),rgba(0,191,255,0.05)); border: 1px solid rgba(138,43,226,0.25); border-radius: var(--radius-md); padding: var(--space-lg); margin-bottom: var(--space-xl);">
-                            <div style="display:flex; align-items:center; gap:8px; margin-bottom: var(--space-md);">
-                                <iconify-icon icon="simple-icons:googlegemini" style="color:var(--accent-blue); font-size:1.2rem;"></iconify-icon>
-                                <span style="font-weight:600; font-family:var(--font-heading);">Gemini Flash Vision API</span>
-                                <span id="api-status-badge" style="font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:12px; background:rgba(255,255,255,0.05); color:var(--text-muted); margin-left:auto;">Not Configured</span>
-                            </div>
-                            <label class="form-label">Google AI Studio API Key</label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="password" class="form-input" id="gemini-api-key" placeholder="AIza..." style="flex:1; font-family:monospace;">
-                                <button class="btn btn-secondary" id="btn-toggle-key" style="white-space:nowrap; padding: 10px 14px;"><iconify-icon icon="lucide:eye"></iconify-icon></button>
-                            </div>
-                            <p style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">
-                                Get your free key at <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent-blue);">aistudio.google.com</a>. 
-                                Stored locally in your browser — never sent to any server.
-                            </p>
-                            <div style="display:flex; gap:var(--space-md); margin-top:var(--space-md);">
-                                <button class="btn btn-primary" id="btn-save-key"><iconify-icon icon="lucide:save"></iconify-icon> Save API Key</button>
-                                <button class="btn btn-secondary" id="btn-test-key"><iconify-icon icon="lucide:zap"></iconify-icon> Test Connection</button>
-                            </div>
+                    <div class="form-group">
+                        <label class="form-label">OCR Sensitivity (Fuzzy Name Matching)</label>
+                        <div class="slider-row">
+                            <input type="range" id="ocr-sense" min="0.4" max="1.0" step="0.05" value="0.75">
+                            <span class="font-mono text-cyan" id="sense-val">0.75</span>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label">OCR Sensitivity (Fuzzy Name Matching)</label>
-                            <div class="slider-container">
-                                <input type="range" id="setting-ocr-sense" min="0.4" max="1.0" step="0.05" value="0.75">
-                                <span id="ocr-sense-val" class="font-mono text-cyan">0.75</span>
-                            </div>
-                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Lower values try harder to match misread names, but may increase false positives.</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Duplicate Detection Strategy</label>
-                            <select class="form-select">
-                                <option>Strict (Require identical Kill count + Same Lobby)</option>
-                                <option>Moderate (Allow +/- 1 Kill difference)</option>
-                                <option>Manual Review Only</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Default Week Size</label>
-                            <select class="form-select">
-                                <option value="5">5 Days (Mon-Fri)</option>
-                                <option value="7" selected>7 Days (Full Week)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" style="margin-top: var(--space-xl);">
-                            <button class="btn btn-primary" id="btn-save-settings"><iconify-icon icon="lucide:save"></iconify-icon> Save Configurations</button>
-                        </div>
+                        <p class="text-muted mt-sm" style="font-size:0.78rem;">Lower = more aggressive matching (may cause false positives)</p>
                     </div>
-
                 </div>
+
+                <!-- Account Settings -->
+                <div class="card card-body mb-md">
+                    <div class="flex items-center gap-sm mb-md">
+                        <iconify-icon icon="lucide:user" style="font-size:1.3rem;color:var(--accent-purple);"></iconify-icon>
+                        <h2 class="card-title">Account</h2>
+                    </div>
+                    <div class="data-item" style="background:var(--bg-elevated);border:none;">
+                        <div class="data-item-content">
+                            <div class="data-item-title" id="profile-name">Loading...</div>
+                            <div class="data-item-subtitle" id="profile-email">—</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger btn-block mt-md" data-action="signout">
+                        <iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out
+                    </button>
+                </div>
+
+                <!-- Save -->
+                <button class="btn btn-primary btn-block" id="btn-save">
+                    <iconify-icon icon="lucide:save"></iconify-icon> Save Settings
+                </button>
             </main>
         </div>
     </div>
+
+    <nav class="bottom-tabs">
+        <a href="/" class="tab-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon><span>Home</span></a>
+        <a href="/weeks.html" class="tab-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days"></iconify-icon><span>Weeks</span></a>
+        <a href="/ocr-review.html" class="tab-item" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye"></iconify-icon><span>OCR</span></a>
+        <a href="/leaderboards.html" class="tab-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy"></iconify-icon><span>Ranks</span></a>
+        <a href="/settings.html" class="tab-item active" data-page="settings"><iconify-icon icon="lucide:settings"></iconify-icon><span>More</span></a>
+    </nav>
+
     <script type="module">
-        import * as router from '/src/router.js';
-        window.router = router;
-        await router.initApp('settings');
+        import { initApp, showToast, state } from '/src/router.js';
 
-        const { showToast } = router;
+        await initApp('settings');
 
-        // OCR Sensitivity slider
-        const sSlider = document.getElementById('setting-ocr-sense');
-        const sVal    = document.getElementById('ocr-sense-val');
-        sSlider.value = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
-        sVal.textContent = parseFloat(sSlider.value).toFixed(2);
-        sSlider.addEventListener('input', e => {
-            sVal.textContent = parseFloat(e.target.value).toFixed(2);
-        });
-
-        // Gemini API Key management
-        const keyInput   = document.getElementById('gemini-api-key');
-        const statusBadge = document.getElementById('api-status-badge');
-        const toggleBtn  = document.getElementById('btn-toggle-key');
-        const saveKeyBtn = document.getElementById('btn-save-key');
-        const testKeyBtn = document.getElementById('btn-test-key');
-        const saveSettingsBtn = document.getElementById('btn-save-settings');
-
-        // Load saved key
-        const savedKey = localStorage.getItem('nova_gemini_api_key');
-        if (savedKey) {
-            keyInput.value = savedKey;
-            setStatusBadge('Configured', 'rgba(0,255,136,0.15)', 'var(--accent-cyan)');
+        // Profile info
+        if (state.profile) {
+            document.getElementById('profile-name').textContent = state.profile.display_name || 'User';
+            document.getElementById('profile-email').textContent = state.profile.email || '—';
         }
 
-        function setStatusBadge(text, bg, color) {
-            statusBadge.textContent = text;
-            statusBadge.style.background = bg;
-            statusBadge.style.color = color;
-        }
+        // OCR sensitivity
+        const slider = document.getElementById('ocr-sense');
+        const valEl = document.getElementById('sense-val');
+        slider.value = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
+        valEl.textContent = parseFloat(slider.value).toFixed(2);
+        slider.addEventListener('input', () => valEl.textContent = parseFloat(slider.value).toFixed(2));
 
-        // Toggle key visibility
-        toggleBtn.addEventListener('click', () => {
-            keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
-            toggleBtn.innerHTML = keyInput.type === 'password'
-                ? '<iconify-icon icon="lucide:eye"></iconify-icon>'
-                : '<iconify-icon icon="lucide:eye-off"></iconify-icon>';
-        });
-
-        // Save key
-        saveKeyBtn.addEventListener('click', () => {
-            const key = keyInput.value.trim();
-            if (!key) { showToast('Please enter an API key', 'error'); return; }
-            localStorage.setItem('nova_gemini_api_key', key);
-            setStatusBadge('Configured', 'rgba(0,255,136,0.15)', 'var(--accent-cyan)');
-            showToast('Gemini API key saved!', 'success');
-        });
-
-        // Test connection
-        testKeyBtn.addEventListener('click', async () => {
-            const key = keyInput.value.trim();
-            if (!key) { showToast('Enter a key first', 'error'); return; }
-
-            testKeyBtn.disabled = true;
-            testKeyBtn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Testing...';
-
-            try {
-                const res = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }] })
-                    }
-                );
-                if (res.ok) {
-                    setStatusBadge('✓ Connected', 'rgba(0,255,136,0.15)', 'var(--accent-cyan)');
-                    showToast('Gemini API: Connection successful!', 'success');
-                } else {
-                    const err = await res.json();
-                    throw new Error(err?.error?.message || 'Unknown error');
-                }
-            } catch (e) {
-                setStatusBadge('Error', 'rgba(255,51,102,0.15)', 'var(--accent-red)');
-                showToast('API Error: ' + e.message, 'error');
-            } finally {
-                testKeyBtn.disabled = false;
-                testKeyBtn.innerHTML = '<iconify-icon icon="lucide:zap"></iconify-icon> Test Connection';
-            }
-        });
-
-        // Save all settings
-        saveSettingsBtn.addEventListener('click', () => {
-            localStorage.setItem('nova_setting_ocr_sense', sSlider.value);
-            showToast('All settings saved!', 'success');
+        // Save
+        document.getElementById('btn-save').addEventListener('click', () => {
+            localStorage.setItem('nova_setting_ocr_sense', slider.value);
+            showToast('Settings saved!', 'success');
         });
     </script>
 </body>

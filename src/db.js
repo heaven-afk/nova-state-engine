@@ -1,216 +1,193 @@
 /**
- * db.js
- * Nova Scrims Analytics — IndexedDB Data Layer
- * Handles all storage for Weeks, Days, Lobbies, OCR Records, and Approved Stats.
+ * db.js — Nova Stat Engine
+ * Supabase Database Layer (Clean Rebuild)
  */
 
-import { openDB } from 'idb';
+import { supabase } from './auth.js';
 
-const DB_NAME = 'NovaScrimsDB';
-const DB_VERSION = 1;
+/* ── WEEKS ──────────────────────────────────────────── */
 
-/**
- * Initializes the IndexedDB database and creates object stores.
- */
-async function initDB() {
-    return openDB(DB_NAME, DB_VERSION, {
-        upgrade(db) {
-            if (!db.objectStoreNames.contains('weeks')) {
-                db.createObjectStore('weeks', { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains('days')) {
-                const dayStore = db.createObjectStore('days', { keyPath: 'id' });
-                dayStore.createIndex('by-week', 'weekId');
-            }
-            if (!db.objectStoreNames.contains('lobbies')) {
-                const lobbyStore = db.createObjectStore('lobbies', { keyPath: 'id' });
-                lobbyStore.createIndex('by-day', 'dayId');
-            }
-            if (!db.objectStoreNames.contains('ocr_records')) {
-                const ocrStore = db.createObjectStore('ocr_records', { keyPath: 'id' });
-                ocrStore.createIndex('by-lobby', 'lobbyId');
-            }
-            if (!db.objectStoreNames.contains('player_stats')) {
-                const statStore = db.createObjectStore('player_stats', { keyPath: 'id' });
-                statStore.createIndex('by-week', 'weekId');
-                statStore.createIndex('by-day', 'dayId');
-                statStore.createIndex('by-lobby', 'lobbyId');
-                statStore.createIndex('by-player', 'playerIgn');
-            }
-        }
-    });
-}
-
-const dbPromise = initDB();
-
-// ----------------------------------------------------
-// WEEKS API
-// ----------------------------------------------------
 export async function createWeek(name, totalDays = 7) {
-    const db = await dbPromise;
-    const weekId = 'wk_' + Date.now();
+    const { data: week, error } = await supabase
+        .from('weeks').insert({ name, total_days: totalDays }).select().single();
+    if (error) throw error;
 
-    const newWeek = {
-        id: weekId,
-        name,
-        totalDays,
-        status: 'active',
-        createdAt: new Date().toISOString()
-    };
+    const days = Array.from({ length: totalDays }, (_, i) => ({
+        week_id: week.id, day_number: i + 1
+    }));
+    const { data: createdDays, error: dayErr } = await supabase
+        .from('days').insert(days).select();
+    if (dayErr) throw dayErr;
 
-    // Build all writes up front, then do a single transaction
-    const days = [];
-    const lobbies = [];
-    for (let d = 1; d <= totalDays; d++) {
-        const dayId = `${weekId}_day_${d}`;
-        days.push({ id: dayId, weekId, dayNumber: d, status: 'pending', createdAt: new Date().toISOString() });
-        for (let l = 1; l <= 3; l++) {
-            lobbies.push({ id: `${dayId}_lobby_${l}`, dayId, lobbyNumber: l, status: 'pending', images: [] });
-        }
-    }
-
-    const tx = db.transaction(['weeks', 'days', 'lobbies'], 'readwrite');
-    tx.objectStore('weeks').put(newWeek);
-    days.forEach(d => tx.objectStore('days').put(d));
-    lobbies.forEach(l => tx.objectStore('lobbies').put(l));
-    await tx.done;
-
-    return newWeek;
+    const lobbies = createdDays.flatMap(d =>
+        [1, 2, 3].map(n => ({ day_id: d.id, lobby_number: n }))
+    );
+    await supabase.from('lobbies').insert(lobbies);
+    return week;
 }
 
 export async function getAllWeeks() {
-    const db = await dbPromise;
-    return db.getAll('weeks');
+    const { data, error } = await supabase
+        .from('weeks').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
 }
 
 export async function getWeek(weekId) {
-    const db = await dbPromise;
-    return db.get('weeks', weekId);
+    const { data, error } = await supabase
+        .from('weeks').select('*').eq('id', weekId).single();
+    if (error) throw error;
+    return data;
 }
 
-// ----------------------------------------------------
-// DAYS API
-// ----------------------------------------------------
+export async function deleteWeek(weekId) {
+    const { error } = await supabase.from('weeks').delete().eq('id', weekId);
+    if (error) throw error;
+}
+
+export async function updateWeekStatus(weekId, status) {
+    const { error } = await supabase.from('weeks').update({ status }).eq('id', weekId);
+    if (error) throw error;
+}
+
+/* ── DAYS ───────────────────────────────────────────── */
+
 export async function getDaysByWeek(weekId) {
-    const db = await dbPromise;
-    const days = await db.getAllFromIndex('days', 'by-week', weekId);
-    return days.sort((a, b) => a.dayNumber - b.dayNumber);
+    const { data, error } = await supabase
+        .from('days').select('*').eq('week_id', weekId).order('day_number');
+    if (error) throw error;
+    return data || [];
 }
 
-// ----------------------------------------------------
-// LOBBIES API
-// ----------------------------------------------------
+export async function updateDayStatus(dayId, status) {
+    const { error } = await supabase.from('days').update({ status }).eq('id', dayId);
+    if (error) throw error;
+}
+
+/* ── LOBBIES ────────────────────────────────────────── */
+
 export async function getLobby(lobbyId) {
-    const db = await dbPromise;
-    return db.get('lobbies', lobbyId);
+    const { data, error } = await supabase
+        .from('lobbies').select('*').eq('id', lobbyId).single();
+    if (error) throw error;
+    return data;
 }
 
 export async function getLobbiesByDay(dayId) {
-    const db = await dbPromise;
-    const lobbies = await db.getAllFromIndex('lobbies', 'by-day', dayId);
-    return lobbies.sort((a, b) => a.lobbyNumber - b.lobbyNumber);
+    const { data, error } = await supabase
+        .from('lobbies').select('*').eq('day_id', dayId).order('lobby_number');
+    if (error) throw error;
+    return data || [];
 }
 
 export async function updateLobbyImages(lobbyId, imagesBase64) {
-    const db = await dbPromise;
-    // Read first (outside transaction), then write
-    const lobby = await db.get('lobbies', lobbyId);
-    if (!lobby) throw new Error('Lobby not found');
-    lobby.images = imagesBase64;
-    await db.put('lobbies', lobby);
+    const { error } = await supabase
+        .from('lobbies').update({ images: imagesBase64, status: 'uploaded' }).eq('id', lobbyId);
+    if (error) throw error;
 }
 
 export async function updateLobbyStatus(lobbyId, status) {
-    const db = await dbPromise;
-    const lobby = await db.get('lobbies', lobbyId);
-    if (!lobby) throw new Error('Lobby not found');
-    lobby.status = status;
-    await db.put('lobbies', lobby);
+    const { error } = await supabase.from('lobbies').update({ status }).eq('id', lobbyId);
+    if (error) throw error;
 }
 
-// ----------------------------------------------------
-// OCR RECORDS (Pre-approval Review Queue)
-// ----------------------------------------------------
-export async function saveRawOCRRecords(lobbyId, records) {
-    const db = await dbPromise;
+/* ── OCR RECORDS ────────────────────────────────────── */
 
-    // ---- Step 1: Read old records BEFORE opening the write transaction ----
-    const oldRecords = await db.getAllFromIndex('ocr_records', 'by-lobby', lobbyId);
-
-    // ---- Step 2: Assign IDs to new records (no async needed here) ----
-    const now = Date.now();
-    const newRecords = records.map((r, i) => ({
-        ...r,
-        id: `ocr_${now}_${i}_${Math.random().toString(36).substr(2, 5)}`,
-        lobbyId
+export async function saveOCRRecords(lobbyId, records) {
+    await supabase.from('ocr_records').delete().eq('lobby_id', lobbyId);
+    const rows = records.map(r => ({
+        lobby_id: lobbyId,
+        source_image: r.sourceImage,
+        raw_player_name: r.rawPlayerName,
+        normalized_name: r.normalizedName,
+        raw_kills: String(r.rawKills || '0'),
+        normalized_kills: parseInt(r.normalizedKills) || 0,
+        team_slot: r.teamSlot === 'Unknown' ? null : parseInt(r.teamSlot) || null,
+        confidence: r.confidence ?? 0.95,
+        is_duplicate: r.isDuplicate || false
     }));
-
-    // ---- Step 3: Single write transaction — delete old, insert new ----
-    const tx = db.transaction('ocr_records', 'readwrite');
-    const store = tx.objectStore('ocr_records');
-    oldRecords.forEach(r => store.delete(r.id));
-    newRecords.forEach(r => store.put(r));
-    await tx.done;
-
-    // ---- Step 4: Mark lobby as 'reviewing' in a separate transaction ----
-    const lobby = await db.get('lobbies', lobbyId);
-    if (lobby) {
-        lobby.status = 'reviewing';
-        await db.put('lobbies', lobby);
+    if (rows.length > 0) {
+        const { error } = await supabase.from('ocr_records').insert(rows);
+        if (error) throw error;
     }
+    await updateLobbyStatus(lobbyId, 'reviewing');
 }
 
 export async function getOCRRecordsByLobby(lobbyId) {
-    const db = await dbPromise;
-    return db.getAllFromIndex('ocr_records', 'by-lobby', lobbyId);
+    const { data, error } = await supabase
+        .from('ocr_records').select('*').eq('lobby_id', lobbyId);
+    if (error) throw error;
+    return (data || []).map(r => ({
+        id: r.id, lobbyId: r.lobby_id, sourceImage: r.source_image,
+        rawPlayerName: r.raw_player_name, normalizedName: r.normalized_name,
+        rawKills: r.raw_kills, normalizedKills: r.normalized_kills,
+        teamSlot: r.team_slot, confidence: r.confidence,
+        isDuplicate: r.is_duplicate
+    }));
 }
 
-// ----------------------------------------------------
-// FINAL STATS API (Post-approval Analytics)
-// ----------------------------------------------------
-export async function approveLobbyStats(weekId, dayId, lobbyId, finalPlayerStats) {
-    const db = await dbPromise;
+export async function updateOCRRecord(recordId, updates) {
+    const { error } = await supabase.from('ocr_records')
+        .update({ normalized_name: updates.normalizedName, normalized_kills: updates.normalizedKills })
+        .eq('id', recordId);
+    if (error) throw error;
+}
 
-    // ---- Step 1: All reads BEFORE any write transaction ----
-    const oldStats   = await db.getAllFromIndex('player_stats', 'by-lobby', lobbyId);
-    const allLobbies = await db.getAllFromIndex('lobbies', 'by-day', dayId);
-    const lobby      = await db.get('lobbies', lobbyId);
-    const day        = await db.get('days', dayId);
+export async function deleteOCRRecord(recordId) {
+    const { error } = await supabase.from('ocr_records').delete().eq('id', recordId);
+    if (error) throw error;
+}
 
-    // ---- Step 2: Prepare new stat records ----
-    const now = Date.now();
-    const newStats = finalPlayerStats.map((s, i) => ({
-        ...s,
-        id:      `stat_${now}_${i}_${Math.random().toString(36).substr(2, 5)}`,
-        weekId,
-        dayId,
-        lobbyId
+/* ── PLAYER STATS ───────────────────────────────────── */
+
+export async function approveLobbyStats(weekId, dayId, lobbyId, players) {
+    await supabase.from('player_stats').delete().eq('lobby_id', lobbyId);
+    const rows = players.map(p => ({
+        week_id: weekId, day_id: dayId, lobby_id: lobbyId,
+        player_ign: p.normalizedName || p.playerIgn,
+        kills: p.normalizedKills ?? p.kills ?? 0
     }));
-
-    // ---- Step 3: Determine if the whole day is now approved ----
-    const allApproved = allLobbies.every(l => l.status === 'approved' || l.id === lobbyId);
-
-    // ---- Step 4: Single write transaction for stats ----
-    const statsTx = db.transaction('player_stats', 'readwrite');
-    const statsStore = statsTx.objectStore('player_stats');
-    oldStats.forEach(s => statsStore.delete(s.id));
-    newStats.forEach(s => statsStore.put(s));
-    await statsTx.done;
-
-    // ---- Step 5: Update lobby status ----
-    if (lobby) {
-        lobby.status = 'approved';
-        await db.put('lobbies', lobby);
+    if (rows.length > 0) {
+        const { error } = await supabase.from('player_stats').insert(rows);
+        if (error) throw error;
     }
-
-    // ---- Step 6: Update day status if fully approved ----
-    if (allApproved && day) {
-        day.status = 'completed';
-        await db.put('days', day);
+    await updateLobbyStatus(lobbyId, 'approved');
+    const allLobbies = await getLobbiesByDay(dayId);
+    if (allLobbies.every(l => l.status === 'approved')) {
+        await updateDayStatus(dayId, 'completed');
     }
 }
 
 export async function getWeeklyStats(weekId) {
-    const db = await dbPromise;
-    return db.getAllFromIndex('player_stats', 'by-week', weekId);
+    const { data, error } = await supabase
+        .from('player_stats').select('*').eq('week_id', weekId);
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getDailyStats(dayId) {
+    const { data, error } = await supabase
+        .from('player_stats').select('*').eq('day_id', dayId);
+    if (error) throw error;
+    return data || [];
+}
+
+/* ── DASHBOARD ──────────────────────────────────────── */
+
+export async function getDashboardStats() {
+    const [weeks, days, players, lobbies] = await Promise.all([
+        supabase.from('weeks').select('id, name, status').order('created_at', { ascending: false }),
+        supabase.from('days').select('id, status'),
+        supabase.from('player_stats').select('player_ign'),
+        supabase.from('lobbies').select('id, status')
+    ]);
+    const activeWeek = (weeks.data || []).find(w => w.status === 'active');
+    const uniquePlayers = new Set((players.data || []).map(p => p.player_ign));
+    return {
+        activeWeek,
+        totalWeeks: (weeks.data || []).length,
+        totalDays: (days.data || []).filter(d => d.status === 'completed').length,
+        totalPlayers: uniquePlayers.size,
+        totalLobbies: (lobbies.data || []).filter(l => l.status === 'approved').length
+    };
 }
