@@ -31,16 +31,14 @@ export async function signIn(email, password) {
 }
 
 export async function signUp(email, password, displayName) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+            data: { display_name: displayName || email.split('@')[0] }
+        }
+    });
     if (error) throw error;
-
-    if (data.user) {
-        await supabase.from('user_profiles').insert({
-            id: data.user.id,
-            display_name: displayName || email.split('@')[0],
-            role: 'member'
-        });
-    }
     return data;
 }
 
@@ -72,7 +70,7 @@ export async function getUserProfile() {
             .from('user_profiles')
             .insert({
                 id: user.id,
-                display_name: user.email?.split('@')[0] || 'User',
+                display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
                 role: 'member'
             })
             .select()
