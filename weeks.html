@@ -90,7 +90,7 @@
 
     <script type="module">
         import { initApp, showToast } from '/src/router.js';
-        import { createWeek, getAllWeeks, getDaysByWeek, deleteWeek } from '/src/db.js';
+        import { createWeek, getAllWeeksWithDays, deleteWeek } from '/src/db.js';
 
         await initApp('weeks');
 
@@ -110,7 +110,8 @@
             try {
                 container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><iconify-icon icon="lucide:loader-2" class="spin" style="font-size:2rem;"></iconify-icon><p style="margin-top:12px;">Loading weeks...</p></div>';
                 
-                const weeks = await getAllWeeks();
+                // Fetch weeks and their associated days in a SINGLE network query! Extremely fast.
+                const weeks = await getAllWeeksWithDays();
                 if (weeks.length === 0) {
                     container.innerHTML = '';
                     emptyState.style.display = 'block';
@@ -118,14 +119,11 @@
                 }
                 emptyState.style.display = 'none';
 
-                // Fetch days for all weeks concurrently
-                const daysPerWeek = await Promise.all(weeks.map(wk => getDaysByWeek(wk.id)));
-
                 container.innerHTML = '';
                 container.className = 'weeks-grid';
 
-                weeks.forEach((wk, i) => {
-                    const days = daysPerWeek[i];
+                weeks.forEach((wk) => {
+                    const days = wk.days || [];
                     const completed = days.filter(d => d.status === 'completed').length;
                     const total = wk.total_days || days.length;
                     const pct = Math.round((completed / total) * 100);

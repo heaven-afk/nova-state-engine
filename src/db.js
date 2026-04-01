@@ -33,6 +33,13 @@ export async function getAllWeeks() {
     return data || [];
 }
 
+export async function getAllWeeksWithDays() {
+    const { data, error } = await supabase
+        .from('weeks').select('*, days(*)').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+}
+
 export async function getWeek(weekId) {
     const { data, error } = await supabase
         .from('weeks').select('*').eq('id', weekId).single();
