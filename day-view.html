@@ -153,7 +153,12 @@
             const imgs = lobbyImages[lobbyId] || [];
 
             grid.innerHTML = imgs.map((src, i) => `
-                <div class="thumb"><img src="${src}" alt="Screenshot ${i + 1}"></div>
+                <div class="thumb" style="position:relative;">
+                    <img src="${src}" alt="Screenshot ${i + 1}">
+                    <button class="btn-icon" style="position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(17,19,32,0.8);color:var(--accent-red);font-size:1rem;" onclick="event.stopPropagation(); window.removeScreenshot('${lobbyId}', ${i}, false)">
+                        <iconify-icon icon="lucide:x"></iconify-icon>
+                    </button>
+                </div>
             `).join('');
 
             btn.disabled = imgs.length === 0;
@@ -164,16 +169,43 @@
         window.openScreenshotsModal = function(lobbyId) {
             const container = document.getElementById('screenshots-container');
             const imgs = lobbyImages[lobbyId] || [];
-            if (imgs.length === 0) return showToast('No screenshots uploaded.', 'error');
+            if (imgs.length === 0) {
+                window.closeScreenshotsModal();
+                return showToast('No screenshots to display.', 'info');
+            }
             
             container.innerHTML = imgs.map((src, i) => `
                 <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden;">
-                    <div style="background: var(--bg-elevated); padding: 8px 12px; font-weight: 600; font-size: 0.9rem; border-bottom: 1px solid var(--border-subtle);">Screenshot ${i + 1}</div>
+                    <div class="flex justify-between items-center" style="background: var(--bg-elevated); padding: 8px 12px; font-weight: 600; font-size: 0.9rem; border-bottom: 1px solid var(--border-subtle);">
+                        <span>Screenshot ${i + 1}</span>
+                        <button class="btn-icon" style="width:24px;height:24px;background:rgba(255,51,102,0.15);color:var(--accent-red);" onclick="window.removeScreenshot('${lobbyId}', ${i}, true)">
+                            <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                        </button>
+                    </div>
                     <img src="${src}" style="width: 100%; height: auto; display: block;" />
                 </div>
             `).join('');
             
             document.getElementById('modal-screenshots').classList.add('show');
+        };
+
+        window.removeScreenshot = async function(lobbyId, index, isFromModal) {
+            if (!confirm('Remove this screenshot?')) return;
+            lobbyImages[lobbyId].splice(index, 1);
+            
+            // Sync with db to persist removal immediately
+            try {
+                await updateLobbyImages(lobbyId, lobbyImages[lobbyId]);
+            } catch (e) {
+                console.error('Failed to sync deletion to DB:', e);
+            }
+
+            renderThumbs(lobbyId);
+
+            if (isFromModal) {
+                // re-render modal or close if empty
+                window.openScreenshotsModal(lobbyId);
+            }
         };
 
         window.closeScreenshotsModal = function() {
