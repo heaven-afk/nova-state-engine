@@ -80,6 +80,14 @@ export async function getLobbiesByDay(dayId) {
     return data || [];
 }
 
+/** Lightweight lobby fetch — excludes the heavy `images` column. Use for list views. */
+export async function getLobbiesByDayLight(dayId) {
+    const { data, error } = await supabase
+        .from('lobbies').select('id, day_id, lobby_number, status').eq('day_id', dayId).order('lobby_number');
+    if (error) throw error;
+    return data || [];
+}
+
 export async function updateLobbyImages(lobbyId, imagesBase64) {
     const { error } = await supabase
         .from('lobbies').update({ images: imagesBase64, status: 'uploaded' }).eq('id', lobbyId);

@@ -153,10 +153,12 @@
             btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Extracting...';
 
             try {
-                // Save images to DB
-                await updateLobbyImages(lobbyId, images);
-                // Run OCR
-                const records = await runOCRExtraction(images);
+                // Save images to DB and run OCR concurrently to save time
+                const [_, records] = await Promise.all([
+                    updateLobbyImages(lobbyId, images),
+                    runOCRExtraction(images)
+                ]);
+                
                 // Save OCR records
                 await saveOCRRecords(lobbyId, records);
 

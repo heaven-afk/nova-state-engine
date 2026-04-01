@@ -53,7 +53,7 @@
 
     <script type="module">
         import { initApp, showToast } from '/src/router.js';
-        import { getWeek, getDaysByWeek, getLobbiesByDay } from '/src/db.js';
+        import { getWeek, getDaysByWeek, getLobbiesByDayLight } from '/src/db.js';
 
         await initApp('weeks');
 
@@ -61,16 +61,23 @@
         if (!weekId) { window.location.href = '/weeks.html'; }
 
         async function load() {
+            const container = document.getElementById('days-container');
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><iconify-icon icon="lucide:loader-2" style="font-size:2rem;animation:spin 1s linear infinite;"></iconify-icon><p style="margin-top:12px;">Loading days...</p></div>';
             try {
                 const week = await getWeek(weekId);
                 document.getElementById('week-title').textContent = week.name;
 
                 const days = await getDaysByWeek(weekId);
-                const container = document.getElementById('days-container');
+
+                // Fetch all lobbies in parallel using the lightweight query (no images column)
+                const lobbiesPerDay = await Promise.all(
+                    days.map(day => getLobbiesByDayLight(day.id))
+                );
+
                 container.innerHTML = '';
 
-                for (const day of days) {
-                    const lobbies = await getLobbiesByDay(day.id);
+                days.forEach((day, i) => {
+                    const lobbies = lobbiesPerDay[i];
                     const approvedCount = lobbies.filter(l => l.status === 'approved').length;
                     const statusClass = day.status === 'completed' ? 'completed' : day.status === 'in_progress' ? 'active' : 'pending';
 
@@ -88,8 +95,13 @@
                         <span class="badge badge-${statusClass}">${day.status}</span>
                     `;
                     container.appendChild(card);
+                });
+
+                if (days.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><p>No days found for this week.</p></div>';
                 }
             } catch (e) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><iconify-icon icon="lucide:alert-triangle" style="font-size:2rem;color:var(--danger);"></iconify-icon><p style="margin-top:12px;">Failed to load week data. Please try again.</p></div>';
                 showToast('Error loading week: ' + e.message, 'error');
             }
         }

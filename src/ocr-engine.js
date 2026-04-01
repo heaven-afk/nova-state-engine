@@ -26,16 +26,22 @@ Rules:
 export async function runOCRExtraction(imageURIs) {
     let allRecords = [];
 
-    for (let i = 0; i < imageURIs.length; i++) {
+    const promises = imageURIs.map(async (uri, i) => {
         console.log(`[OCR] Processing image ${i + 1} of ${imageURIs.length}...`);
         try {
-            const records = await extractFromImage(imageURIs[i], i);
-            allRecords = allRecords.concat(records);
+            const records = await extractFromImage(uri, i);
             console.log(`[OCR] Image ${i + 1}: extracted ${records.length} players`);
+            return records;
         } catch (err) {
             console.error(`[OCR] Failed on image ${i + 1}:`, err.message);
+            return [];
         }
-    }
+    });
+
+    const results = await Promise.all(promises);
+    results.forEach(records => {
+        allRecords = allRecords.concat(records);
+    });
 
     if (allRecords.length === 0) {
         throw new Error('No player data could be extracted. Check your screenshots.');
