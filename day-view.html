@@ -43,6 +43,18 @@
         </div>
     </div>
 
+    <!-- Screenshot Modal -->
+    <div class="modal-overlay" id="modal-screenshots">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="flex justify-between items-center mb-md">
+                <h2 class="modal-title" style="margin:0;">Lobby Screenshots</h2>
+                <button class="btn-icon" onclick="window.closeScreenshotsModal()"><iconify-icon icon="lucide:x"></iconify-icon></button>
+            </div>
+            <div id="screenshots-container" class="flex flex-col gap-md"></div>
+        </div>
+    </div>
+
     <nav class="bottom-tabs">
         <a href="/" class="tab-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon><span>Home</span></a>
         <a href="/weeks.html" class="tab-item active" data-page="weeks"><iconify-icon icon="lucide:calendar-days"></iconify-icon><span>Weeks</span></a>
@@ -95,6 +107,9 @@
                     <div class="thumb-grid mt-sm" id="thumbs-${lobby.id}"></div>
 
                     <div class="flex gap-sm mt-md">
+                        <button class="btn btn-secondary btn-sm flex-1" id="review-ss-btn-${lobby.id}" disabled onclick="window.openScreenshotsModal('${lobby.id}')">
+                            <iconify-icon icon="lucide:image"></iconify-icon> Images
+                        </button>
                         <button class="btn btn-primary btn-sm flex-1" id="ocr-btn-${lobby.id}" disabled onclick="window.runOCR('${lobby.id}')">
                             <iconify-icon icon="lucide:scan-eye"></iconify-icon> Run OCR
                         </button>
@@ -142,7 +157,28 @@
             `).join('');
 
             btn.disabled = imgs.length === 0;
+            const ssBtn = document.getElementById(`review-ss-btn-${lobbyId}`);
+            if (ssBtn) ssBtn.disabled = imgs.length === 0;
         }
+
+        window.openScreenshotsModal = function(lobbyId) {
+            const container = document.getElementById('screenshots-container');
+            const imgs = lobbyImages[lobbyId] || [];
+            if (imgs.length === 0) return showToast('No screenshots uploaded.', 'error');
+            
+            container.innerHTML = imgs.map((src, i) => `
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden;">
+                    <div style="background: var(--bg-elevated); padding: 8px 12px; font-weight: 600; font-size: 0.9rem; border-bottom: 1px solid var(--border-subtle);">Screenshot ${i + 1}</div>
+                    <img src="${src}" style="width: 100%; height: auto; display: block;" />
+                </div>
+            `).join('');
+            
+            document.getElementById('modal-screenshots').classList.add('show');
+        };
+
+        window.closeScreenshotsModal = function() {
+            document.getElementById('modal-screenshots').classList.remove('show');
+        };
 
         window.runOCR = async function(lobbyId) {
             const images = lobbyImages[lobbyId];
