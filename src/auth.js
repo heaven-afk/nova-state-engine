@@ -45,8 +45,13 @@ export async function signUp(email, password, displayName) {
 }
 
 export async function signOut() {
-    await supabase.auth.signOut();
-    window.location.href = '/login.html';
+    try {
+        await supabase.auth.signOut();
+    } catch (e) {
+        console.error('Sign out error:', e);
+    } finally {
+        window.location.href = '/login.html';
+    }
 }
 
 /* ── Profile ────────────────────────────────────────── */
