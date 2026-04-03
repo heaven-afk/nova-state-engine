@@ -58,7 +58,7 @@ export async function getUserProfile() {
     const user = await getUser();
     if (!user) return null;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
@@ -66,16 +66,20 @@ export async function getUserProfile() {
 
     if (!data) {
         // Auto-create profile if missing
-        const { data: newProfile } = await supabase
+        const fallbackProfile = {
+            id: user.id,
+            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+            role: 'member'
+        };
+
+        const { data: newProfile, error: insertError } = await supabase
             .from('user_profiles')
-            .insert({
-                id: user.id,
-                display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-                role: 'member'
-            })
+            .insert(fallbackProfile)
             .select()
             .single();
-        return newProfile ? { ...newProfile, email: user.email } : null;
+            
+        // If the insert gets blocked by RLS or fails, gracefully return the fallback profile so UI doesn't freeze
+        return newProfile ? { ...newProfile, email: user.email } : { ...fallbackProfile, email: user.email };
     }
 
     return { ...data, email: user.email };
