@@ -1,55 +1,66 @@
 /**
  * auth.js — Nova Stat Engine
- * Supabase Authentication (Clean Rebuild)
+ * Firebase Authentication
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = 'https://iafdpyeigkthdakksnih.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_n4n0dFU84gHjsLmHDVeHrA_cb4SFvUu';
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fbSignOut, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from './firebase.js';
 
 /* ── Session ────────────────────────────────────────── */
 
-export async function getSession() {
-    const { data } = await supabase.auth.getSession();
-    return data.session;
+export function getSession() {
+    return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            unsubscribe();
+            resolve(user);
+        });
+    });
 }
 
 export async function getUser() {
-    const { data } = await supabase.auth.getUser();
-    return data.user;
+    return await getSession();
 }
 
 /* ── Sign In / Up / Out ─────────────────────────────── */
 
 export async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return { user: userCredential.user };
 }
 
 export async function signUp(email, password, displayName) {
-    const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-            data: { display_name: displayName || email.split('@')[0] }
-        }
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    // Update Firebase Profile
+    if (displayName) {
+        await updateProfile(user, { displayName });
+    }
+
+    // Provision Firestore Profile
+    await setDoc(doc(db, 'user_profiles', user.uid), {
+        id: user.uid,
+        display_name: displayName || email.split('@')[0],
+        role: 'member',
+        created_at: new Date().toISOString()
     });
-    if (error) throw error;
-    return data;
+
+    return { user };
 }
 
 export async function signOut() {
     try {
-        await supabase.auth.signOut();
+        await fbSignOut(auth);
     } catch (e) {
         console.error('Sign out error:', e);
     } finally {
         window.location.href = '/login.html';
     }
+}
+
+export async function resetPassword(email) {
+    await sendPasswordResetEmail(auth, email);
 }
 
 /* ── Profile ────────────────────────────────────────── */
@@ -58,31 +69,32 @@ export async function getUserProfile() {
     const user = await getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+    try {
+        const docRef = doc(db, 'user_profiles', user.uid);
+        const docSnap = await getDoc(docRef);
 
-    if (!data) {
-        // Auto-create profile if missing
-        const fallbackProfile = {
-            id: user.id,
-            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-            role: 'member'
+        if (!docSnap.exists()) {
+            // Auto-create profile if missing
+            const fallbackProfile = {
+                id: user.uid,
+                display_name: user.displayName || user.email?.split('@')[0] || 'User',
+                role: 'member'
+            };
+            await setDoc(docRef, fallbackProfile);
+            return { ...fallbackProfile, email: user.email };
+        }
+
+        return { ...docSnap.data(), email: user.email };
+    } catch (e) {
+        console.error("Failed to fetch user profile", e);
+        // Fallback for UI resilience
+        return {
+            id: user.uid,
+            display_name: user.displayName || user.email?.split('@')[0] || 'User',
+            role: 'member',
+            email: user.email
         };
-
-        const { data: newProfile, error: insertError } = await supabase
-            .from('user_profiles')
-            .insert(fallbackProfile)
-            .select()
-            .single();
-            
-        // If the insert gets blocked by RLS or fails, gracefully return the fallback profile so UI doesn't freeze
-        return newProfile ? { ...newProfile, email: user.email } : { ...fallbackProfile, email: user.email };
     }
-
-    return { ...data, email: user.email };
 }
 
 /* ── Auth Guard ─────────────────────────────────────── */

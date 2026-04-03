@@ -300,13 +300,8 @@
                     await signIn(email, password);
                     window.location.href = '/';
                 } else {
-                    const result = await signUp(email, password, name);
-                    if (result.session) {
-                        window.location.href = '/';
-                    } else {
-                        showSuccess('Account created! Check your email to verify, then sign in.');
-                        switchTab('login');
-                    }
+                    await signUp(email, password, name);
+                    window.location.href = '/';
                 }
             } catch (err) {
                 showError(err.message || 'An error occurred.');
@@ -319,9 +314,13 @@
         window.handleForgotPassword = async function() {
             const email = document.getElementById('inp-email').value.trim();
             if (!email) { showError('Enter your email first.'); return; }
-            const { supabase } = await import('/src/auth.js');
-            await supabase.auth.resetPasswordForEmail(email);
-            showSuccess('Password reset email sent!');
+            const { resetPassword } = await import('/src/auth.js');
+            try {
+                await resetPassword(email);
+                showSuccess('Password reset email sent!');
+            } catch (e) {
+                showError(e.message || 'Failed to send reset email');
+            }
         };
     </script>
     <style>@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; display: inline-block; }</style>
