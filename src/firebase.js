@@ -9,12 +9,13 @@ import { getStorage } from "firebase/storage";
 // 3. Copy the firebaseConfig object here
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBlq8jChwIvfYI2_xQ4yFFfC2OgUCRGHLw",
+  authDomain: "novastats-engine.firebaseapp.com",
+  projectId: "novastats-engine",
+  storageBucket: "novastats-engine.firebasestorage.app",
+  messagingSenderId: "1058232817567",
+  appId: "1:1058232817567:web:8d75abe9bd14990f664faa",
+  measurementId: "G-52Z7XXK6XX"
 };
 
 const app = initializeApp(firebaseConfig);
