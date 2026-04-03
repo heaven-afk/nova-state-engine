@@ -3,7 +3,7 @@
  * Firebase Authentication
  */
 
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fbSignOut, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fbSignOut, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
 
@@ -45,6 +45,27 @@ export async function signUp(email, password, displayName) {
         role: 'member',
         created_at: new Date().toISOString()
     });
+
+    return { user };
+}
+
+export async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    const user = userCredential.user;
+
+    // Check/provision Firestore profile
+    const docRef = doc(db, 'user_profiles', user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+        await setDoc(docRef, {
+            id: user.uid,
+            display_name: user.displayName || user.email?.split('@')[0] || 'User',
+            role: 'member',
+            created_at: new Date().toISOString()
+        });
+    }
 
     return { user };
 }

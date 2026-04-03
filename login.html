@@ -258,6 +258,16 @@
                 <iconify-icon icon="lucide:log-in"></iconify-icon>
                 <span id="btn-text">Sign In</span>
             </button>
+
+            <div style="display:flex;align-items:center;gap:12px;margin:24px 0;">
+                <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
+                <span class="text-muted" style="font-size:0.85rem;">or</span>
+                <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
+            </div>
+
+            <button type="button" class="btn-submit" id="btn-google" style="background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.1);margin-top:0;" onclick="handleGoogleSignIn()">
+                <iconify-icon icon="logos:google-icon"></iconify-icon> Continue with Google
+            </button>
         </form>
     </div>
 
@@ -320,6 +330,25 @@
                 showSuccess('Password reset email sent!');
             } catch (e) {
                 showError(e.message || 'Failed to send reset email');
+            }
+        };
+
+        window.handleGoogleSignIn = async function() {
+            clearMsg();
+            const btn = document.getElementById('btn-google');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Connecting...';
+            
+            const { signInWithGoogle } = await import('/src/auth.js');
+            try {
+                await signInWithGoogle();
+                window.location.href = '/';
+            } catch (err) {
+                showError(err.message || 'Google sign in failed');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
             }
         };
     </script>
