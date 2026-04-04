@@ -25,6 +25,7 @@ Rules:
  */
 export async function runOCRExtraction(imageURIs) {
     let allRecords = [];
+    let lastError = null;
 
     const promises = imageURIs.map(async (uri, i) => {
         console.log(`[OCR] Processing image ${i + 1} of ${imageURIs.length}...`);
@@ -34,6 +35,7 @@ export async function runOCRExtraction(imageURIs) {
             return records;
         } catch (err) {
             console.error(`[OCR] Failed on image ${i + 1}:`, err.message);
+            lastError = err.message;
             return [];
         }
     });
@@ -44,7 +46,7 @@ export async function runOCRExtraction(imageURIs) {
     });
 
     if (allRecords.length === 0) {
-        throw new Error('No player data could be extracted. Check your screenshots.');
+        throw new Error(`No player data could be extracted. Details: ${lastError || 'Unknown error'}`);
     }
 
     return resolveDuplicates(allRecords);
@@ -81,12 +83,16 @@ async function extractFromImage(base64DataURI, imageIndex) {
 
     let parsed = [];
     try {
+        if (!rawText) throw new Error("API returned empty string (possibly blocked by safety filters)");
         const clean = rawText.replace(/```json\n?/gi, '').replace(/```/g, '').trim();
         parsed = JSON.parse(clean);
-        if (!Array.isArray(parsed)) parsed = [];
+        if (!Array.isArray(parsed)) throw new Error("Parsed JSON is not an array");
     } catch (e) {
-        console.warn(`[OCR] Could not parse JSON from image ${imageIndex + 1}:`, rawText);
-        return [];
+        throw new Error(`Parse failed: ${e.message}. Raw Output: ${rawText.substring(0, 150)}`);
+    }
+
+    if (parsed.length === 0) {
+        throw new Error(`Model returned an empty array. Raw Output: ${rawText.substring(0, 50)}`);
     }
 
     return parsed.map(entry => {
