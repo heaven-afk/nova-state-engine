@@ -3,6 +3,14 @@
  * API key is stored as GEMINI_API_KEY environment variable in Vercel.
  */
 
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '4mb'
+        }
+    }
+};
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -20,7 +28,7 @@ export default async function handler(req, res) {
 
     try {
         const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -31,7 +39,7 @@ export default async function handler(req, res) {
                             { inline_data: { mime_type: mimeType || 'image/png', data: image } }
                         ]
                     }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 2048, responseMimeType: 'application/json' }
                 })
             }
         );

@@ -64,8 +64,16 @@ async function extractFromImage(base64DataURI, imageIndex) {
     });
 
     if (!resp.ok) {
-        const errBody = await resp.json().catch(() => ({}));
-        throw new Error(errBody?.error || `OCR API error (${resp.status})`);
+        const errText = await resp.text().catch(() => '');
+        let errBody = {};
+        try { errBody = JSON.parse(errText); } catch(e) {}
+        throw new Error(errBody?.error || `OCR API error (${resp.status}): ${errText.substring(0, 50)}`);
+    }
+
+    const contentType = resp.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        const errText = await resp.text();
+        throw new Error(`OCR API returned non-JSON response. Ensure you are running via 'vercel dev'. Content: ${errText.substring(0, 50)}...`);
     }
 
     const data = await resp.json();
