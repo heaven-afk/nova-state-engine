@@ -80,10 +80,10 @@ async function extractFromImage(base64DataURI, imageIndex) {
         try { errBody = JSON.parse(errText); } catch(e) {}
         const errMsg = errBody?.error || `OCR API error (${resp.status})`;
 
-        // Surface quota errors with a clean, actionable message
-        const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit');
+        // Pass through the server's actual error message for transparency
+        const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('all ocr providers');
         if (isQuota) {
-            const err = new Error('Gemini API quota exceeded — enable billing or wait for daily reset.');
+            const err = new Error(errMsg);
             err.isQuotaError = true;
             throw err;
         }
