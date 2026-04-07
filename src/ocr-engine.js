@@ -26,26 +26,35 @@ Rules:
 export async function runOCRExtraction(imageURIs) {
     let allRecords = [];
     let lastError = null;
+    let quotaExhausted = false;
 
-    const promises = imageURIs.map(async (uri, i) => {
+    for (let i = 0; i < imageURIs.length; i++) {
+        const uri = imageURIs[i];
         console.log(`[OCR] Processing image ${i + 1} of ${imageURIs.length}...`);
+
+        // Small delay between images to reduce rate limit pressure
+        if (i > 0) await new Promise(r => setTimeout(r, 1500));
+
         try {
             const records = await extractFromImage(uri, i);
             console.log(`[OCR] Image ${i + 1}: extracted ${records.length} players`);
-            return records;
+            allRecords = allRecords.concat(records);
         } catch (err) {
             console.error(`[OCR] Failed on image ${i + 1}:`, err.message);
             lastError = err.message;
-            return [];
-        }
-    });
 
-    const results = await Promise.all(promises);
-    results.forEach(records => {
-        allRecords = allRecords.concat(records);
-    });
+            // If quota is exhausted, skip remaining images — they'll all fail too
+            if (err.isQuotaError) {
+                quotaExhausted = true;
+                break;
+            }
+        }
+    }
 
     if (allRecords.length === 0) {
+        if (quotaExhausted) {
+            throw new Error('Gemini API quota exhausted. Please enable billing at ai.google.dev or wait for your daily limit to reset.');
+        }
         throw new Error(`No player data could be extracted. Details: ${lastError || 'Unknown error'}`);
     }
 
@@ -69,7 +78,16 @@ async function extractFromImage(base64DataURI, imageIndex) {
         const errText = await resp.text().catch(() => '');
         let errBody = {};
         try { errBody = JSON.parse(errText); } catch(e) {}
-        throw new Error(errBody?.error || `OCR API error (${resp.status}): ${errText.substring(0, 50)}`);
+        const errMsg = errBody?.error || `OCR API error (${resp.status})`;
+
+        // Surface quota errors with a clean, actionable message
+        const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit');
+        if (isQuota) {
+            const err = new Error('Gemini API quota exceeded — enable billing or wait for daily reset.');
+            err.isQuotaError = true;
+            throw err;
+        }
+        throw new Error(errMsg);
     }
 
     const contentType = resp.headers.get('content-type');
@@ -80,6 +98,7 @@ async function extractFromImage(base64DataURI, imageIndex) {
 
     const data = await resp.json();
     const rawText = data?.text || '';
+    if (data?.model) console.log(`[OCR] Image ${imageIndex + 1} processed by model: ${data.model}`);
 
     let parsed = [];
     try {
