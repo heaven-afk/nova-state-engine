@@ -43,26 +43,25 @@ async function tryGemini(apiKey, image, mimeType, prompt) {
             if (resp.ok) {
                 const data = await resp.json();
                 const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                return { text, model: `gemini/${model}` };
+                return { ok: true, text, model: `gemini/${model}` };
             }
 
             const errBody = await resp.json().catch(() => ({}));
-            const errMsg = (errBody?.error?.message || '').toLowerCase();
-            const isQuota = resp.status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit');
+            const errMsg = errBody?.error?.message || `HTTP ${resp.status}`;
+            const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit');
 
             if (isQuota) {
-                // All Gemini models share the same account quota — skip remaining
                 console.log(`[OCR] Gemini quota hit on ${model}, skipping remaining Gemini models`);
-                return null;
+                return { ok: false, error: `Gemini quota: ${errMsg}` };
             }
 
-            // Non-quota error on this model — try next
-            console.log(`[OCR] Gemini ${model} failed (non-quota): ${errBody?.error?.message || resp.status}`);
+            console.log(`[OCR] Gemini ${model} failed: ${errMsg}`);
         } catch (err) {
             console.error(`[OCR] Gemini ${model} network error:`, err.message);
+            return { ok: false, error: `Gemini network: ${err.message}` };
         }
     }
-    return null;
+    return { ok: false, error: 'All Gemini models failed' };
 }
 
 /* ── Groq Provider (OpenAI-compatible) ────────────────── */
@@ -103,24 +102,27 @@ async function tryGroq(apiKey, image, mimeType, prompt) {
             if (resp.ok) {
                 const data = await resp.json();
                 const text = data?.choices?.[0]?.message?.content || '';
-                return { text, model: `groq/${model}` };
+                return { ok: true, text, model: `groq/${model}` };
             }
 
             const errBody = await resp.json().catch(() => ({}));
-            const errMsg = (errBody?.error?.message || '').toLowerCase();
-            const isQuota = resp.status === 429 || errMsg.includes('rate limit') || errMsg.includes('quota');
+            const errMsg = errBody?.error?.message || `HTTP ${resp.status}`;
+            console.log(`[OCR] Groq ${model} failed: ${errMsg}`);
 
+            const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('quota');
             if (isQuota) {
-                console.log(`[OCR] Groq quota hit on ${model}, trying next model...`);
+                // Try next model
                 continue;
             }
 
-            console.log(`[OCR] Groq ${model} failed: ${errBody?.error?.message || resp.status}`);
+            // Non-quota error — return it for debugging
+            return { ok: false, error: `Groq ${model}: ${errMsg}` };
         } catch (err) {
             console.error(`[OCR] Groq ${model} network error:`, err.message);
+            return { ok: false, error: `Groq network: ${err.message}` };
         }
     }
-    return null;
+    return { ok: false, error: 'All Groq models rate-limited' };
 }
 
 /* ── Handler ──────────────────────────────────────────── */
@@ -134,7 +136,7 @@ export default async function handler(req, res) {
     const groqKey = process.env.GROQ_API_KEY;
 
     if (!geminiKey && !groqKey) {
-        return res.status(500).json({ error: 'No API keys configured. Set GEMINI_API_KEY or GROQ_API_KEY in Vercel.' });
+        return res.status(500).json({ error: 'No API keys configured. Set GEMINI_API_KEY or GROQ_API_KEY in Vercel env vars.' });
     }
 
     const { image, mimeType, prompt } = req.body;
@@ -142,27 +144,33 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing image or prompt.' });
     }
 
+    const errors = [];
+
     // 1. Try Gemini first (higher accuracy)
     if (geminiKey) {
         const result = await tryGemini(geminiKey, image, mimeType, prompt);
-        if (result) {
-            console.log(`[OCR] Success via ${result.model}`);
-            return res.status(200).json(result);
+        if (result.ok) {
+            return res.status(200).json({ text: result.text, model: result.model });
         }
+        errors.push(result.error);
+    } else {
+        errors.push('GEMINI_API_KEY not set');
     }
 
     // 2. Fall back to Groq
     if (groqKey) {
         console.log('[OCR] Falling back to Groq...');
         const result = await tryGroq(groqKey, image, mimeType, prompt);
-        if (result) {
-            console.log(`[OCR] Success via ${result.model}`);
-            return res.status(200).json(result);
+        if (result.ok) {
+            return res.status(200).json({ text: result.text, model: result.model });
         }
+        errors.push(result.error);
+    } else {
+        errors.push('GROQ_API_KEY not set');
     }
 
-    // 3. All providers exhausted
+    // 3. All providers exhausted — include detailed errors
     return res.status(429).json({
-        error: 'All OCR providers failed. Gemini and Groq quotas may be exhausted. Please wait a few minutes and try again.'
+        error: `All providers failed. ${errors.join(' | ')}`
     });
 }
