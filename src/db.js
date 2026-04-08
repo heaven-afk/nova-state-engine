@@ -129,7 +129,7 @@ export async function saveOCRRecords(lobbyId, records) {
             normalized_name: r.normalizedName,
             raw_kills: String(r.rawKills || '0'),
             normalized_kills: parseInt(r.normalizedKills) || 0,
-            team_slot: r.teamSlot === 'Unknown' ? null : parseInt(r.teamSlot) || null,
+            team_slot: r.teamSlot === 'Unknown' ? null : (parseInt(String(r.teamSlot).replace(/\D/g, '')) || null),
             confidence: r.confidence ?? 0.95,
             is_duplicate: r.isDuplicate || false
         });
@@ -180,7 +180,8 @@ export async function approveLobbyStats(weekId, dayId, lobbyId, players) {
         batch.set(ref, {
             week_id: weekId, day_id: dayId, lobby_id: lobbyId,
             player_ign: p.normalizedName || p.playerIgn,
-            kills: p.normalizedKills ?? p.kills ?? 0
+            kills: p.normalizedKills ?? p.kills ?? 0,
+            team_slot: p.teamSlot || null
         });
     });
     

@@ -8,12 +8,16 @@ import stringSimilarity from 'string-similarity';
 const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
 
 Extract every visible player entry. Each row shows a player IGN and their kill count.
+The screenshots also contain Team Numbers (e.g., 1, 2, 3...) next to the players.
 
 Return ONLY a JSON array. No explanation, no markdown, no code fences. Example:
-[{"name": "Nova|Shadow", "kills": 14}, {"name": "T1_Viper", "kills": 9}]
+[{"name": "Nova|Shadow", "kills": 14, "team": 1}, {"name": "T1_Viper", "kills": 9, "team": 1}]
 
 Rules:
 - Include ALL visible player rows
+- Extract the Team Number for each player:
+  - Max 4 players per team. If a team has more than 4, it is likely a misread.
+  - If a team number is missing/unclear, you can leave it out or return null for that player.
 - Player names may contain: letters, numbers, symbols like | . _ - [ ] > < ~
 - Kills are 0–40. If > 40, still include it
 - If you cannot read a name clearly, include your best guess
@@ -80,6 +84,11 @@ async function extractFromImage(base64DataURI, imageIndex) {
         try { errBody = JSON.parse(errText); } catch(e) {}
         const errMsg = errBody?.error || `OCR API error (${resp.status})`;
 
+        // Log key status if the server included it (helps debugging)
+        if (errBody?.keys) {
+            console.log('[OCR] API Key Status:', errBody.keys.join(' | '));
+        }
+
         // Pass through the server's actual error message for transparency
         const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('all ocr providers');
         if (isQuota) {
@@ -117,13 +126,15 @@ async function extractFromImage(base64DataURI, imageIndex) {
     return parsed.map(entry => {
         const kills = parseInt(entry.kills, 10);
         const conf = isNaN(kills) || kills > 40 ? 0.5 : 0.95;
+        const teamNum = entry.team ? `Team ${entry.team}` : 'Unknown';
+        
         return {
             sourceImage: `Image_${imageIndex + 1}`,
             rawPlayerName: entry.name || 'Unknown',
             normalizedName: (entry.name || '').trim(),
             rawKills: isNaN(kills) ? 0 : kills,
             normalizedKills: isNaN(kills) ? 0 : kills,
-            teamSlot: 'Unknown',
+            teamSlot: teamNum,
             confidence: conf,
             isDuplicate: false
         };

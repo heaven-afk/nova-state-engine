@@ -129,24 +129,81 @@
 
         function renderRecords(records) {
             const list = document.getElementById('records-list');
-            list.innerHTML = records.map(r => {
-                const confClass = r.confidence < 0.7 ? 'low-confidence' : '';
-                const dupClass = r.isDuplicate ? 'duplicate' : '';
-                return `<div class="ocr-record ${confClass} ${dupClass}" id="rec-${r.id}">
-                    <div class="data-item-content" style="flex:1;">
-                        <input type="text" class="form-input" value="${r.normalizedName}" data-id="${r.id}" data-field="name"
-                            style="background:transparent;border:1px solid var(--border-subtle);padding:8px 12px;margin-bottom:6px;font-weight:600;">
-                        <div class="flex items-center gap-sm">
-                            <span class="text-muted" style="font-size:0.78rem;">Kills:</span>
-                            <input type="number" class="form-input" value="${r.normalizedKills}" data-id="${r.id}" data-field="kills"
-                                style="background:transparent;border:1px solid var(--border-subtle);padding:6px 10px;width:70px;font-family:var(--font-heading);font-weight:700;">
-                            <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">${r.sourceImage}</span>
+            
+            // Group records by team slot with a 4-player limit
+            const groups = {};
+            const uncategorized = [];
+            const teamCounts = {};
+
+            records.forEach(r => {
+                const teamId = r.teamSlot;
+                const label = teamId ? `Team ${teamId}` : 'Uncategorized';
+                
+                if (teamId) {
+                    const count = teamCounts[teamId] || 0;
+                    if (count < 4) {
+                        if (!groups[label]) groups[label] = [];
+                        groups[label].push(r);
+                        teamCounts[teamId] = count + 1;
+                    } else {
+                        // Overflow to Uncategorized
+                        uncategorized.push(r);
+                    }
+                } else {
+                    uncategorized.push(r);
+                }
+            });
+
+            // Sort team names correctly
+            const teamKeys = Object.keys(groups).sort((a, b) => {
+                return a.localeCompare(b, undefined, { numeric: true });
+            });
+
+            // Put Uncategorized at the end
+            const allKeys = [...teamKeys];
+            if (uncategorized.length > 0) {
+                groups['Uncategorized'] = uncategorized;
+                allKeys.push('Uncategorized');
+            }
+
+            list.innerHTML = allKeys.map(groupName => {
+                const groupRecords = groups[groupName];
+                const isUncategorized = groupName === 'Uncategorized';
+                const headerColor = isUncategorized ? 'var(--accent-red)' : 'var(--primary)';
+                
+                const groupHtml = groupRecords.map(r => {
+                    const confClass = r.confidence < 0.7 ? 'low-confidence' : '';
+                    const dupClass = r.isDuplicate ? 'duplicate' : '';
+                    const uncClass = isUncategorized ? 'is-uncategorized' : '';
+                    
+                    return `<div class="ocr-record ${confClass} ${dupClass} ${uncClass}" id="rec-${r.id}" 
+                                 style="${isUncategorized ? 'border-left: 3px solid var(--accent-red);' : ''}">
+                        <div class="data-item-content" style="flex:1;">
+                            <input type="text" class="form-input" value="${r.normalizedName}" data-id="${r.id}" data-field="name"
+                                style="background:transparent;border:1px solid var(--border-subtle);padding:8px 12px;margin-bottom:6px;font-weight:600;">
+                            <div class="flex items-center gap-sm">
+                                <span class="text-muted" style="font-size:0.78rem;">Kills:</span>
+                                <input type="number" class="form-input" value="${r.normalizedKills}" data-id="${r.id}" data-field="kills"
+                                    style="background:transparent;border:1px solid var(--border-subtle);padding:6px 10px;width:70px;font-family:var(--font-heading);font-weight:700;">
+                                <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">${r.sourceImage}</span>
+                            </div>
+                        </div>
+                        <button class="btn-icon" onclick="window.deleteRecord('${r.id}')" style="color:var(--accent-red);">
+                            <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                        </button>
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="team-group card mb-md" id="group-${groupName.replace(/\s+/g, '-')}">
+                        <div class="card-header" style="background:rgba(255,255,255,0.03);padding:8px 16px;border-bottom:1px solid var(--border-subtle);">
+                            <h3 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;color:${headerColor};margin:0;">${groupName}</h3>
+                        </div>
+                        <div class="card-body flex flex-col gap-sm" style="padding:12px;">
+                            ${groupHtml}
                         </div>
                     </div>
-                    <button class="btn-icon" onclick="window.deleteRecord('${r.id}')" style="color:var(--accent-red);">
-                        <iconify-icon icon="lucide:trash-2"></iconify-icon>
-                    </button>
-                </div>`;
+                `;
             }).join('');
 
             // Inline edit handlers
@@ -182,7 +239,8 @@
             const records = await getOCRRecordsByLobby(lobbyId);
             const players = records.map(r => ({
                 normalizedName: r.normalizedName,
-                normalizedKills: r.normalizedKills
+                normalizedKills: r.normalizedKills,
+                teamSlot: r.teamSlot
             }));
 
             try {

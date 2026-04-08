@@ -1,9 +1,11 @@
 /**
  * /api/ocr — Vercel Serverless Proxy for Vision OCR
- * Tries Gemini first, falls back to Groq if quota is exhausted.
- * API keys stored as environment variables in Vercel:
- *   - GEMINI_API_KEY
- *   - GROQ_API_KEY
+ * 3-tier fallback: Gemini Key 1 → Gemini Key 2 → Groq
+ *
+ * Environment variables (set in Vercel dashboard + local .env):
+ *   - GEMINI_API_KEY      (primary)
+ *   - GEMINI_API_KEY_2    (backup — different project/account)
+ *   - GROQ_API_KEY        (final fallback)
  */
 
 export const config = {
@@ -22,7 +24,7 @@ const GEMINI_MODELS = [
     'gemini-2.0-flash-lite'
 ];
 
-async function tryGemini(apiKey, image, mimeType, prompt) {
+async function tryGeminiWithKey(apiKey, keyLabel, image, mimeType, prompt) {
     for (const model of GEMINI_MODELS) {
         try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -43,7 +45,7 @@ async function tryGemini(apiKey, image, mimeType, prompt) {
             if (resp.ok) {
                 const data = await resp.json();
                 const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                return { ok: true, text, model: `gemini/${model}` };
+                return { ok: true, text, model: `gemini/${model} (${keyLabel})` };
             }
 
             const errBody = await resp.json().catch(() => ({}));
@@ -51,29 +53,32 @@ async function tryGemini(apiKey, image, mimeType, prompt) {
             const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit');
 
             if (isQuota) {
-                console.log(`[OCR] Gemini quota hit on ${model}, skipping remaining Gemini models`);
-                return { ok: false, error: `Gemini quota: ${errMsg}` };
+                console.log(`[OCR] ${keyLabel} quota hit on ${model}, moving to next provider`);
+                return { ok: false, error: `${keyLabel} quota: ${errMsg}`, isQuota: true };
             }
 
-            console.log(`[OCR] Gemini ${model} failed: ${errMsg}`);
+            // Non-quota error on this model — try next model
+            console.log(`[OCR] ${keyLabel} ${model} failed: ${errMsg}`);
         } catch (err) {
-            console.error(`[OCR] Gemini ${model} network error:`, err.message);
-            return { ok: false, error: `Gemini network: ${err.message}` };
+            console.error(`[OCR] ${keyLabel} ${model} network error:`, err.message);
+            return { ok: false, error: `${keyLabel} network: ${err.message}`, isQuota: false };
         }
     }
-    return { ok: false, error: 'All Gemini models failed' };
+    return { ok: false, error: `All Gemini models failed for ${keyLabel}`, isQuota: false };
 }
 
 /* ── Groq Provider (OpenAI-compatible) ────────────────── */
 
 const GROQ_MODELS = [
-    'llama-3.2-90b-vision-preview',
-    'llama-3.2-11b-vision-preview'
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+    'meta-llama/llama-3.2-90b-vision',
+    'meta-llama/llama-3.2-11b-vision'
 ];
 
 async function tryGroq(apiKey, image, mimeType, prompt) {
     for (const model of GROQ_MODELS) {
         try {
+            console.log(`[OCR] Trying Groq model: ${model}...`);
             const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -111,18 +116,16 @@ async function tryGroq(apiKey, image, mimeType, prompt) {
 
             const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('quota');
             if (isQuota) {
-                // Try next model
-                continue;
+                continue; // Try next Groq model
             }
 
-            // Non-quota error — return it for debugging
             return { ok: false, error: `Groq ${model}: ${errMsg}` };
         } catch (err) {
             console.error(`[OCR] Groq ${model} network error:`, err.message);
             return { ok: false, error: `Groq network: ${err.message}` };
         }
     }
-    return { ok: false, error: 'All Groq models rate-limited' };
+    return { ok: false, error: 'All Groq models failed or were rate-limited' };
 }
 
 /* ── Handler ──────────────────────────────────────────── */
@@ -132,11 +135,23 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey1 = process.env.GEMINI_API_KEY;
+    const geminiKey2 = process.env.GEMINI_API_KEY_2;
     const groqKey = process.env.GROQ_API_KEY;
 
-    if (!geminiKey && !groqKey) {
-        return res.status(500).json({ error: 'No API keys configured. Set GEMINI_API_KEY or GROQ_API_KEY in Vercel env vars.' });
+    // ── Startup diagnostic: log which keys are detected ──
+    const keyStatus = [
+        geminiKey1 ? `✅ GEMINI_API_KEY (${geminiKey1.substring(0, 5)}...)` : '❌ GEMINI_API_KEY (not set)',
+        geminiKey2 ? `✅ GEMINI_API_KEY_2 (${geminiKey2.substring(0, 5)}...)` : '❌ GEMINI_API_KEY_2 (not set)',
+        groqKey    ? `✅ GROQ_API_KEY (${groqKey.substring(0, 5)}...)` : '❌ GROQ_API_KEY (not set)'
+    ];
+    console.log(`[OCR] Provider health check: ${keyStatus.join(' | ')}`);
+
+    if (!geminiKey1 && !geminiKey2 && !groqKey) {
+        return res.status(500).json({
+            error: 'No API keys configured. Set them in your .env or Vercel dashboard.',
+            keys: keyStatus
+        });
     }
 
     const { image, mimeType, prompt } = req.body;
@@ -146,18 +161,27 @@ export default async function handler(req, res) {
 
     const errors = [];
 
-    // 1. Try Gemini first (higher accuracy)
-    if (geminiKey) {
-        const result = await tryGemini(geminiKey, image, mimeType, prompt);
+    // ── Tier 1: Gemini Key 1 (primary) ──
+    if (geminiKey1) {
+        console.log(`[OCR] Attempting with Gemini Key 1...`);
+        const result = await tryGeminiWithKey(geminiKey1, 'Gemini-Key-1', image, mimeType, prompt);
         if (result.ok) {
             return res.status(200).json({ text: result.text, model: result.model });
         }
         errors.push(result.error);
-    } else {
-        errors.push('GEMINI_API_KEY not set');
     }
 
-    // 2. Fall back to Groq
+    // ── Tier 2: Gemini Key 2 (backup) ──
+    if (geminiKey2) {
+        console.log(`[OCR] Attempting with Gemini Key 2...`);
+        const result = await tryGeminiWithKey(geminiKey2, 'Gemini-Key-2', image, mimeType, prompt);
+        if (result.ok) {
+            return res.status(200).json({ text: result.text, model: result.model });
+        }
+        errors.push(result.error);
+    }
+
+    // ── Tier 3: Groq (final fallback) ──
     if (groqKey) {
         console.log('[OCR] Falling back to Groq...');
         const result = await tryGroq(groqKey, image, mimeType, prompt);
@@ -165,12 +189,11 @@ export default async function handler(req, res) {
             return res.status(200).json({ text: result.text, model: result.model });
         }
         errors.push(result.error);
-    } else {
-        errors.push('GROQ_API_KEY not set');
     }
 
-    // 3. All providers exhausted — include detailed errors
+    // ── All providers exhausted ──
     return res.status(429).json({
-        error: `All providers failed. ${errors.join(' | ')}`
+        error: `All providers failed. Details: ${errors.join(' | ')}`,
+        keys: keyStatus
     });
 }
