@@ -7,6 +7,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .studio-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+        @media (min-width: 1024px) {
+            .studio-layout { flex-direction: row; }
+        }
+        .theme-btn {
+            border: 1px solid var(--border-strong);
+            font-size: 0.8rem;
+            padding: 8px;
+        }
+        .theme-btn.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 191, 255, 0.1);
+            color: var(--accent-cyan);
+        }
+        
+        .preview-pane {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        #preview-scaler {
+            transform: scale(0.4);
+            transform-origin: top center;
+            width: 1080px;
+            transition: height 0.2s;
+        }
+        @media (min-width: 1400px) {
+            #preview-scaler { transform: scale(0.5); }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -30,7 +72,7 @@
             <header class="topbar">
                 <div class="topbar-left">
                     <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
-                    <h1 class="page-title">Exports</h1>
+                    <h1 class="page-title">Exports Studio</h1>
                 </div>
                 <div class="topbar-right">
                     <div class="user-profile"><div class="avatar">U</div><div class="user-info"><span class="user-name">User</span><span class="user-role">Member</span></div></div>
@@ -38,36 +80,100 @@
             </header>
 
             <main class="page-content">
-                <div class="form-group">
+                <div class="form-group mb-lg">
                     <label class="form-label">Select Week</label>
                     <select class="form-select" id="week-select"><option value="">Loading...</option></select>
                 </div>
 
-                <div class="flex flex-col gap-sm mt-md" id="export-actions" style="display:none;">
-                    <div class="card card-body">
-                        <div class="flex items-center gap-md mb-md">
-                            <iconify-icon icon="lucide:file-spreadsheet" style="font-size:1.5rem;color:var(--accent-cyan);"></iconify-icon>
-                            <div>
-                                <div class="font-bold">Weekly CSV Export</div>
-                                <div class="text-muted" style="font-size:0.82rem;">Download full weekly leaderboard as CSV</div>
+                <div id="studio-layout" class="studio-layout" style="display:none;">
+                    
+                    <div class="card card-body" style="flex: 1; min-width: 320px; max-width: 400px;">
+                        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; margin-bottom: 20px;">Design Tools</h2>
+
+                        <div class="form-group">
+                            <label class="form-label">Timeframe</label>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary flex-1" id="btn-tf-week" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">Weekly</button>
+                                <button class="btn btn-secondary flex-1" id="btn-tf-day">Daily</button>
                             </div>
                         </div>
-                        <button class="btn btn-primary btn-block" id="btn-csv">
-                            <iconify-icon icon="lucide:download"></iconify-icon> Export CSV
-                        </button>
+
+                        <div class="form-group" id="day-selector-group" style="display: none;">
+                            <label class="form-label">Select Day</label>
+                            <select class="form-select" id="day-select"><option value="">Select a day...</option></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Event Headline</label>
+                            <input type="text" class="form-input" id="input-event-name" value="NOVA STAT ENGINE" placeholder="e.g. Scrims Finals">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Subtitle</label>
+                            <input type="text" class="form-input" id="input-export-subtitle" placeholder="Will auto-update if left blank">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Custom Logo URL (Optional)</label>
+                            <input type="text" class="form-input" id="input-logo-url" placeholder="https://...">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="display:flex; justify-content:space-between;">
+                                <span>Players Picked</span>
+                                <span id="player-count-val">Top 10</span>
+                            </label>
+                            <input type="range" id="input-player-count" min="5" max="25" step="5" value="10" style="width:100%;">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Visual Theme</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <button class="btn theme-btn active" data-theme="nova">✨ Nova Default</button>
+                                <button class="btn theme-btn" data-theme="cyberpunk">🦾 Cyberpunk</button>
+                                <button class="btn theme-btn" data-theme="royal">👑 Royal Gold</button>
+                                <button class="btn theme-btn" data-theme="clean">📄 Clean Light</button>
+                                <button class="btn theme-btn" data-theme="outrun" style="grid-column: span 2;">🌆 Outrun Synthwave</button>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction:column; gap: 10px; margin-top: 30px;">
+                            <button class="btn btn-primary btn-block" id="btn-download-image"><iconify-icon icon="lucide:image-down" style="font-size:1.2rem;"></iconify-icon> Export Image</button>
+                            <button class="btn btn-secondary btn-block" id="btn-csv-new"><iconify-icon icon="lucide:file-spreadsheet" style="font-size:1.2rem;"></iconify-icon> Export CSV</button>
+                        </div>
                     </div>
 
-                    <div class="card card-body">
-                        <div class="flex items-center gap-md mb-md">
-                            <iconify-icon icon="lucide:image" style="font-size:1.5rem;color:var(--accent-purple);"></iconify-icon>
-                            <div>
-                                <div class="font-bold">Leaderboard Image</div>
-                                <div class="text-muted" style="font-size:0.82rem;">Generate a branded PNG for sharing</div>
+                    <div style="flex: 2; display:flex; flex-direction:column;">
+                        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; margin-bottom: 20px;">Live Preview</h2>
+                        <div class="preview-pane" id="preview-wrapper">
+                            
+                            <div id="preview-scaler">
+                                <div id="image-export-container">
+                                    <div id="export-header-wrapper" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:40px; padding-bottom:30px;">
+                                        <div style="display:flex; align-items:center; gap:20px;">
+                                            <div id="export-logo-box" style="width:80px; height:80px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-size:3rem; font-weight:700; overflow:hidden; flex-shrink:0;">
+                                                <span id="export-logo-text">N</span>
+                                                <img id="export-logo-img" src="" style="display:none; width:100%; height:100%; object-fit:cover;">
+                                            </div>
+                                            <div>
+                                                <h1 id="export-title" style="margin:0; font-weight:700; font-size:3.2rem; line-height:1;">NOVA STAT ENGINE</h1>
+                                                <h2 id="export-subtitle" style="margin:5px 0 0 0; font-size:1.8rem; font-weight:500;">Weekly Leaderboard</h2>
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div id="export-top-label" style="font-size:1.5rem; font-weight:600;">Top 10</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="export-list" style="display:flex; flex-direction:column; gap:15px;"></div>
+                                    
+                                    <div id="export-footer" style="margin-top:40px; text-align:center; font-size:1.2rem; padding-top:30px; font-weight:500;">
+                                        Generated by Nova Stat Engine
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
-                        <button class="btn btn-secondary btn-block" id="btn-image">
-                            <iconify-icon icon="lucide:image-down"></iconify-icon> Generate Image
-                        </button>
                     </div>
                 </div>
             </main>
@@ -84,37 +190,317 @@
 
     <script type="module">
         import { initApp, showToast } from '/src/router.js';
-        import { getAllWeeks } from '/src/db.js';
-        import { exportWeeklyCSV } from '/src/export-engine.js';
+        import { getAllWeeks, getDaysByWeek } from '/src/db.js';
+        import { getWeeklyLeaderboard, getDailyLeaderboard } from '/src/stats-engine.js';
+        import { exportWeeklyCSV, exportDailyCSV, exportLeaderboardImage } from '/src/export-engine.js';
 
-        await initApp('exports');
+        async function initStudio() {
+            await initApp('exports');
 
-        const select = document.getElementById('week-select');
-        const actions = document.getElementById('export-actions');
-        let selectedWeek = null;
+            let state = {
+                week: null,
+                day: null,
+                mode: 'weekly', // 'weekly' or 'daily'
+            playerCount: 10,
+            theme: 'nova',
+            customEventName: 'NOVA STAT ENGINE',
+            customSubtitle: '',
+            customLogo: '',
+            weeklyData: [],
+            dailyData: [],
+            daysList: []
+        };
+
+        const THEMES = {
+            nova: {
+                bg: 'linear-gradient(135deg, #0a0a0f, #150f24)',
+                color: '#ffffff',
+                headerBorder: '2px solid rgba(255,255,255,0.1)',
+                footerBorder: '1px solid rgba(255,255,255,0.1)',
+                logoBg: 'linear-gradient(135deg, #8a2be2, #00bfff)',
+                logoText: '#ffffff',
+                titleFont: "'Space Grotesk', sans-serif",
+                subtitleColor: '#00bfff',
+                itemBg: 'rgba(255,255,255,0.03)',
+                itemBorder: '1px solid rgba(255,255,255,0.05)',
+                valBg: 'rgba(0, 191, 255, 0.1)',
+                valBorder: '1px solid rgba(0, 191, 255, 0.3)',
+                valColor: '#00bfff',
+            },
+            cyberpunk: {
+                bg: '#050505',
+                color: '#ffffff',
+                headerBorder: '2px solid #ff007f',
+                footerBorder: '1px dashed #ff007f',
+                logoBg: '#ff007f',
+                logoText: '#050505',
+                titleFont: "monospace",
+                subtitleColor: '#00f3ff',
+                itemBg: '#0a0a0a',
+                itemBorder: '1px solid #333',
+                valBg: 'transparent',
+                valBorder: '1px solid #00f3ff',
+                valColor: '#00f3ff',
+            },
+            royal: {
+                bg: 'linear-gradient(135deg, #1a0b0b, #000000)',
+                color: '#fdfdfd',
+                headerBorder: '2px solid #d4af37',
+                footerBorder: '1px solid #d4af37',
+                logoBg: 'linear-gradient(135deg, #d4af37, #aa8022)',
+                logoText: '#000000',
+                titleFont: "'Times New Roman', serif",
+                subtitleColor: '#d4af37',
+                itemBg: 'rgba(212,175,55,0.05)',
+                itemBorder: '1px solid rgba(212,175,55,0.2)',
+                valBg: 'transparent',
+                valBorder: '1px solid #d4af37',
+                valColor: '#d4af37',
+            },
+            clean: {
+                bg: '#ffffff',
+                color: '#111111',
+                headerBorder: '2px solid #dddddd',
+                footerBorder: '1px solid #eeeeee',
+                logoBg: '#111111',
+                logoText: '#ffffff',
+                titleFont: "'Inter', sans-serif",
+                subtitleColor: '#555555',
+                itemBg: '#f9f9f9',
+                itemBorder: '1px solid #eaeaea',
+                valBg: '#111',
+                valBorder: '1px solid #111',
+                valColor: '#ffffff',
+            },
+            outrun: {
+                bg: 'linear-gradient(to bottom, #110022, #330033)',
+                color: '#00ffff',
+                headerBorder: '2px solid #ff00ff',
+                footerBorder: '1px solid #ff00ff',
+                logoBg: '#ff00ff',
+                logoText: '#110022',
+                titleFont: "'Space Grotesk', sans-serif",
+                subtitleColor: '#ff00ff',
+                itemBg: 'rgba(255,0,255,0.05)',
+                itemBorder: '1px solid rgba(0,255,255,0.5)',
+                valBg: 'transparent',
+                valBorder: '1px dotted #ff00ff',
+                valColor: '#ff00ff',
+            }
+        };
+
+        const selectWeek = document.getElementById('week-select');
+        const studio = document.getElementById('studio-layout');
+        const selectDay = document.getElementById('day-select');
+        const daySelectorGroup = document.getElementById('day-selector-group');
+        
+        const btnWeek = document.getElementById('btn-tf-week');
+        const btnDay = document.getElementById('btn-tf-day');
+        const iEvent = document.getElementById('input-event-name');
+        const iSubtitle = document.getElementById('input-export-subtitle');
+        const iLogo = document.getElementById('input-logo-url');
+        const iPlayers = document.getElementById('input-player-count');
+        const pCountVal = document.getElementById('player-count-val');
 
         const weeks = await getAllWeeks();
-        select.innerHTML = '<option value="">— Select a week —</option>' +
-            weeks.map(w => `<option value="${w.id}" data-name="${w.name}">${w.name}</option>`).join('');
+        selectWeek.innerHTML = '<option value="">— Select a week —</option>' + 
+            weeks.map(w => '<option value="' + w.id + '" data-name="' + w.name + '">' + w.name + '</option>').join('');
 
-        select.addEventListener('change', () => {
-            selectedWeek = select.value ? { id: select.value, name: select.options[select.selectedIndex].dataset.name } : null;
-            actions.style.display = selectedWeek ? 'flex' : 'none';
+        selectWeek.addEventListener('change', async () => {
+            if (!selectWeek.value) {
+                studio.style.display = 'none';
+                state.week = null;
+                return;
+            }
+            showToast('Loading data...', 'info');
+            state.week = { id: selectWeek.value, name: selectWeek.options[selectWeek.selectedIndex].dataset.name };
+            
+            state.daysList = await getDaysByWeek(state.week.id);
+            selectDay.innerHTML = '<option value="">— Select Day —</option>' + 
+                state.daysList.map(d => '<option value="' + d.id + '" data-n="' + d.day_number + '">Day ' + d.day_number + '</option>').join('');
+
+            state.weeklyData = await getWeeklyLeaderboard(state.week.id);
+            
+            studio.style.display = window.innerWidth >= 1024 ? 'flex' : 'flex';
+            if (state.mode === 'daily') setMode('weekly');
+            else renderPreview();
         });
 
-        document.getElementById('btn-csv').addEventListener('click', async () => {
-            if (!selectedWeek) return;
+        selectDay.addEventListener('change', async () => {
+            if (!selectDay.value) { state.day = null; return; }
+            state.day = { id: selectDay.value, num: selectDay.options[selectDay.selectedIndex].dataset.n };
+            state.dailyData = await getDailyLeaderboard(state.week.id, state.day.id);
+            renderPreview();
+        });
+
+        function setMode(mode) {
+            state.mode = mode;
+            if (mode === 'daily') {
+                btnDay.style.borderColor = 'var(--accent-cyan)'; btnDay.style.color = 'var(--accent-cyan)';
+                btnWeek.style.borderColor = 'var(--border-strong)'; btnWeek.style.color = 'var(--text-primary)';
+                daySelectorGroup.style.display = 'block';
+                if (!state.day && state.daysList.length > 0) {
+                    selectDay.value = state.daysList[0].id;
+                    selectDay.dispatchEvent(new Event('change'));
+                } else renderPreview();
+            } else {
+                btnWeek.style.borderColor = 'var(--accent-cyan)'; btnWeek.style.color = 'var(--accent-cyan)';
+                btnDay.style.borderColor = 'var(--border-strong)'; btnDay.style.color = 'var(--text-primary)';
+                daySelectorGroup.style.display = 'none';
+                renderPreview();
+            }
+        }
+        btnWeek.addEventListener('click', () => setMode('weekly'));
+        btnDay.addEventListener('click', () => setMode('daily'));
+
+        iEvent.addEventListener('input', () => { state.customEventName = iEvent.value; renderPreview(); });
+        iSubtitle.addEventListener('input', () => { state.customSubtitle = iSubtitle.value; renderPreview(); });
+        iLogo.addEventListener('input', () => { state.customLogo = iLogo.value; renderPreview(); });
+        iPlayers.addEventListener('input', () => { 
+            state.playerCount = parseInt(iPlayers.value); 
+            pCountVal.textContent = "Top " + state.playerCount;
+            renderPreview(); 
+        });
+
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.theme = btn.dataset.theme;
+                renderPreview();
+            });
+        });
+
+        function renderPreview() {
+            if (!state.week) return;
+
+            const t = THEMES[state.theme];
+            const isWeekly = state.mode === 'weekly';
+            const data = isWeekly ? state.weeklyData : state.dailyData;
+            const topSlice = data.slice(0, state.playerCount);
+
+            const autoSubtitle = isWeekly ? state.week.name : (state.day ? ('Day ' + state.day.num + ' Leaderboard') : 'Daily Leaderboard');
+            const sub = state.customSubtitle.trim() !== '' ? state.customSubtitle : autoSubtitle;
+            const title = state.customEventName.trim() !== '' ? state.customEventName : 'NOVA STAT ENGINE';
+
+            const box = document.getElementById('image-export-container');
+            box.style.background = t.bg;
+            box.style.color = t.color;
+            box.style.width = '1080px';
+            box.style.padding = '60px';
+            box.style.fontFamily = "'Inter', sans-serif";
+
+            document.getElementById('export-header-wrapper').style.borderBottom = t.headerBorder;
+            document.getElementById('export-logo-box').style.background = t.logoBg;
+            document.getElementById('export-logo-text').style.color = t.logoText;
+            document.getElementById('export-logo-text').style.fontFamily = t.titleFont;
+            
+            if (state.customLogo) {
+                document.getElementById('export-logo-img').src = state.customLogo;
+                document.getElementById('export-logo-img').style.display = 'block';
+                document.getElementById('export-logo-text').style.display = 'none';
+            } else {
+                document.getElementById('export-logo-img').style.display = 'none';
+                document.getElementById('export-logo-text').style.display = 'block';
+            }
+
+            document.getElementById('export-title').textContent = title;
+            document.getElementById('export-title').style.fontFamily = t.titleFont;
+            document.getElementById('export-subtitle').textContent = sub;
+            document.getElementById('export-subtitle').style.color = t.subtitleColor;
+            
+            document.getElementById('export-top-label').textContent = 'Top ' + state.playerCount;
+            document.getElementById('export-top-label').style.color = t.color;
+            document.getElementById('export-top-label').style.opacity = '0.7';
+
+            document.getElementById('export-footer').style.borderTop = t.footerBorder;
+            document.getElementById('export-footer').style.color = t.color;
+            document.getElementById('export-footer').style.opacity = '0.5';
+
+            const listEl = document.getElementById('export-list');
+            listEl.innerHTML = topSlice.map((p, i) => {
+                let rBg = 'transparent'; let rCol = t.color; let rBord = '1px solid transparent';
+                if (state.theme === 'nova' || state.theme === 'clean' || state.theme === 'royal') {
+                    if (i === 0) { rBg = 'rgba(255, 215, 0, 0.2)'; rCol = '#FFD700'; rBord = '1px solid #FFD700'; }
+                    else if (i === 1) { rBg = 'rgba(192, 192, 192, 0.2)'; rCol = '#C0C0C0'; rBord = '1px solid #C0C0C0'; }
+                    else if (i === 2) { rBg = 'rgba(205, 127, 50, 0.2)'; rCol = '#CD7F32'; rBord = '1px solid #CD7F32'; }
+                } else {
+                    if (i < 3) { rCol = t.subtitleColor; rBord = '1px solid ' + t.subtitleColor; }
+                }
+
+                let metricsHTML = '';
+                const valColor = state.theme === 'clean' ? t.color : t.valColor;
+                if (isWeekly) {
+                    metricsHTML = `
+                        <div style="font-size: 0.9rem; opacity: 0.6; text-transform: uppercase; font-weight: 600;">Days</div>
+                        <div style="font-size: 1.4rem; font-weight: 500;">${p.daysPlayed}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.6; text-transform: uppercase; font-weight: 600; margin-left: 20px;">Avg</div>
+                        <div style="font-size: 1.4rem; font-weight: 500;">${p.avgKillsPerDay}</div>
+                        <div style="background: ${t.valBg}; border: ${t.valBorder}; border-radius: 12px; padding: 10px 20px; margin-left:20px; text-align:center;">
+                            <div style="font-size: 0.8rem; color: ${t.valColor}; text-transform: uppercase; font-weight: 600;">Total</div>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: ${valColor}; font-family: ${t.titleFont};">${p.weeklyTotal}</div>
+                        </div>`;
+                } else {
+                    metricsHTML = `
+                        <div style="background: ${t.valBg}; border: ${t.valBorder}; border-radius: 12px; padding: 10px 30px; text-align:center;">
+                            <div style="font-size: 0.8rem; color: ${t.valColor}; text-transform: uppercase; font-weight: 600;">Kills</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: ${valColor}; font-family: ${t.titleFont};">${p.dailyTotal || p.kills || 0}</div>
+                        </div>`;
+                }
+
+                return `
+                <div style="background: ${t.itemBg}; border: ${t.itemBorder}; border-radius: 16px; padding: 20px 30px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 25px;">
+                        <div style="width: 50px; height: 50px; border-radius: 12px; background: ${rBg}; color: ${rCol}; border: ${rBord}; display: flex; align-items: center; justify-content: center; font-family: ${t.titleFont}; font-size: 1.5rem; font-weight: 700;">
+                            ${i + 1}
+                        </div>
+                        <div style="font-size: 1.8rem; font-weight: 600; font-family: ${t.titleFont};">${p.name || p.player_ign}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 20px; text-align: right;">
+                        ${metricsHTML}
+                    </div>
+                </div>`;
+            }).join('');
+
+            setTimeout(() => {
+                const h = box.getBoundingClientRect().height;
+                const scale = window.innerWidth >= 1400 ? 0.5 : 0.4;
+                document.getElementById('preview-scaler').style.height = (h * scale) + 'px';
+            }, 50);
+        }
+
+        document.getElementById('btn-csv-new').addEventListener('click', async () => {
+            if (!state.week) return;
             try {
-                await exportWeeklyCSV(selectedWeek.id, selectedWeek.name);
-                showToast('CSV exported!', 'success');
+                if (state.mode === 'weekly') {
+                    await exportWeeklyCSV(state.week.id, state.week.name);
+                } else if (state.mode === 'daily' && state.day) {
+                    await exportDailyCSV(state.week.id, state.day.id, 'Day_' + state.day.num);
+                }
+                showToast('CSV Export generated!', 'success');
             } catch (e) {
                 showToast('Export error: ' + e.message, 'error');
             }
         });
 
-        document.getElementById('btn-image').addEventListener('click', () => {
-            showToast('Image export coming in Phase 2', 'info');
+        document.getElementById('btn-download-image').addEventListener('click', async () => {
+            if (!state.week || (state.mode === 'daily' && !state.day)) {
+                showToast('Please verify your selection data is fetched.', 'warning');
+                return;
+            }
+            try {
+                showToast('Rendering high-res image...', 'info');
+                await new Promise(r => setTimeout(r, 100));
+                const el = document.getElementById('image-export-container');
+                await exportLeaderboardImage('image-export-container');
+                showToast('Image downloaded!', 'success');
+            } catch (e) {
+                showToast('Export error: ' + e.message, 'error');
+            }
         });
+    }
+
+    initStudio();
     </script>
 </body>
 </html>
