@@ -53,7 +53,18 @@
 <body>
     <div class="app-container">
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand"><div class="brand-logo">N</div><span class="brand-text">NOVA STAT ENGINE</span></div>
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g fill="var(--accent-primary)">
+                            <path d="M68 5C61 5 57 11 60 17L83 45C86 49 92 49 95 45L97 42C101 37 101 29 96 24L79 7C76 4 72 5 68 5Z" />
+                            <path d="M12 2C5 2 1 8 4 14L86 96C89 99 95 99 98 96L99 95C102 91 102 83 97 78L23 4C20 1 16 2 12 2Z" />
+                            <path d="M3 58C-1 63 -1 71 4 76L21 93C24 96 28 95 32 95C39 95 43 89 40 83L17 55C14 51 8 51 5 55L3 58Z" />
+                        </g>
+                    </svg>
+                </div>
+                <span class="brand-text">NOVA GAMING</span>
+            </div>
             <nav class="sidebar-nav">
                 <div class="nav-section">MAIN</div>
                 <a href="/" class="nav-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
@@ -151,13 +162,21 @@
                                 <div id="image-export-container">
                                     <div id="export-header-wrapper" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:40px; padding-bottom:30px;">
                                         <div style="display:flex; align-items:center; gap:20px;">
-                                            <div id="export-logo-box" style="width:80px; height:80px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-size:3rem; font-weight:700; overflow:hidden; flex-shrink:0;">
-                                                <span id="export-logo-text">N</span>
-                                                <img id="export-logo-img" src="" style="display:none; width:100%; height:100%; object-fit:cover;">
+                                            <div id="export-logo-box" style="width:100px; height:100px; display:flex; align-items:center; justify-content:center; flex-shrink:0; position:relative;">
+                                                <div id="export-logo-svg" style="width:100%; height:100%;">
+                                                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+                                                        <g id="export-logo-paths">
+                                                            <path d="M68 5C61 5 57 11 60 17L83 45C86 49 92 49 95 45L97 42C101 37 101 29 96 24L79 7C76 4 72 5 68 5Z" />
+                                                            <path d="M12 2C5 2 1 8 4 14L86 96C89 99 95 99 98 96L99 95C102 91 102 83 97 78L23 4C20 1 16 2 12 2Z" />
+                                                            <path d="M3 58C-1 63 -1 71 4 76L21 93C24 96 28 95 32 95C39 95 43 89 40 83L17 55C14 51 8 51 5 55L3 58Z" />
+                                                        </g>
+                                                    </svg>
+                                                </div>
+                                                <img id="export-logo-img" src="" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:20px;">
                                             </div>
                                             <div>
-                                                <h1 id="export-title" style="margin:0; font-weight:700; font-size:3.2rem; line-height:1;">NOVA STAT ENGINE</h1>
-                                                <h2 id="export-subtitle" style="margin:5px 0 0 0; font-size:1.8rem; font-weight:500;">Weekly Leaderboard</h2>
+                                                <h1 id="export-title" style="margin:0; font-weight:700; font-size:3.5rem; line-height:1; letter-spacing:-0.03em;">NOVA GAMING</h1>
+                                                <h2 id="export-subtitle" style="margin:8px 0 0 0; font-size:1.8rem; font-weight:500; opacity:0.9;">Weekly Leaderboard</h2>
                                             </div>
                                         </div>
                                         <div style="text-align:right;">
@@ -213,42 +232,42 @@
 
         const THEMES = {
             nova: {
-                bg: 'linear-gradient(135deg, #0a0a0f, #150f24)',
+                bg: 'linear-gradient(160deg, #05060a 0%, #0f111a 100%)',
                 color: '#ffffff',
-                headerBorder: '2px solid rgba(255,255,255,0.1)',
-                footerBorder: '1px solid rgba(255,255,255,0.1)',
-                logoBg: 'linear-gradient(135deg, #8a2be2, #00bfff)',
-                logoText: '#ffffff',
+                headerBorder: '2px solid rgba(108, 182, 4, 0.3)',
+                footerBorder: '1px solid rgba(108, 182, 4, 0.2)',
+                logoBg: 'transparent',
+                logoText: '#6cb604',
                 titleFont: "'Space Grotesk', sans-serif",
-                subtitleColor: '#00bfff',
+                subtitleColor: '#6cb604',
                 itemBg: 'rgba(255,255,255,0.03)',
-                itemBorder: '1px solid rgba(255,255,255,0.05)',
-                valBg: 'rgba(0, 191, 255, 0.1)',
-                valBorder: '1px solid rgba(0, 191, 255, 0.3)',
-                valColor: '#00bfff',
+                itemBorder: '1px solid rgba(108, 182, 4, 0.15)',
+                valBg: 'rgba(108, 182, 4, 0.1)',
+                valBorder: '1px solid rgba(108, 182, 4, 0.3)',
+                valColor: '#6cb604',
             },
             cyberpunk: {
                 bg: '#050505',
                 color: '#ffffff',
-                headerBorder: '2px solid #ff007f',
-                footerBorder: '1px dashed #ff007f',
-                logoBg: '#ff007f',
-                logoText: '#050505',
-                titleFont: "monospace",
+                headerBorder: '4px solid #00ff88',
+                footerBorder: '1px dashed #00ff88',
+                logoBg: 'transparent',
+                logoText: '#00ff88',
+                titleFont: "'Space Grotesk', sans-serif",
                 subtitleColor: '#00f3ff',
-                itemBg: '#0a0a0a',
+                itemBg: 'rgba(0, 0, 0, 0.8)',
                 itemBorder: '1px solid #333',
                 valBg: 'transparent',
-                valBorder: '1px solid #00f3ff',
+                valBorder: '2px solid #00f3ff',
                 valColor: '#00f3ff',
             },
             royal: {
-                bg: 'linear-gradient(135deg, #1a0b0b, #000000)',
+                bg: 'linear-gradient(135deg, #0f0a05 0%, #1a150a 100%)',
                 color: '#fdfdfd',
                 headerBorder: '2px solid #d4af37',
                 footerBorder: '1px solid #d4af37',
-                logoBg: 'linear-gradient(135deg, #d4af37, #aa8022)',
-                logoText: '#000000',
+                logoBg: 'transparent',
+                logoText: '#d4af37',
                 titleFont: "'Times New Roman', serif",
                 subtitleColor: '#d4af37',
                 itemBg: 'rgba(212,175,55,0.05)',
@@ -260,29 +279,29 @@
             clean: {
                 bg: '#ffffff',
                 color: '#111111',
-                headerBorder: '2px solid #dddddd',
-                footerBorder: '1px solid #eeeeee',
-                logoBg: '#111111',
-                logoText: '#ffffff',
+                headerBorder: '2px solid #eeeeee',
+                footerBorder: '1px solid #f5f5f5',
+                logoBg: 'transparent',
+                logoText: '#111111',
                 titleFont: "'Inter', sans-serif",
-                subtitleColor: '#555555',
-                itemBg: '#f9f9f9',
-                itemBorder: '1px solid #eaeaea',
-                valBg: '#111',
-                valBorder: '1px solid #111',
+                subtitleColor: '#666666',
+                itemBg: '#fbfbfb',
+                itemBorder: '1px solid #f0f0f0',
+                valBg: '#111111',
+                valBorder: '1px solid #111111',
                 valColor: '#ffffff',
             },
             outrun: {
-                bg: 'linear-gradient(to bottom, #110022, #330033)',
+                bg: 'linear-gradient(180deg, #110022 0%, #2a0033 100%)',
                 color: '#00ffff',
-                headerBorder: '2px solid #ff00ff',
+                headerBorder: '3px solid #ff00ff',
                 footerBorder: '1px solid #ff00ff',
-                logoBg: '#ff00ff',
-                logoText: '#110022',
+                logoBg: 'transparent',
+                logoText: '#ff00ff',
                 titleFont: "'Space Grotesk', sans-serif",
                 subtitleColor: '#ff00ff',
-                itemBg: 'rgba(255,0,255,0.05)',
-                itemBorder: '1px solid rgba(0,255,255,0.5)',
+                itemBg: 'rgba(255,0,255,0.03)',
+                itemBorder: '1px solid rgba(0,255,255,0.3)',
                 valBg: 'transparent',
                 valBorder: '1px dotted #ff00ff',
                 valColor: '#ff00ff',
@@ -392,16 +411,15 @@
 
             document.getElementById('export-header-wrapper').style.borderBottom = t.headerBorder;
             document.getElementById('export-logo-box').style.background = t.logoBg;
-            document.getElementById('export-logo-text').style.color = t.logoText;
-            document.getElementById('export-logo-text').style.fontFamily = t.titleFont;
+            document.getElementById('export-logo-paths').style.fill = t.logoText;
             
             if (state.customLogo) {
                 document.getElementById('export-logo-img').src = state.customLogo;
                 document.getElementById('export-logo-img').style.display = 'block';
-                document.getElementById('export-logo-text').style.display = 'none';
+                document.getElementById('export-logo-svg').style.display = 'none';
             } else {
                 document.getElementById('export-logo-img').style.display = 'none';
-                document.getElementById('export-logo-text').style.display = 'block';
+                document.getElementById('export-logo-svg').style.display = 'block';
             }
 
             document.getElementById('export-title').textContent = title;
