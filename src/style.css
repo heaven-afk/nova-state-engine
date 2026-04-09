@@ -60,6 +60,12 @@ html { -webkit-text-size-adjust: 100%; }
 body {
     font-family: var(--font-body);
     background: var(--bg-base);
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(108, 182, 4, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(157, 78, 221, 0.05) 0px, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
     color: var(--text-primary);
     line-height: 1.5;
     overflow-x: hidden;
@@ -137,9 +143,9 @@ input, select, textarea { font-family: var(--font-body); }
 .avatar {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 8px;
     background: var(--bg-elevated);
-    border: 2px solid var(--accent-primary);
+    border: 1px solid var(--accent-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -147,6 +153,7 @@ input, select, textarea { font-family: var(--font-body); }
     font-family: var(--font-heading);
     font-size: 0.85rem;
     flex-shrink: 0;
+    box-shadow: 0 0 10px var(--brand-glow);
 }
 
 .user-info { display: none; }
@@ -285,11 +292,18 @@ input, select, textarea { font-family: var(--font-body); }
 .card {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
+    border-top: 2px solid var(--border-strong);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: transform var(--transition), border-color var(--transition);
+    transition: all var(--transition);
+    box-shadow: var(--shadow-sm);
 }
-.card:hover { border-color: var(--border-strong); }
+.card:hover { 
+    border-color: var(--border-strong);
+    border-top-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
 .card-body { padding: var(--space-md); }
 .card-header {
     padding: var(--space-md);
@@ -319,25 +333,43 @@ input, select, textarea { font-family: var(--font-body); }
     padding: var(--space-md);
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    transition: transform var(--transition);
+    gap: var(--space-md);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.metric-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 .metric-card:active { transform: scale(0.98); }
 
 .metric-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     flex-shrink: 0;
+    position: relative;
+}
+
+.metric-icon::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    filter: blur(8px);
+    opacity: 0.3;
+    z-index: -1;
 }
 
 .metric-info { min-width: 0; }
-.metric-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
-.metric-value { font-size: 1.3rem; font-family: var(--font-heading); font-weight: 700; margin-top: 2px; }
+.metric-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.metric-value { font-size: 1.4rem; font-family: var(--font-heading); font-weight: 700; margin-top: 2px; letter-spacing: -0.01em; }
 
 /* ── DATA LIST (Mobile card-based alternative to tables) */
 .data-list {
@@ -354,10 +386,35 @@ input, select, textarea { font-family: var(--font-body); }
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    transition: background var(--transition);
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
     -webkit-tap-highlight-color: transparent;
 }
-.data-item:active { background: var(--bg-surface-hover); }
+
+.data-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent-primary);
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+.data-item:hover {
+    background: var(--bg-surface-hover);
+    transform: translateX(4px);
+    border-color: var(--border-strong);
+}
+
+.data-item:hover::before {
+    opacity: 1;
+}
+
+.data-item:active { transform: scale(0.98); }
 .data-item-clickable { cursor: pointer; }
 
 .data-item-rank {
@@ -659,23 +716,49 @@ input[type=range] {
     align-items: center;
     gap: var(--space-md);
     margin-bottom: var(--space-sm);
+    transition: all var(--transition);
+}
+.ocr-record:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-surface-hover);
+    transform: translateX(4px);
 }
 .ocr-record.low-confidence {
-    border-color: rgba(255, 165, 0, 0.3);
-    background: rgba(255, 165, 0, 0.05);
+    border-color: rgba(255, 165, 0, 0.4);
+    background: rgba(255, 165, 0, 0.08);
 }
 .ocr-record.duplicate {
-    border-color: rgba(255, 51, 102, 0.3);
-    background: rgba(255, 51, 102, 0.05);
+    border-color: rgba(255, 51, 102, 0.4);
+    background: rgba(255, 51, 102, 0.08);
+    opacity: 0.7;
+}
+
+.ocr-record .form-input {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+.ocr-record .form-input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 10px var(--brand-glow);
 }
 
 /* ── WEEK CARD ──────────────────────────────────────── */
 .week-card {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
+    border-top: 3px solid var(--border-strong);
     border-radius: var(--radius-lg);
     padding: var(--space-md);
-    transition: transform var(--transition), border-color var(--transition);
+    transition: all var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+.week-card:hover { 
+    transform: translateY(-4px); 
+    border-color: var(--border-strong); 
+    border-top-color: var(--accent-primary);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 .week-card:active { transform: scale(0.98); }
 .week-title { font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
