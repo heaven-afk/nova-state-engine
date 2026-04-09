@@ -446,11 +446,17 @@
                 </div>`;
             }).join('');
 
-            // RENDER LIST
+            // RENDER LIST (Broadcast style)
             const listEl = document.getElementById('export-list');
+            listEl.style.display = 'flex';
+            listEl.style.flexDirection = 'column';
+            listEl.style.gap = '2px'; // Tighter gap for "list" feel
+            
             listEl.innerHTML = listData.map((p, i) => {
                 const globalRank = i + 4;
                 const valColor = state.theme === 'clean' ? t.color : t.valColor;
+                const isEven = i % 2 === 0;
+                const rowBg = isEven ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.01)';
                 
                 let metricsHTML = isWeekly ? `
                     <div style="display:flex; align-items:center; gap:20px;">
@@ -466,10 +472,10 @@
                 `;
 
                 return `
-                <div style="background:${t.itemBg}; border:${t.itemBorder}; border-radius:20px; padding:15px 30px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(10px); clip-path:${t.clipPath || 'none'};">
+                <div style="background:${rowBg}; border-bottom:1px solid ${t.itemBorder}; padding:15px 30px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(10px); clip-path:${t.clipPath || 'none'};">
                     <div style="display:flex; align-items:center; gap:25px;">
-                        <div style="font-size:1.8rem; font-weight:800; opacity:0.2; width:40px;">${globalRank}</div>
-                        <div style="font-size:1.8rem; font-weight:700; text-transform:uppercase;">${p.name || p.player_ign}</div>
+                        <div style="font-size:1.8rem; font-weight:800; opacity:0.3; width:45px;">${globalRank}</div>
+                        <div style="font-size:1.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">${p.name || p.player_ign}</div>
                     </div>
                     ${metricsHTML}
                 </div>`;
