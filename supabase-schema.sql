@@ -118,3 +118,45 @@ CREATE INDEX IF NOT EXISTS idx_sessions_date ON scrims_sessions(date DESC);
 CREATE INDEX IF NOT EXISTS idx_results_session ON match_results(session_id);
 CREATE INDEX IF NOT EXISTS idx_stats_session ON player_stats(session_id);
 CREATE INDEX IF NOT EXISTS idx_stats_player ON player_stats(player_name);
+
+-- 7. point_system
+CREATE TABLE IF NOT EXISTS point_system (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  config JSONB NOT NULL,
+  updated_by UUID REFERENCES auth.users,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Insert default point system
+INSERT INTO point_system (config) VALUES ('{
+  "placement_points": {
+    "1": 50,
+    "2": 40,
+    "3": 30,
+    "4-9": 20,
+    "10-25": 10
+  },
+  "kill_points": 2
+}'::jsonb);
+
+-- 8. session_teams (daily slots)
+CREATE TABLE IF NOT EXISTS session_teams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES scrims_sessions ON DELETE CASCADE,
+  slot_number INT NOT NULL,
+  team_name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(session_id, slot_number)
+);
+
+ALTER TABLE point_system ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_teams ENABLE ROW LEVEL SECURITY;
+
+-- point_system policies
+CREATE POLICY "admin_read_points" ON point_system FOR SELECT USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
+CREATE POLICY "admin_insert_points" ON point_system FOR INSERT WITH CHECK (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
+
+-- session_teams policies
+CREATE POLICY "admin_read_session_teams" ON session_teams FOR SELECT USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner', 'mod')));
+CREATE POLICY "admin_insert_session_teams" ON session_teams FOR INSERT WITH CHECK (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
+CREATE POLICY "admin_delete_session_teams" ON session_teams FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));

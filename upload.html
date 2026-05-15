@@ -53,27 +53,33 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Target Lobby Number</label>
-                            <select class="form-select" id="inp-target-lobby">
-                                <option value="1">Lobby 1</option>
-                                <option value="2">Lobby 2</option>
-                                <option value="3">Lobby 3</option>
-                                <option value="4">Lobby 4</option>
-                                <option value="5">Lobby 5</option>
-                                <option value="6">Lobby 6</option>
-                                <option value="7">Lobby 7</option>
-                                <option value="8">Lobby 8</option>
-                                <option value="9">Lobby 9</option>
-                                <option value="10">Lobby 10</option>
-                            </select>
-                            <small class="text-muted" style="margin-top: 4px; display: block;">Select which lobby this upload is for.</small>
+                            <label class="form-label">Paste Today's Team Slots (numbered list)</label>
+                            <textarea class="form-input" id="inp-teams" rows="8" placeholder="1. 44 Regents&#10;2. Main Character OG&#10;3. Vox Mortis" required></textarea>
+                            <small class="text-muted" style="margin-top: 4px; display: block;">Paste the list of teams for this session. It will be parsed automatically.</small>
                         </div>
+                        <button class="btn btn-primary btn-block" type="submit" id="btn-create-session">
+                            <iconify-icon icon="lucide:check-circle"></iconify-icon> CREATE & ACTIVATE SESSION
+                        </button>
                     </form>
                 </div>
             </div>
 
+            <div id="active-session-banner" class="card mb-md hidden" style="border-top-color: var(--nova-green);">
+                <div class="card-body" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:0.8rem; color:var(--nova-green); font-weight:700;">ACTIVE SESSION</div>
+                        <div id="active-session-name" style="font-size:1.2rem; font-weight:700;"></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <select class="form-select" id="inp-target-lobby" style="margin-bottom:0; width:150px;">
+                            <!-- populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Upload Zone -->
-            <div class="card mb-md">
+            <div class="card mb-md hidden" id="upload-card">
                 <div class="card-body">
                     <div class="upload-zone" id="drop-zone">
                         <iconify-icon icon="lucide:image-plus"></iconify-icon>
@@ -111,7 +117,8 @@
     <script type="module">
         import { requireRole } from '/src/auth.js';
         import { injectLayout, showToast } from '/src/layout.js';
-        import { createSession, insertMatchResults, insertPlayerStats } from '/src/db.js';
+        import { createSession, insertMatchResults, insertPlayerStats, saveSessionTeams, getPointSystem } from '/src/db.js';
+        import { supabase } from '/src/supabase.js';
         import { runOCRExtraction } from '/src/ocr-engine.js';
 
         (async () => {
@@ -120,6 +127,10 @@
             injectLayout('upload', 'UPLOAD RESULTS', profile);
 
             document.getElementById('inp-date').valueAsDate = new Date();
+
+            let activeDbSession = null;
+            let activeTeams = [];
+            let pointSystemConfig = null;
 
             let selectedFiles = [];
             let base64Images = [];
@@ -130,15 +141,64 @@
             const previewGrid = document.getElementById('preview-grid');
             const btnProcess = document.getElementById('btn-process');
             
-            dropZone.addEventListener('click', () => fileInput.click());
-            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-            dropZone.addEventListener('drop', e => {
+            // Session Setup Logic
+            document.getElementById('setup-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                dropZone.classList.remove('dragover');
-                handleFiles(e.dataTransfer.files);
+                const sessionName = document.getElementById('inp-session').value.trim();
+                const date = document.getElementById('inp-date').value;
+                const lobbyCount = parseInt(document.getElementById('inp-lobbies').value);
+                const teamsText = document.getElementById('inp-teams').value;
+
+                if (!sessionName || !teamsText) return showToast('Please fill all fields', 'error');
+
+                const btn = document.getElementById('btn-create-session');
+                btn.disabled = true;
+                btn.innerHTML = 'CREATING...';
+
+                try {
+                    // Try to find exact match by name + date
+                    const { data: existing } = await supabase.from('scrims_sessions')
+                        .select('*').eq('session_name', sessionName).eq('date', date).maybeSingle();
+                    
+                    if (existing) {
+                        activeDbSession = existing;
+                        // Fetch existing teams
+                        const { data: tData } = await supabase.from('session_teams').select('*').eq('session_id', activeDbSession.id).order('slot_number');
+                        activeTeams = tData || [];
+                    } else {
+                        activeDbSession = await createSession(sessionName, date, lobbyCount, profile.id);
+                        
+                        // Parse teams
+                        const lines = teamsText.split('\n').map(l => l.trim()).filter(l => l);
+                        activeTeams = lines.map((l, i) => {
+                            // Strip numbering like "1. ", "1)", "1- "
+                            const name = l.replace(/^\d+[\.\)\-]\s*/, '').trim();
+                            return { session_id: activeDbSession.id, slot_number: i+1, team_name: name };
+                        });
+                        await saveSessionTeams(activeTeams);
+                    }
+
+                    pointSystemConfig = await getPointSystem();
+
+                    // Update UI
+                    document.getElementById('setup-form').parentElement.parentElement.classList.add('hidden'); // Hide setup card
+                    document.getElementById('active-session-banner').classList.remove('hidden');
+                    document.getElementById('upload-card').classList.remove('hidden');
+                    document.getElementById('active-session-name').textContent = activeDbSession.session_name;
+                    
+                    const lobbySelect = document.getElementById('inp-target-lobby');
+                    lobbySelect.innerHTML = Array.from({length: activeDbSession.lobby_count}, (_, i) => `<option value="${i+1}">Lobby ${i+1}</option>`).join('');
+
+                    showToast('Session Active! Ready for uploads.', 'success');
+                } catch(err) {
+                    showToast('Failed to create session: ' + err.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<iconify-icon icon="lucide:check-circle"></iconify-icon> CREATE & ACTIVATE SESSION';
+                }
             });
-            fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+            dropZone.addEventListener('click', () => fileInput.click());
 
             function handleFiles(files) {
                 const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 20);
@@ -203,6 +263,46 @@
                 }
             });
 
+            function similarity(s1, s2) {
+                let longer = s1, shorter = s2;
+                if (s1.length < s2.length) { longer = s2; shorter = s1; }
+                const longerLength = longer.length;
+                if (longerLength === 0) return 1.0;
+                const costs = [];
+                for (let i = 0; i <= longerLength; i++) {
+                    let lastValue = i;
+                    for (let j = 0; j <= shorter.length; j++) {
+                        if (i === 0) costs[j] = j;
+                        else if (j > 0) {
+                            let newValue = costs[j - 1];
+                            if (longer.charAt(i - 1) !== shorter.charAt(j - 1)) {
+                                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                            }
+                            costs[j - 1] = lastValue;
+                            lastValue = newValue;
+                        }
+                    }
+                    if (i > 0) costs[shorter.length] = lastValue;
+                }
+                return (longerLength - costs[shorter.length]) / longerLength;
+            }
+
+            function fuzzyMatchTeam(ocrTeam) {
+                if (!ocrTeam) return { match: null, conf: 0 };
+                let bestMatch = null;
+                let highestScore = 0;
+                const lowerOcr = ocrTeam.toLowerCase().trim();
+                
+                activeTeams.forEach(t => {
+                    const score = similarity(lowerOcr, t.team_name.toLowerCase());
+                    if (score > highestScore) {
+                        highestScore = score;
+                        bestMatch = t.team_name;
+                    }
+                });
+                return { match: bestMatch, conf: highestScore };
+            }
+
             function renderOCRResults() {
                 const container = document.getElementById('ocr-results');
                 if (ocrData.length === 0) {
@@ -219,16 +319,37 @@
                 });
 
                 let html = '';
+                const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${t.team_name}">${t.team_name}</option>`).join('');
+
                 for (const [teamName, players] of Object.entries(teamMap)) {
-                    html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">${teamName}</div>`;
+                    html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">Grouped: ${teamName}</div>`;
                     
                     players.forEach(p => {
-                        const isLowConf = p.confidence < 0.8;
-                        const cardClass = isLowConf ? 'ocr-card low-conf' : 'ocr-card';
-                        const warnIcon = isLowConf ? '<iconify-icon icon="lucide:alert-triangle" class="text-red" style="margin-left:8px;" title="Low Confidence read"></iconify-icon>' : '';
+                        const { match, conf } = fuzzyMatchTeam(p.teamSlot);
+                        let teamSelectVal = "";
+                        let teamClass = "";
+                        let warnIcon = "";
+                        
+                        if (conf >= 0.8) {
+                            teamSelectVal = match;
+                            teamClass = "ocr-card"; // Green implicit
+                        } else if (conf > 0.4) {
+                            teamSelectVal = match;
+                            teamClass = "ocr-card low-conf"; // Amber/Warn
+                            warnIcon = '<iconify-icon icon="lucide:alert-circle" class="text-orange" style="margin-left:8px;" title="Low confidence team match"></iconify-icon>';
+                        } else {
+                            teamClass = "ocr-card low-conf"; // Red/Warn
+                            warnIcon = '<iconify-icon icon="lucide:alert-triangle" class="text-red" style="margin-left:8px;" title="No team match found"></iconify-icon>';
+                        }
+
+                        // Player name low conf
+                        if (p.confidence < 0.8) {
+                            teamClass = "ocr-card low-conf";
+                            warnIcon += '<iconify-icon icon="lucide:help-circle" class="text-orange" style="margin-left:8px;" title="Low confidence player name"></iconify-icon>';
+                        }
 
                         html += `
-                        <div class="${cardClass}" data-idx="${p._idx}">
+                        <div class="${teamClass}" data-idx="${p._idx}">
                             <div class="ocr-row">
                                 <div class="form-group" style="margin:0;">
                                     <label class="form-label" style="display:flex;align-items:center;">Player IGN ${warnIcon}</label>
@@ -239,9 +360,11 @@
                                         <label class="form-label">Kills</label>
                                         <input type="number" class="form-input inp-kills" value="${p.normalizedKills}" min="0">
                                     </div>
-                                    <div class="form-group" style="margin:0;flex:1;">
-                                        <label class="form-label">Team</label>
-                                        <input type="text" class="form-input inp-team" value="${p.teamSlot}">
+                                    <div class="form-group" style="margin:0;flex:2;">
+                                        <label class="form-label">Mapped Team</label>
+                                        <select class="form-select inp-team">
+                                            ${teamOptions.replace(`value="${teamSelectVal}"`, `value="${teamSelectVal}" selected`)}
+                                        </select>
                                     </div>
                                     <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
                                 </div>
@@ -263,6 +386,8 @@
             document.getElementById('btn-add-row').addEventListener('click', () => {
                 const container = document.getElementById('ocr-results');
                 const newIdx = Date.now();
+                const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${t.team_name}">${t.team_name}</option>`).join('');
+                
                 const html = `
                 <div class="ocr-card" data-idx="${newIdx}">
                     <div class="ocr-row">
@@ -275,9 +400,9 @@
                                 <label class="form-label">Kills</label>
                                 <input type="number" class="form-input inp-kills" value="0" min="0">
                             </div>
-                            <div class="form-group" style="margin:0;flex:1;">
-                                <label class="form-label">Team</label>
-                                <input type="text" class="form-input inp-team" placeholder="Team X">
+                            <div class="form-group" style="margin:0;flex:2;">
+                                <label class="form-label">Mapped Team</label>
+                                <select class="form-select inp-team">${teamOptions}</select>
                             </div>
                             <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
                         </div>
@@ -287,13 +412,24 @@
                 container.querySelector('.btn-del-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
             });
 
-            document.getElementById('btn-save').addEventListener('click', async () => {
-                const sessionName = document.getElementById('inp-session').value.trim();
-                const date = document.getElementById('inp-date').value;
-                const lobbyCount = parseInt(document.getElementById('inp-lobbies').value);
-                const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
+            function calculatePoints(placement, kills, pointSystem) {
+                if (!pointSystem) return kills * 2;
+                const { placement_points, kill_points } = pointSystem;
                 
-                if (!sessionName || !date) { showToast('Complete session setup above', 'error'); return; }
+                let placementPts = 0;
+                if (placement === 1) placementPts = placement_points["1"] || 0;
+                else if (placement === 2) placementPts = placement_points["2"] || 0;
+                else if (placement === 3) placementPts = placement_points["3"] || 0;
+                else if (placement >= 4 && placement <= 9) placementPts = placement_points["4-9"] || 0;
+                else if (placement >= 10) placementPts = placement_points["10-25"] || 0;
+                
+                const killPts = kills * (kill_points || 2);
+                return placementPts + killPts;
+            }
+
+            document.getElementById('btn-save').addEventListener('click', async () => {
+                if (!activeDbSession) { showToast('No active session!', 'error'); return; }
+                const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
 
                 const cards = document.querySelectorAll('.ocr-card');
                 if (cards.length === 0) { showToast('No players to save', 'warning'); return; }
@@ -301,11 +437,14 @@
                 const finalData = [];
                 const teamMap = {}; // Aggregate team kills for match_results table
 
+                let missingTeam = false;
                 cards.forEach(card => {
                     const name = card.querySelector('.inp-ign').value.trim();
                     const kills = parseInt(card.querySelector('.inp-kills').value) || 0;
-                    const team = card.querySelector('.inp-team').value.trim() || 'Unknown Team';
+                    const team = card.querySelector('.inp-team').value;
+                    
                     if (!name) return;
+                    if (!team) { missingTeam = true; return; }
 
                     finalData.push({ player_name: name, kills, team_name: team, lobby_number: targetLobby });
 
@@ -313,6 +452,7 @@
                     teamMap[team].kills += kills;
                 });
 
+                if (missingTeam) { return showToast('Please assign a team to all players', 'error'); }
                 if (finalData.length === 0) { showToast('All player rows are empty', 'error'); return; }
 
                 const btn = document.getElementById('btn-save');
@@ -320,29 +460,15 @@
                 btn.innerHTML = '<span class="spin">⟳</span> SAVING...';
 
                 try {
-                    // 1. Check if session already exists, or create new
-                    const { supabase } = await import('/src/supabase.js');
-                    let dbSession;
-                    
-                    // Try to find exact match by name + date
-                    const { data: existing } = await supabase.from('scrims_sessions')
-                        .select('*').eq('session_name', sessionName).eq('date', date).maybeSingle();
-                    
-                    if (existing) {
-                        dbSession = existing;
-                    } else {
-                        dbSession = await createSession(sessionName, date, lobbyCount, profile.user.id);
-                    }
-
-                    // 2. Clear old data for THIS lobby (allow re-uploads)
+                    // 1. Clear old data for THIS lobby (allow re-uploads)
                     await supabase.from('player_stats')
-                        .delete().eq('session_id', dbSession.id).eq('lobby_number', targetLobby);
+                        .delete().eq('session_id', activeDbSession.id).eq('lobby_number', targetLobby);
                     await supabase.from('match_results')
-                        .delete().eq('session_id', dbSession.id).eq('lobby_number', targetLobby);
+                        .delete().eq('session_id', activeDbSession.id).eq('lobby_number', targetLobby);
 
-                    // 3. Save Players
+                    // 2. Save Players
                     const playersToInsert = finalData.map(p => ({
-                        session_id: dbSession.id,
+                        session_id: activeDbSession.id,
                         lobby_number: targetLobby,
                         player_name: p.player_name,
                         team_name: p.team_name,
@@ -350,17 +476,21 @@
                     }));
                     await insertPlayerStats(playersToInsert);
 
-                    // 4. Save Teams (Match Results)
-                    // Sort teams by kills for basic placement (points calc can happen later)
+                    // 3. Save Teams (Match Results)
+                    // Sort teams by kills to determine placement
                     const sortedTeams = Object.values(teamMap).sort((a, b) => b.kills - a.kills);
-                    const teamsToInsert = sortedTeams.map((t, i) => ({
-                        session_id: dbSession.id,
-                        lobby_number: targetLobby,
-                        team_name: t.team_name,
-                        kills: t.kills,
-                        placement: i + 1,
-                        points: Math.max(0, 15 - i) + t.kills // Simple dummy point calc: placement pts + kills
-                    }));
+                    const teamsToInsert = sortedTeams.map((t, i) => {
+                        const placement = i + 1;
+                        const points = calculatePoints(placement, t.kills, pointSystemConfig);
+                        return {
+                            session_id: activeDbSession.id,
+                            lobby_number: targetLobby,
+                            team_name: t.team_name,
+                            kills: t.kills,
+                            placement: placement,
+                            points: points
+                        };
+                    });
                     await insertMatchResults(teamsToInsert);
 
                     showToast(`Lobby ${targetLobby} saved successfully!`, 'success');

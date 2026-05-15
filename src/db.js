@@ -14,6 +14,39 @@ export async function createSession(sessionName, date, lobbyCount, userId) {
     return data;
 }
 
+export async function getSessionTeams(sessionId) {
+    const { data, error } = await supabase.from('session_teams')
+        .select('*').eq('session_id', sessionId).order('slot_number');
+    if (error) throw error;
+    return data || [];
+}
+
+export async function saveSessionTeams(teams) {
+    if (!teams || teams.length === 0) return;
+    const { error } = await supabase.from('session_teams').insert(teams);
+    if (error) throw error;
+}
+
+export async function getPointSystem() {
+    const { data, error } = await supabase.from('point_system')
+        .select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    if (error) throw error;
+    // Default fallback in case table is empty
+    if (!data) return {
+        placement_points: { "1": 50, "2": 40, "3": 30, "4-9": 20, "10-25": 10 },
+        kill_points: 2
+    };
+    return data.config;
+}
+
+export async function savePointSystem(config, userId) {
+    const { error } = await supabase.from('point_system').insert({
+        config, updated_by: userId
+    });
+    if (error) throw error;
+}
+
+
 export async function getAllSessions() {
     const { data, error } = await supabase.from('scrims_sessions')
         .select('*').order('date', { ascending: false });

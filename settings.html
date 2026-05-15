@@ -26,6 +26,22 @@
             </div>
 
             <div class="card mb-md">
+                <div class="card-header"><span class="card-title">POINT SYSTEM</span></div>
+                <div class="card-body">
+                    <div style="font-family:var(--font-data); font-size:0.9rem; margin-bottom:16px;">
+                        <strong>Current Configuration:</strong><br>
+                        <pre id="current-points-display" style="background:#111; padding:12px; border-radius:4px; border:1px solid #333; margin-top:8px; white-space:pre-wrap;">Loading...</pre>
+                    </div>
+                    <div class="form-group" id="point-edit-group" style="display:none;">
+                        <label class="form-label">Paste New Point System (Plain text)</label>
+                        <textarea class="form-input" id="inp-point-text" rows="8" placeholder="1st - 50pts&#10;2nd - 40pts&#10;3rd - 30pts&#10;4th-9th - 20pts&#10;10th-25th - 10pts&#10;Kill - 2pts"></textarea>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-edit-points">EDIT POINT SYSTEM</button>
+                    <button class="btn btn-primary" id="btn-save-points" style="display:none;">CONFIRM & SAVE</button>
+                </div>
+            </div>
+
+            <div class="card mb-md">
                 <div class="card-header"><span class="card-title">OCR CONFIGURATION</span></div>
                 <div class="card-body">
                     <div class="form-group">
@@ -37,7 +53,7 @@
                 </div>
             </div>
 
-            <div class="card" style="border-top-color: var(--alert-red);">
+            <div class="card" id="danger-zone-card" style="border-top-color: var(--alert-red); display:none;">
                 <div class="card-header"><span class="card-title text-red">DANGER ZONE</span></div>
                 <div class="card-body">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -57,11 +73,16 @@
         import { requireRole } from '/src/auth.js';
         import { injectLayout, showToast } from '/src/layout.js';
         import { supabase } from '/src/supabase.js';
+        import { getPointSystem, savePointSystem } from '/src/db.js';
 
         (async () => {
-            const profile = await requireRole('owner');
+            const profile = await requireRole('admin');
             if (!profile) return;
             injectLayout('settings', 'SETTINGS', profile);
+
+            if (profile.role === 'owner') {
+                document.getElementById('danger-zone-card').style.display = 'block';
+            }
 
             // Load settings from local storage
             const sense = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
@@ -71,6 +92,85 @@
                 const val = document.getElementById('inp-ocr-sense').value;
                 localStorage.setItem('nova_setting_ocr_sense', val);
                 showToast('OCR config saved', 'success');
+            });
+
+            // Point System Logic
+            async function loadPointSystem() {
+                try {
+                    const config = await getPointSystem();
+                    document.getElementById('current-points-display').textContent = JSON.stringify(config, null, 2);
+                } catch(e) {
+                    console.error(e);
+                    document.getElementById('current-points-display').textContent = "Failed to load.";
+                }
+            }
+            await loadPointSystem();
+
+            document.getElementById('btn-edit-points').addEventListener('click', () => {
+                document.getElementById('point-edit-group').style.display = 'block';
+                document.getElementById('btn-edit-points').style.display = 'none';
+                document.getElementById('btn-save-points').style.display = 'inline-block';
+            });
+
+            document.getElementById('btn-save-points').addEventListener('click', async () => {
+                const text = document.getElementById('inp-point-text').value;
+                if (!text) return showToast('Please enter a point system', 'error');
+
+                const lines = text.split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
+                const config = { placement_points: {}, kill_points: 0 };
+                
+                lines.forEach(line => {
+                    if (line.includes('kill')) {
+                        const match = line.match(/(\d+)/);
+                        if (match) config.kill_points = parseInt(match[1]);
+                    } else {
+                        // Regex to parse "1st - 50pts" or "4th-9th - 20pts"
+                        let placementMatch = line.match(/^(\d+)(?:st|nd|rd|th)?\s*(?:-|to)?\s*(\d+)?(?:st|nd|rd|th)?/);
+                        let ptsMatch = line.match(/-\s*(\d+)/) || line.match(/(\d+)\s*(?:pts|points)/);
+                        
+                        if (placementMatch && ptsMatch) {
+                            let key = placementMatch[1];
+                            if (placementMatch[2]) key += '-' + placementMatch[2];
+                            config.placement_points[key] = parseInt(ptsMatch[1] || ptsMatch[2]);
+                        }
+                    }
+                });
+
+                if (Object.keys(config.placement_points).length === 0) {
+                    return showToast('Could not parse point system format', 'error');
+                }
+
+                try {
+                    document.getElementById('btn-save-points').textContent = 'SAVING...';
+                    await savePointSystem(config, profile.id);
+                    
+                    // Recalculate existing matches
+                    const { data: results } = await supabase.from('match_results').select('*');
+                    if (results && results.length > 0) {
+                        const updates = results.map(r => {
+                            let placementPts = 0;
+                            if (r.placement === 1) placementPts = config.placement_points["1"] || 0;
+                            else if (r.placement === 2) placementPts = config.placement_points["2"] || 0;
+                            else if (r.placement === 3) placementPts = config.placement_points["3"] || 0;
+                            else if (r.placement >= 4 && r.placement <= 9) placementPts = config.placement_points["4-9"] || 0;
+                            else if (r.placement >= 10) placementPts = config.placement_points["10-25"] || 0;
+                            
+                            r.points = placementPts + ((r.kills || 0) * (config.kill_points || 2));
+                            return r;
+                        });
+                        await supabase.from('match_results').upsert(updates);
+                    }
+
+                    showToast('Point system updated & matches recalculated!', 'success');
+                    await loadPointSystem();
+                    
+                    document.getElementById('point-edit-group').style.display = 'none';
+                    document.getElementById('btn-edit-points').style.display = 'inline-block';
+                    document.getElementById('btn-save-points').style.display = 'none';
+                    document.getElementById('btn-save-points').textContent = 'CONFIRM & SAVE';
+                } catch(e) {
+                    showToast(e.message, 'error');
+                }
             });
 
             document.getElementById('btn-reset').addEventListener('click', async () => {
