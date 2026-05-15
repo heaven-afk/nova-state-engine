@@ -7,14 +7,20 @@
     <script type="module">
         import { getSession } from '/src/auth.js';
         (async () => {
+            const fallbackTimer = setTimeout(() => {
+                window.location.replace('/stats.html');
+            }, 3000);
+
             try {
                 const session = await getSession();
+                clearTimeout(fallbackTimer);
                 if (session) {
                     window.location.replace('/dashboard.html');
                 } else {
                     window.location.replace('/stats.html');
                 }
             } catch (e) {
+                clearTimeout(fallbackTimer);
                 window.location.replace('/stats.html');
             }
         })();
