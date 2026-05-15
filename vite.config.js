@@ -15,7 +15,8 @@ export default defineConfig({
         upload:       resolve(__dirname, 'upload.html'),
         gfx:          resolve(__dirname, 'gfx.html'),
         users:        resolve(__dirname, 'users.html'),
-        settings:     resolve(__dirname, 'settings.html')
+        settings:     resolve(__dirname, 'settings.html'),
+        profile:      resolve(__dirname, 'profile.html')
       }
     }
   }

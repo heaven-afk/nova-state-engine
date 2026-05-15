@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Setup — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .profile-card {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px;
+            background: #0F0F0F;
+            border: 0.5px solid rgba(108,182,4,0.20);
+            border-top: 2px solid #6CB604;
+            border-radius: 4px;
+            padding: 40px 32px;
+        }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo-area h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #6CB604;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+        }
+        .logo-area p {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-card">
+        <div class="logo-area">
+            <h1>NOVA GAMING NETWORK</h1>
+            <p>Complete Your Profile</p>
+        </div>
+
+        <div id="msg-error" class="card mb-md" style="background:rgba(255,76,0,0.1); border-color:rgba(255,76,0,0.3); color:#FF6B4A; padding:10px; font-size:0.85rem; display:none;"></div>
+        <div id="msg-success" class="card mb-md" style="background:rgba(108,182,4,0.1); border-color:rgba(108,182,4,0.3); color:#6CB604; padding:10px; font-size:0.85rem; display:none;"></div>
+
+        <form id="profile-form">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="inp-email" placeholder="you@nova.gg" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-input" id="inp-username" placeholder="Enter username" required minlength="3">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Set Password</label>
+                <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" class="form-input" id="inp-password-confirm" placeholder="••••••••" required minlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="btn-submit">
+                SAVE PROFILE
+            </button>
+        </form>
+    </div>
+
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script type="module">
+        import { supabase } from '/src/supabase.js';
+        import { getSession } from '/src/auth.js';
+
+        (async () => {
+            // Check if we have an active session (e.g. clicked invite link)
+            const session = await getSession();
+            if (session) {
+                document.getElementById('inp-email').value = session.user.email;
+                document.getElementById('inp-email').disabled = true;
+            }
+
+            document.getElementById('profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('inp-email').value.trim();
+                const username = document.getElementById('inp-username').value.trim();
+                const password = document.getElementById('inp-password').value;
+                const passwordConfirm = document.getElementById('inp-password-confirm').value;
+
+                const errBox = document.getElementById('msg-error');
+                const successBox = document.getElementById('msg-success');
+                errBox.style.display = 'none';
+                successBox.style.display = 'none';
+
+                if (password !== passwordConfirm) {
+                    errBox.textContent = "Passwords do not match.";
+                    errBox.style.display = 'block';
+                    return;
+                }
+
+                const btn = document.getElementById('btn-submit');
+                btn.disabled = true;
+                btn.textContent = 'SAVING...';
+
+                try {
+                    const currentSession = await getSession();
+                    
+                    if (currentSession) {
+                        // User is logged in (clicked invite link)
+                        // Update password and metadata (username)
+                        const { error } = await supabase.auth.updateUser({
+                            password: password,
+                            data: { username: username }
+                        });
+                        if (error) throw error;
+                        
+                        successBox.textContent = "Profile updated successfully! Redirecting to dashboard...";
+                        successBox.style.display = 'block';
+                        
+                        setTimeout(() => window.location.href = '/dashboard.html', 2000);
+                    } else {
+                        // Fresh sign up?
+                        const { data, error } = await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: {
+                                data: { username: username }
+                            }
+                        });
+                        if (error) throw error;
+                        
+                        successBox.textContent = "Sign up successful! Please check your email to confirm your account.";
+                        successBox.style.display = 'block';
+                    }
+                } catch (err) {
+                    errBox.textContent = err.message;
+                    errBox.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'SAVE PROFILE';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
