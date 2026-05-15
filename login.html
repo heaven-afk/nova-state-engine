@@ -81,7 +81,7 @@
             background: #0A0A0A;
             border: 0.5px solid rgba(108,182,4,0.20);
             color: #fff;
-            padding: 12px 14px;
+            padding: 12px 40px 12px 14px;
             border-radius: 4px;
             font-family: 'Barlow', sans-serif;
             font-size: 0.9rem;
@@ -183,9 +183,12 @@
                 <label class="form-label">Email Address</label>
                 <input type="email" class="form-input" id="inp-email" placeholder="you@nova.gg" required autocomplete="email">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
                 <label class="form-label">Password</label>
                 <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required autocomplete="current-password">
+                <button type="button" id="toggle-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; height: 30px;">
+                    <iconify-icon icon="lucide:eye" id="eye-icon"></iconify-icon>
+                </button>
             </div>
             <div class="forgot-link">
                 <a href="#" id="forgot-btn">Forgot password?</a>
@@ -233,10 +236,7 @@
 
             if (role === 'owner') window.location.href = '/users.html';
             else if (role === 'admin') window.location.href = '/upload.html';
-            else if (role === 'mod') window.location.href = '/dashboard.html';
-            else {
-                showError('Access Restricted. Contact equeszero@gmail.com to request access.');
-            }
+            else window.location.href = '/dashboard.html';
         }
 
         function showError(m) {
@@ -273,6 +273,17 @@
         }
 
         document.getElementById('auth-form').addEventListener('submit', handleEmailSignIn);
+        
+        const togglePassword = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('inp-password');
+        const eyeIcon = document.getElementById('eye-icon');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            eyeIcon.setAttribute('icon', type === 'password' ? 'lucide:eye' : 'lucide:eye-off');
+        });
+
         document.getElementById('btn-submit').addEventListener('click', (e) => {
             if (!document.getElementById('auth-form').reportValidity()) return;
             handleEmailSignIn(e);

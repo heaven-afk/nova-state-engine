@@ -68,13 +68,19 @@
                 <label class="form-label">Username</label>
                 <input type="text" class="form-input" id="inp-username" placeholder="Enter username" required minlength="3">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
                 <label class="form-label">Set Password</label>
                 <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required minlength="6">
+                <button type="button" class="toggle-password" data-target="inp-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; height: 30px;">
+                    <iconify-icon icon="lucide:eye"></iconify-icon>
+                </button>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
                 <label class="form-label">Confirm Password</label>
                 <input type="password" class="form-input" id="inp-password-confirm" placeholder="••••••••" required minlength="6">
+                <button type="button" class="toggle-password" data-target="inp-password-confirm" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; height: 30px;">
+                    <iconify-icon icon="lucide:eye"></iconify-icon>
+                </button>
             </div>
             <button type="submit" class="btn btn-primary btn-block" id="btn-submit">
                 SAVE PROFILE
@@ -94,6 +100,18 @@
                 document.getElementById('inp-email').value = session.user.email;
                 document.getElementById('inp-email').disabled = true;
             }
+
+            // Password toggle logic
+            document.querySelectorAll('.toggle-password').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const icon = btn.querySelector('iconify-icon');
+                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                    input.setAttribute('type', type);
+                    icon.setAttribute('icon', type === 'password' ? 'lucide:eye' : 'lucide:eye-off');
+                });
+            });
 
             document.getElementById('profile-form').addEventListener('submit', async (e) => {
                 e.preventDefault();

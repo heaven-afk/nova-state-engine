@@ -449,7 +449,7 @@ img, svg, canvas { max-width: 100%; }
     background: var(--bg-base);
     border: 0.5px solid var(--border-default);
     color: var(--text-primary);
-    padding: 12px 14px;
+    padding: 12px 40px 12px 14px;
     border-radius: var(--radius);
     font-family: var(--font-body);
     font-size: 0.9rem;
