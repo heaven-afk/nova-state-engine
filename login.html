@@ -170,12 +170,22 @@
             <button type="submit" class="btn-submit" id="btn-submit">
                 SIGN IN
             </button>
+
+            <div style="text-align:center; margin: 24px 0; position:relative;">
+                <hr style="border:none; border-top:0.5px solid rgba(255,255,255,0.1);">
+                <span style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:#0F0F0F; padding:0 10px; font-size:0.75rem; color:rgba(255,255,255,0.4);">OR</span>
+            </div>
+
+            <button type="button" class="btn-submit" id="btn-google" style="background:#fff; color:#0A0A0A; border:1px solid #ddd; margin-top:0;">
+                <iconify-icon icon="logos:google-icon"></iconify-icon> SIGN IN WITH GOOGLE
+            </button>
         </form>
     </div>
 
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script type="module">
         import { supabase } from '/src/supabase.js';
-        import { signIn, getSession, getUserRole, bootstrapOwner, resetPassword } from '/src/auth.js';
+        import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword } from '/src/auth.js';
 
         // If already logged in, redirect
         const session = await getSession();
@@ -235,6 +245,20 @@
                 showSuccess('Password reset email sent!');
             } catch (err) {
                 showError(err.message || 'Failed to send reset email.');
+            }
+        });
+
+        document.getElementById('btn-google').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-google');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spin">⟳</span> REDIRECTING...';
+            try {
+                await signInWithGoogle();
+            } catch (err) {
+                showError(err.message || 'Google Sign In failed.');
+                btn.disabled = false;
+                btn.innerHTML = '<iconify-icon icon="logos:google-icon"></iconify-icon> SIGN IN WITH GOOGLE';
             }
         });
     </script>
