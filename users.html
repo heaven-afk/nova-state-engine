@@ -9,6 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .modal-actions { display:flex; gap:12px; margin-top:24px; }
+        @media (max-width: 520px) {
+            .modal-actions { flex-direction: column-reverse; }
+            #btn-add-staff { width: 100%; }
+        }
+    </style>
 </head>
 <body>
     <div class="page-body">
@@ -63,7 +70,7 @@
                     <option value="owner">Owner (Full Access & User Management)</option>
                 </select>
             </div>
-            <div style="display:flex;gap:12px;margin-top:24px;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary flex" id="btn-cancel" style="flex:1;">CANCEL</button>
                 <button class="btn btn-primary flex" id="btn-save" style="flex:1;">GRANT ACCESS</button>
             </div>
@@ -114,11 +121,12 @@
                     });
                 } catch(e) {
                     console.error(e);
+                    showToast('Failed to load staff directory', 'error');
                 }
             }
 
             document.getElementById('btn-save').addEventListener('click', async () => {
-                const email = document.getElementById('inp-new-email').value.trim();
+                const email = document.getElementById('inp-new-email').value.trim().toLowerCase();
                 const role = document.getElementById('inp-new-role').value;
                 
                 if (!email) return showToast('Enter email', 'error');
@@ -128,15 +136,26 @@
                 btn.textContent = 'SAVING...';
 
                 try {
-                    // We insert the role based on email. User id will be null until they log in and a trigger links them,
-                    // or we use a server-side route. For MVP, we insert a role stub by email.
-                    // Wait, user_id is NOT NULL in schema. We need to create the user or wait for them.
-                    // To keep it simple: we use Supabase Auth admin API (via edge function) to invite, OR
-                    // for this rebuild, we can just insert without user_id if we alter schema, OR
-                    // we tell the owner the user must sign up first.
-                    
-                    showToast('To add staff, they must first sign in once. Then you can edit their role here.', 'info');
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) throw new Error('Session expired. Please sign in again.');
+
+                    const resp = await fetch('/api/staff', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ email, role })
+                    });
+
+                    const result = await resp.json().catch(() => ({}));
+                    if (!resp.ok) throw new Error(result.error || 'Failed to grant staff access');
+
+                    showToast(result.invited ? 'Invite sent and staff access granted' : 'Staff access granted', 'success');
+                    document.getElementById('inp-new-email').value = '';
+                    document.getElementById('inp-new-role').value = 'mod';
                     modal.classList.remove('show');
+                    await loadUsers();
                 } catch(e) {
                     showToast(e.message, 'error');
                 } finally {

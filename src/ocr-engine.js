@@ -83,14 +83,17 @@ async function extractFromImage(base64DataURI, imageIndex, authToken) {
     return parsed.map(entry => {
         const kills = parseInt(entry.kills, 10);
         const conf = isNaN(kills) || kills > 40 ? 0.5 : 0.95;
-        const teamNum = entry.team ? `Team ${entry.team}` : 'Unknown';
+        const teamValue = entry.team ?? entry.team_name ?? entry.teamName;
+        const teamLabel = typeof teamValue === 'number' || /^\d+$/.test(String(teamValue || '').trim())
+            ? `Team ${teamValue}`
+            : String(teamValue || 'Unknown').trim();
         
         return {
             sourceImage: `Image_${imageIndex + 1}`,
             normalizedName: (entry.name || '').trim(),
             rawKills: isNaN(kills) ? 0 : kills,
             normalizedKills: isNaN(kills) ? 0 : kills,
-            teamSlot: teamNum,
+            teamSlot: teamLabel,
             confidence: conf
         };
     }).filter(r => r.normalizedName.length > 0);

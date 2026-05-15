@@ -127,8 +127,9 @@ CREATE TABLE IF NOT EXISTS point_system (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Insert default point system
-INSERT INTO point_system (config) VALUES ('{
+-- Insert default point system once
+INSERT INTO point_system (config)
+SELECT '{
   "placement_points": {
     "1": 50,
     "2": 40,
@@ -137,7 +138,8 @@ INSERT INTO point_system (config) VALUES ('{
     "10-25": 10
   },
   "kill_points": 2
-}'::jsonb);
+}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM point_system);
 
 -- 8. session_teams (daily slots)
 CREATE TABLE IF NOT EXISTS session_teams (
@@ -160,3 +162,6 @@ CREATE POLICY "admin_insert_points" ON point_system FOR INSERT WITH CHECK (EXIST
 CREATE POLICY "admin_read_session_teams" ON session_teams FOR SELECT USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner', 'mod')));
 CREATE POLICY "admin_insert_session_teams" ON session_teams FOR INSERT WITH CHECK (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 CREATE POLICY "admin_delete_session_teams" ON session_teams FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
+
+CREATE INDEX IF NOT EXISTS idx_point_system_updated_at ON point_system(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_session_teams_session ON session_teams(session_id, slot_number);

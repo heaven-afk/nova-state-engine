@@ -117,6 +117,18 @@
         .gfx-row.rank-1 .gfx-rank { color: #FFD700; }
         .gfx-row.rank-2 .gfx-rank { color: #C0C0C0; }
         .gfx-row.rank-3 .gfx-rank { color: #CD7F32; }
+
+        @media (max-width: 768px) {
+            .studio-layout { gap: 16px; }
+            .panel-controls { flex-basis: auto; }
+            .preview-wrapper {
+                min-height: 280px;
+                padding: 14px;
+                align-items: flex-start;
+                justify-content: flex-start;
+            }
+            .panel-controls .btn { width: 100%; }
+        }
     </style>
 </head>
 <body>

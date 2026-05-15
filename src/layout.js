@@ -106,13 +106,23 @@ export function injectLayout(activePageId, pageTitle, profile) {
     const backdrop = document.getElementById('sidebar-backdrop');
     const menuBtn = document.getElementById('mobile-menu-toggle');
 
-    const closeSidebar = () => { sidebar.classList.remove('open'); backdrop.classList.remove('active'); };
+    const closeSidebar = () => {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    };
 
     menuBtn?.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        backdrop.classList.toggle('active');
+        const willOpen = !sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', willOpen);
+        backdrop.classList.toggle('active', willOpen);
+        document.body.classList.toggle('sidebar-open', willOpen);
     });
     backdrop?.addEventListener('click', closeSidebar);
+    sidebar?.querySelectorAll('.nav-item').forEach(link => link.addEventListener('click', closeSidebar));
+    window.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeSidebar();
+    });
 
     // Wire up sign out
     document.getElementById('btn-signout')?.addEventListener('click', () => signOut());

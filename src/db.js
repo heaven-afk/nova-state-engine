@@ -28,22 +28,60 @@ export async function saveSessionTeams(teams) {
 }
 
 export async function getPointSystem() {
+    const record = await getPointSystemRecord();
+    return record.config;
+}
+
+export async function getPointSystemRecord() {
     const { data, error } = await supabase.from('point_system')
         .select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle();
     if (error) throw error;
-    // Default fallback in case table is empty
+    // Default fallback in case table is empty.
     if (!data) return {
-        placement_points: { "1": 50, "2": 40, "3": 30, "4-9": 20, "10-25": 10 },
-        kill_points: 2
+        config: {
+            placement_points: { "1": 50, "2": 40, "3": 30, "4-9": 20, "10-25": 10 },
+            kill_points: 2
+        },
+        updated_by: null,
+        updated_at: null
     };
-    return data.config;
+    return data;
 }
 
 export async function savePointSystem(config, userId) {
-    const { error } = await supabase.from('point_system').insert({
+    const { data, error } = await supabase.from('point_system').insert({
         config, updated_by: userId
-    });
+    }).select().single();
     if (error) throw error;
+    return data;
+}
+
+export function calculatePoints(placement, kills, pointSystem) {
+    const placementPoints = pointSystem?.placement_points || {};
+    const killPoints = Number(pointSystem?.kill_points ?? 2);
+
+    let placementPts = 0;
+    if (placement === 1) placementPts = placementPoints["1"] || 0;
+    else if (placement === 2) placementPts = placementPoints["2"] || 0;
+    else if (placement === 3) placementPts = placementPoints["3"] || 0;
+    else if (placement >= 4 && placement <= 9) placementPts = placementPoints["4-9"] || 0;
+    else if (placement >= 10) placementPts = placementPoints["10-25"] || 0;
+
+    return placementPts + ((Number(kills) || 0) * killPoints);
+}
+
+export async function recalculateMatchResultsForPointSystem(config) {
+    const { data: results, error } = await supabase.from('match_results').select('*');
+    if (error) throw error;
+    if (!results || results.length === 0) return [];
+
+    const updates = results.map(result => ({
+        ...result,
+        points: calculatePoints(result.placement, result.kills, config)
+    }));
+    const { data, error: upsertError } = await supabase.from('match_results').upsert(updates).select();
+    if (upsertError) throw upsertError;
+    return data || [];
 }
 
 

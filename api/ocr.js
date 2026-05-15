@@ -10,14 +10,14 @@ export const config = {
 const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
 
 Extract every visible player entry. Each row shows a player IGN and their kill count.
-The screenshots also contain Team Numbers (e.g., 1, 2, 3...) next to the players.
+The screenshots may contain Team Names or Team Numbers (e.g., 1, 2, 3...) next to the players.
 
 Return ONLY a JSON array. No explanation, no markdown, no code fences. Example:
-[{"name": "Nova|Shadow", "kills": 14, "team": 1}, {"name": "T1_Viper", "kills": 9, "team": 1}]
+[{"name": "Nova|Shadow", "kills": 14, "team": "44 Regents"}, {"name": "T1_Viper", "kills": 9, "team": 1}]
 
 Rules:
 - Include ALL visible player rows
-- Extract the Team Number for each player:
+- Extract the team name for each player if visible. If only a team number/slot is visible, return that number:
   - Max 4 players per team. If a team has more than 4, it is likely a misread.
   - If a team number is missing/unclear, you can leave it out or return null for that player.
 - Player names may contain: letters, numbers, symbols like | . _ - [ ] > < ~

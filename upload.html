@@ -16,9 +16,33 @@
             background: var(--bg-card); border: 0.5px solid var(--border-default);
             border-radius: var(--radius); padding: 16px;
         }
+        .ocr-card.auto-conf { border-color: rgba(108, 182, 4, 0.45); background: rgba(108, 182, 4, 0.04); }
         .ocr-card.low-conf { border-color: rgba(255, 165, 0, 0.4); background: rgba(255, 165, 0, 0.05); }
+        .ocr-card.no-conf { border-color: rgba(255, 76, 0, 0.45); background: rgba(255, 76, 0, 0.06); }
         .ocr-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: center; }
-        @media (max-width: 600px) { .ocr-row { grid-template-columns: 1fr; } }
+        .slot-preview { max-height: 260px; overflow: auto; margin: 12px 0 16px; border: 0.5px solid var(--border-default); border-radius: var(--radius); }
+        .slot-preview-row { display: grid; grid-template-columns: 48px 1fr; gap: 10px; padding: 8px 12px; border-bottom: 0.5px solid var(--border-subtle); font-family: var(--font-data); font-weight: 700; }
+        .slot-preview-row:last-child { border-bottom: 0; }
+        .match-indicator { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-data); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+        .confirm-match { margin-top: 10px; font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+        @media (max-width: 600px) {
+            .upload-wrapper { max-width: none; }
+            .ocr-grid { gap: 12px; margin-top: 16px; }
+            .ocr-card { padding: 14px; }
+            .ocr-row { grid-template-columns: 1fr; gap: 12px; }
+            .ocr-row > div:last-child { flex-wrap: wrap; gap: 10px !important; }
+            .ocr-row > div:last-child .form-group { min-width: min(100%, 140px); }
+            .ocr-row > div:last-child .form-group:last-of-type { flex-basis: 100%; }
+            .btn-del-row { min-width: 44px; min-height: 44px; margin-top: 0 !important; margin-left: auto; }
+            .match-indicator { width: 100%; margin-top: 4px; justify-content: flex-start; }
+            .confirm-match { align-items: flex-start; line-height: 1.3; }
+            .slot-preview { max-height: 220px; }
+            #active-session-banner .card-body { flex-direction: column; align-items: stretch !important; gap: 12px; }
+            #active-session-banner .card-body > div:last-child { text-align: left !important; }
+            #inp-target-lobby { width: 100% !important; }
+            #ocr-container .section-header { flex-wrap: wrap; gap: 10px; }
+            #btn-add-row { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -57,8 +81,12 @@
                             <textarea class="form-input" id="inp-teams" rows="8" placeholder="1. 44 Regents&#10;2. Main Character OG&#10;3. Vox Mortis" required></textarea>
                             <small class="text-muted" style="margin-top: 4px; display: block;">Paste the list of teams for this session. It will be parsed automatically.</small>
                         </div>
+                        <div id="team-preview-panel" class="hidden">
+                            <label class="form-label">Parsed Team Slot Preview</label>
+                            <div class="slot-preview" id="team-preview-list"></div>
+                        </div>
                         <button class="btn btn-primary btn-block" type="submit" id="btn-create-session">
-                            <iconify-icon icon="lucide:check-circle"></iconify-icon> CREATE & ACTIVATE SESSION
+                            <iconify-icon icon="lucide:list-checks"></iconify-icon> PREVIEW TEAM SLOTS
                         </button>
                     </form>
                 </div>
@@ -117,7 +145,7 @@
     <script type="module">
         import { requireRole } from '/src/auth.js';
         import { injectLayout, showToast } from '/src/layout.js';
-        import { createSession, insertMatchResults, insertPlayerStats, saveSessionTeams, getPointSystem } from '/src/db.js';
+        import { createSession, insertMatchResults, insertPlayerStats, saveSessionTeams, getPointSystem, calculatePoints } from '/src/db.js';
         import { supabase } from '/src/supabase.js';
         import { runOCRExtraction } from '/src/ocr-engine.js';
 
@@ -135,11 +163,44 @@
             let selectedFiles = [];
             let base64Images = [];
             let ocrData = [];
+            let pendingParsedTeams = [];
+            let teamSlotsConfirmed = false;
 
             const dropZone = document.getElementById('drop-zone');
             const fileInput = document.getElementById('file-input');
             const previewGrid = document.getElementById('preview-grid');
             const btnProcess = document.getElementById('btn-process');
+
+            function escapeHTML(value) {
+                return String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[char]));
+            }
+
+            function parseTeamSlots(text) {
+                return text.split('\n')
+                    .map(line => line.trim())
+                    .filter(Boolean)
+                    .map((line, index) => ({
+                        slot_number: index + 1,
+                        team_name: line.replace(/^\d+[\s.)-]+/, '').trim()
+                    }))
+                    .filter(team => team.team_name.length > 0);
+            }
+
+            function renderTeamSlotPreview(teams) {
+                document.getElementById('team-preview-panel').classList.remove('hidden');
+                document.getElementById('team-preview-list').innerHTML = teams.map(team => `
+                    <div class="slot-preview-row">
+                        <span class="text-muted">#${team.slot_number}</span>
+                        <span>${escapeHTML(team.team_name)}</span>
+                    </div>
+                `).join('');
+            }
             
             // Session Setup Logic
             document.getElementById('setup-form').addEventListener('submit', async (e) => {
@@ -150,6 +211,20 @@
                 const teamsText = document.getElementById('inp-teams').value;
 
                 if (!sessionName || !teamsText) return showToast('Please fill all fields', 'error');
+
+                const parsedTeams = parseTeamSlots(teamsText);
+                if (parsedTeams.length === 0) return showToast('Could not parse any team slots', 'error');
+
+                const slotSignature = JSON.stringify(parsedTeams);
+                if (!teamSlotsConfirmed || JSON.stringify(pendingParsedTeams) !== slotSignature) {
+                    pendingParsedTeams = parsedTeams;
+                    teamSlotsConfirmed = true;
+                    renderTeamSlotPreview(parsedTeams);
+                    const btn = document.getElementById('btn-create-session');
+                    btn.innerHTML = '<iconify-icon icon="lucide:check-circle"></iconify-icon> CONFIRM SLOTS & ACTIVATE SESSION';
+                    showToast(`Preview ready: ${parsedTeams.length} team slots parsed`, 'success');
+                    return;
+                }
 
                 const btn = document.getElementById('btn-create-session');
                 btn.disabled = true;
@@ -166,15 +241,13 @@
                         const { data: tData } = await supabase.from('session_teams').select('*').eq('session_id', activeDbSession.id).order('slot_number');
                         activeTeams = tData || [];
                     } else {
-                        activeDbSession = await createSession(sessionName, date, lobbyCount, profile.id);
+                        activeDbSession = await createSession(sessionName, date, lobbyCount, profile.user.id);
                         
-                        // Parse teams
-                        const lines = teamsText.split('\n').map(l => l.trim()).filter(l => l);
-                        activeTeams = lines.map((l, i) => {
-                            // Strip numbering like "1. ", "1)", "1- "
-                            const name = l.replace(/^\d+[\.\)\-]\s*/, '').trim();
-                            return { session_id: activeDbSession.id, slot_number: i+1, team_name: name };
-                        });
+                        activeTeams = pendingParsedTeams.map(team => ({
+                            session_id: activeDbSession.id,
+                            slot_number: team.slot_number,
+                            team_name: team.team_name
+                        }));
                         await saveSessionTeams(activeTeams);
                     }
 
@@ -194,8 +267,15 @@
                     showToast('Failed to create session: ' + err.message, 'error');
                 } finally {
                     btn.disabled = false;
-                    btn.innerHTML = '<iconify-icon icon="lucide:check-circle"></iconify-icon> CREATE & ACTIVATE SESSION';
+                    btn.innerHTML = '<iconify-icon icon="lucide:list-checks"></iconify-icon> PREVIEW TEAM SLOTS';
                 }
+            });
+
+            document.getElementById('inp-teams').addEventListener('input', () => {
+                teamSlotsConfirmed = false;
+                pendingParsedTeams = [];
+                document.getElementById('team-preview-panel').classList.add('hidden');
+                document.getElementById('btn-create-session').innerHTML = '<iconify-icon icon="lucide:list-checks"></iconify-icon> PREVIEW TEAM SLOTS';
             });
 
             dropZone.addEventListener('click', () => fileInput.click());
@@ -288,7 +368,13 @@
             }
 
             function fuzzyMatchTeam(ocrTeam) {
-                if (!ocrTeam) return { match: null, conf: 0 };
+                if (!ocrTeam) return { match: null, conf: 0, status: 'red', label: 'No team read' };
+                const slotMatch = String(ocrTeam).trim().match(/^(?:team|slot)?\s*#?\s*(\d+)$/i);
+                if (slotMatch) {
+                    const slotTeam = activeTeams.find(t => Number(t.slot_number) === Number(slotMatch[0]));
+                    if (slotTeam) return { match: slotTeam.team_name, conf: 1, status: 'green', label: `Slot ${slotTeam.slot_number}` };
+                }
+
                 let bestMatch = null;
                 let highestScore = 0;
                 const lowerOcr = ocrTeam.toLowerCase().trim();
@@ -300,7 +386,9 @@
                         bestMatch = t.team_name;
                     }
                 });
-                return { match: bestMatch, conf: highestScore };
+                if (highestScore >= 0.8) return { match: bestMatch, conf: highestScore, status: 'green', label: `${Math.round(highestScore * 100)}% match` };
+                if (bestMatch) return { match: bestMatch, conf: highestScore, status: 'amber', label: `${Math.round(highestScore * 100)}% suggestion` };
+                return { match: null, conf: 0, status: 'red', label: 'No match' };
             }
 
             function renderOCRResults() {
@@ -319,41 +407,51 @@
                 });
 
                 let html = '';
-                const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${t.team_name}">${t.team_name}</option>`).join('');
+                const makeTeamOptions = selected => '<option value="">-- Select Team --</option>' + activeTeams.map(t => {
+                    const safeName = escapeHTML(t.team_name);
+                    const isSelected = t.team_name === selected ? ' selected' : '';
+                    return `<option value="${safeName}"${isSelected}>${safeName}</option>`;
+                }).join('');
 
                 for (const [teamName, players] of Object.entries(teamMap)) {
-                    html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">Grouped: ${teamName}</div>`;
+                    html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">Grouped: ${escapeHTML(teamName)}</div>`;
                     
                     players.forEach(p => {
-                        const { match, conf } = fuzzyMatchTeam(p.teamSlot);
-                        let teamSelectVal = "";
-                        let teamClass = "";
-                        let warnIcon = "";
+                        const matchResult = fuzzyMatchTeam(p.teamSlot);
+                        const teamSelectVal = matchResult.match || "";
+                        let teamClass = "ocr-card auto-conf";
+                        let indicatorClass = "text-green";
+                        let indicatorIcon = "lucide:check-circle-2";
+                        let confirmation = "";
                         
-                        if (conf >= 0.8) {
-                            teamSelectVal = match;
-                            teamClass = "ocr-card"; // Green implicit
-                        } else if (conf > 0.4) {
-                            teamSelectVal = match;
-                            teamClass = "ocr-card low-conf"; // Amber/Warn
-                            warnIcon = '<iconify-icon icon="lucide:alert-circle" class="text-orange" style="margin-left:8px;" title="Low confidence team match"></iconify-icon>';
-                        } else {
-                            teamClass = "ocr-card low-conf"; // Red/Warn
-                            warnIcon = '<iconify-icon icon="lucide:alert-triangle" class="text-red" style="margin-left:8px;" title="No team match found"></iconify-icon>';
+                        if (matchResult.status === 'amber') {
+                            teamClass = "ocr-card low-conf";
+                            indicatorClass = "text-gold";
+                            indicatorIcon = "lucide:alert-circle";
+                            confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm this suggested/corrected team mapping</label>';
+                        } else if (matchResult.status === 'red') {
+                            teamClass = "ocr-card no-conf";
+                            indicatorClass = "text-red";
+                            indicatorIcon = "lucide:alert-triangle";
+                            confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm selected team mapping</label>';
                         }
 
                         // Player name low conf
                         if (p.confidence < 0.8) {
                             teamClass = "ocr-card low-conf";
-                            warnIcon += '<iconify-icon icon="lucide:help-circle" class="text-orange" style="margin-left:8px;" title="Low confidence player name"></iconify-icon>';
                         }
 
                         html += `
-                        <div class="${teamClass}" data-idx="${p._idx}">
+                        <div class="${teamClass}" data-idx="${p._idx}" data-match-status="${matchResult.status}">
                             <div class="ocr-row">
                                 <div class="form-group" style="margin:0;">
-                                    <label class="form-label" style="display:flex;align-items:center;">Player IGN ${warnIcon}</label>
-                                    <input type="text" class="form-input inp-ign" value="${p.normalizedName}">
+                                    <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span>Player IGN</span>
+                                        <span class="match-indicator ${indicatorClass}">
+                                            <iconify-icon icon="${indicatorIcon}"></iconify-icon> ${escapeHTML(matchResult.label)}
+                                        </span>
+                                    </label>
+                                    <input type="text" class="form-input inp-ign" value="${escapeHTML(p.normalizedName)}">
                                 </div>
                                 <div style="display:flex;gap:12px;">
                                     <div class="form-group" style="margin:0;flex:1;">
@@ -363,8 +461,9 @@
                                     <div class="form-group" style="margin:0;flex:2;">
                                         <label class="form-label">Mapped Team</label>
                                         <select class="form-select inp-team">
-                                            ${teamOptions.replace(`value="${teamSelectVal}"`, `value="${teamSelectVal}" selected`)}
+                                            ${makeTeamOptions(teamSelectVal)}
                                         </select>
+                                        ${confirmation}
                                     </div>
                                     <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
                                 </div>
@@ -386,7 +485,7 @@
             document.getElementById('btn-add-row').addEventListener('click', () => {
                 const container = document.getElementById('ocr-results');
                 const newIdx = Date.now();
-                const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${t.team_name}">${t.team_name}</option>`).join('');
+                const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${escapeHTML(t.team_name)}">${escapeHTML(t.team_name)}</option>`).join('');
                 
                 const html = `
                 <div class="ocr-card" data-idx="${newIdx}">
@@ -412,21 +511,6 @@
                 container.querySelector('.btn-del-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
             });
 
-            function calculatePoints(placement, kills, pointSystem) {
-                if (!pointSystem) return kills * 2;
-                const { placement_points, kill_points } = pointSystem;
-                
-                let placementPts = 0;
-                if (placement === 1) placementPts = placement_points["1"] || 0;
-                else if (placement === 2) placementPts = placement_points["2"] || 0;
-                else if (placement === 3) placementPts = placement_points["3"] || 0;
-                else if (placement >= 4 && placement <= 9) placementPts = placement_points["4-9"] || 0;
-                else if (placement >= 10) placementPts = placement_points["10-25"] || 0;
-                
-                const killPts = kills * (kill_points || 2);
-                return placementPts + killPts;
-            }
-
             document.getElementById('btn-save').addEventListener('click', async () => {
                 if (!activeDbSession) { showToast('No active session!', 'error'); return; }
                 const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
@@ -438,13 +522,20 @@
                 const teamMap = {}; // Aggregate team kills for match_results table
 
                 let missingTeam = false;
+                let unconfirmedMatch = false;
                 cards.forEach(card => {
                     const name = card.querySelector('.inp-ign').value.trim();
                     const kills = parseInt(card.querySelector('.inp-kills').value) || 0;
                     const team = card.querySelector('.inp-team').value;
+                    const status = card.dataset.matchStatus;
+                    const confirmInput = card.querySelector('.inp-confirm-match');
                     
                     if (!name) return;
                     if (!team) { missingTeam = true; return; }
+                    if ((status === 'amber' || status === 'red') && !confirmInput?.checked) {
+                        unconfirmedMatch = true;
+                        return;
+                    }
 
                     finalData.push({ player_name: name, kills, team_name: team, lobby_number: targetLobby });
 
@@ -453,6 +544,7 @@
                 });
 
                 if (missingTeam) { return showToast('Please assign a team to all players', 'error'); }
+                if (unconfirmedMatch) { return showToast('Confirm every amber/red team mapping before saving', 'error'); }
                 if (finalData.length === 0) { showToast('All player rows are empty', 'error'); return; }
 
                 const btn = document.getElementById('btn-save');
