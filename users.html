@@ -49,30 +49,30 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Add User Modal -->
-    <div class="modal-overlay" id="modal-add">
-        <div class="modal-box">
-            <h3 class="modal-title">GRANT STAFF ACCESS</h3>
-            <div class="text-muted mb-md" style="font-size:0.8rem;">
-                Enter the exact email address. The user must sign in using this email to access their role.
-            </div>
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="inp-new-email" placeholder="user@nova.gg">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Role</label>
-                <select class="form-select" id="inp-new-role">
-                    <option value="mod">Moderator (Dashboard & Leaderboards)</option>
-                    <option value="admin">Administrator (+ OCR Uploads & GFX)</option>
-                    <option value="owner">Owner (Full Access & User Management)</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary flex" id="btn-cancel" style="flex:1;">CANCEL</button>
-                <button class="btn btn-primary flex" id="btn-save" style="flex:1;">GRANT ACCESS</button>
+        <!-- Add User Modal: kept inside page-body because injectLayout preserves only page-body content. -->
+        <div class="modal-overlay" id="modal-add">
+            <div class="modal-box">
+                <h3 class="modal-title">GRANT STAFF ACCESS</h3>
+                <div class="text-muted mb-md" style="font-size:0.8rem;">
+                    Enter the exact email address. The user must sign in using this email to access their role.
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="inp-new-email" placeholder="user@nova.gg">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" id="inp-new-role">
+                        <option value="mod">Moderator (Dashboard & Leaderboards)</option>
+                        <option value="admin">Administrator (+ OCR Uploads & GFX)</option>
+                        <option value="owner">Owner (Full Access & User Management)</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary flex" id="btn-cancel" style="flex:1;">CANCEL</button>
+                    <button class="btn btn-primary flex" id="btn-save" style="flex:1;">GRANT ACCESS</button>
+                </div>
             </div>
         </div>
     </div>
@@ -88,6 +88,10 @@
             injectLayout('users', 'USER MANAGEMENT', profile);
 
             const modal = document.getElementById('modal-add');
+            if (!modal) {
+                showToast('Staff modal failed to load. Refresh and try again.', 'error');
+                return;
+            }
             document.getElementById('btn-add-staff').addEventListener('click', () => modal.classList.add('show'));
             document.getElementById('btn-cancel').addEventListener('click', () => modal.classList.remove('show'));
 
