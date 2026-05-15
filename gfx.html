@@ -197,152 +197,154 @@
         import { getAllSessions, getMatchResults, getPlayerStats } from '/src/db.js';
         import html2canvas from 'html2canvas';
 
-        const profile = await requireRole('admin');
-        if (!profile) throw new Error('Unauthorized');
-        injectLayout('gfx', 'GFX STUDIO', profile);
+        (async () => {
+            const profile = await requireRole('admin');
+            if (!profile) return;
+            injectLayout('gfx', 'GFX STUDIO', profile);
 
-        let sessions = [];
-        let currentData = null;
+            let sessions = [];
+            let currentData = null;
 
-        const selectSession = document.getElementById('inp-session');
-        const selectSize = document.getElementById('inp-size');
-        const selectTemplate = document.getElementById('inp-template');
-        const inpTitle = document.getElementById('inp-title');
-        
-        const canvas = document.getElementById('gfx-canvas');
-        const rTitle = document.getElementById('r-title');
-        const rSubtitle = document.getElementById('r-subtitle');
-        const rDate = document.getElementById('r-date');
-        const rBody = document.getElementById('r-body');
-        const scaler = document.getElementById('preview-scaler');
+            const selectSession = document.getElementById('inp-session');
+            const selectSize = document.getElementById('inp-size');
+            const selectTemplate = document.getElementById('inp-template');
+            const inpTitle = document.getElementById('inp-title');
+            
+            const canvas = document.getElementById('gfx-canvas');
+            const rTitle = document.getElementById('r-title');
+            const rSubtitle = document.getElementById('r-subtitle');
+            const rDate = document.getElementById('r-date');
+            const rBody = document.getElementById('r-body');
+            const scaler = document.getElementById('preview-scaler');
 
-        // FontFace preload (critical for html2canvas)
-        async function preloadFonts() {
-            await document.fonts.ready;
-            console.log('Fonts preloaded.');
-        }
-
-        async function init() {
-            await preloadFonts();
-            sessions = await getAllSessions();
-            if (sessions.length > 0) {
-                selectSession.innerHTML = sessions.map(s => `<option value="${s.id}">${s.session_name}</option>`).join('');
-                await loadData(sessions[0].id);
+            // FontFace preload (critical for html2canvas)
+            async function preloadFonts() {
+                await document.fonts.ready;
+                console.log('Fonts preloaded.');
             }
-            updateScale();
-            window.addEventListener('resize', updateScale);
-        }
 
-        function updateScale() {
-            const wrapper = document.getElementById('preview-wrapper');
-            const [w, h] = selectSize.value.split('x').map(Number);
-            const scale = Math.min((wrapper.clientWidth - 48) / w, (wrapper.clientHeight - 48) / h);
-            scaler.style.transform = `scale(${scale})`;
-            wrapper.style.minHeight = `${h * scale + 48}px`;
-        }
-
-        async function loadData(sessionId) {
-            const session = sessions.find(s => s.id === sessionId);
-            if (!session) return;
-            
-            const [results, players] = await Promise.all([
-                getMatchResults(sessionId), getPlayerStats(sessionId)
-            ]);
-
-            // Aggregate teams
-            const teamMap = {};
-            results.forEach(r => {
-                if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, kills: 0, points: 0 };
-                teamMap[r.team_name].kills += r.kills;
-                teamMap[r.team_name].points += r.points;
-            });
-            
-            currentData = {
-                session,
-                teams: Object.values(teamMap).sort((a,b) => b.points - a.points),
-                players: players.slice(0, 10)
-            };
-            
-            renderPreview();
-        }
-
-        function renderPreview() {
-            if (!currentData) return;
-            
-            const [w, h] = selectSize.value.split('x').map(Number);
-            canvas.style.width = `${w}px`;
-            canvas.style.height = `${h}px`;
-            updateScale();
-
-            const t = selectTemplate.value;
-            rTitle.textContent = inpTitle.value || currentData.session.session_name || 'NOVA GAMING';
-            rDate.textContent = new Date(currentData.session.date).toLocaleDateString();
-
-            if (t === 't01') {
-                rSubtitle.textContent = 'TEAM STANDINGS';
-                const limit = h > 1080 ? 12 : 7;
-                rBody.innerHTML = currentData.teams.slice(0, limit).map((t, i) => `
-                    <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
-                        <div class="gfx-rank">${i+1}</div>
-                        <div class="gfx-team">${t.team_name}</div>
-                        <div class="gfx-kills">${t.kills} KILLS</div>
-                        <div class="gfx-pts">${t.points} PTS</div>
-                    </div>
-                `).join('');
-            } 
-            else if (t === 't02') {
-                rSubtitle.textContent = 'TOP FRAGGERS';
-                const limit = h > 1080 ? 12 : 7;
-                rBody.innerHTML = currentData.players.slice(0, limit).map((p, i) => `
-                    <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
-                        <div class="gfx-rank">${i+1}</div>
-                        <div class="gfx-team">${p.player_name} <span style="font-size:1.2rem;color:rgba(255,255,255,0.4);margin-left:12px;">${p.team_name}</span></div>
-                        <div class="gfx-pts" style="color:var(--nova-green);">${p.kills} KILLS</div>
-                    </div>
-                `).join('');
+            async function init() {
+                await preloadFonts();
+                sessions = await getAllSessions();
+                if (sessions.length > 0) {
+                    selectSession.innerHTML = sessions.map(s => `<option value="${s.id}">${s.session_name}</option>`).join('');
+                    await loadData(sessions[0].id);
+                }
+                updateScale();
+                window.addEventListener('resize', updateScale);
             }
-        }
 
-        selectSession.addEventListener('change', e => loadData(e.target.value));
-        selectSize.addEventListener('change', renderPreview);
-        selectTemplate.addEventListener('change', renderPreview);
-        inpTitle.addEventListener('input', renderPreview);
+            function updateScale() {
+                const wrapper = document.getElementById('preview-wrapper');
+                const [w, h] = selectSize.value.split('x').map(Number);
+                const scale = Math.min((wrapper.clientWidth - 48) / w, (wrapper.clientHeight - 48) / h);
+                scaler.style.transform = `scale(${scale})`;
+                wrapper.style.minHeight = `${h * scale + 48}px`;
+            }
 
-        document.getElementById('btn-export').addEventListener('click', async () => {
-            if (!currentData) return;
-            const btn = document.getElementById('btn-export');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spin">⟳</span> RENDERING...';
-            
-            try {
-                // Ensure full scale before capture
-                const target = document.getElementById('gfx-canvas');
-                const canvas = await html2canvas(target, {
-                    scale: 2, // Retina export
-                    useCORS: true,
-                    backgroundColor: '#0A0A0A',
-                    logging: false,
-                    onclone: (clonedDoc) => {
-                        const cl = clonedDoc.getElementById('gfx-canvas');
-                        cl.style.transform = 'none';
-                    }
+            async function loadData(sessionId) {
+                const session = sessions.find(s => s.id === sessionId);
+                if (!session) return;
+                
+                const [results, players] = await Promise.all([
+                    getMatchResults(sessionId), getPlayerStats(sessionId)
+                ]);
+
+                // Aggregate teams
+                const teamMap = {};
+                results.forEach(r => {
+                    if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, kills: 0, points: 0 };
+                    teamMap[r.team_name].kills += r.kills;
+                    teamMap[r.team_name].points += r.points;
                 });
                 
-                const link = document.createElement('a');
-                link.download = `Nova_GFX_${selectTemplate.value}_${currentData.session.date}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast('Export successful!', 'success');
-            } catch (err) {
-                console.error(err);
-                showToast('Failed to export image', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<iconify-icon icon="lucide:image-down"></iconify-icon> EXPORT PNG';
+                currentData = {
+                    session,
+                    teams: Object.values(teamMap).sort((a,b) => b.points - a.points),
+                    players: players.slice(0, 10)
+                };
+                
+                renderPreview();
             }
-        });
 
-        init();
+            function renderPreview() {
+                if (!currentData) return;
+                
+                const [w, h] = selectSize.value.split('x').map(Number);
+                canvas.style.width = `${w}px`;
+                canvas.style.height = `${h}px`;
+                updateScale();
+
+                const t = selectTemplate.value;
+                rTitle.textContent = inpTitle.value || currentData.session.session_name || 'NOVA GAMING';
+                rDate.textContent = new Date(currentData.session.date).toLocaleDateString();
+
+                if (t === 't01') {
+                    rSubtitle.textContent = 'TEAM STANDINGS';
+                    const limit = h > 1080 ? 12 : 7;
+                    rBody.innerHTML = currentData.teams.slice(0, limit).map((t, i) => `
+                        <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
+                            <div class="gfx-rank">${i+1}</div>
+                            <div class="gfx-team">${t.team_name}</div>
+                            <div class="gfx-kills">${t.kills} KILLS</div>
+                            <div class="gfx-pts">${t.points} PTS</div>
+                        </div>
+                    `).join('');
+                } 
+                else if (t === 't02') {
+                    rSubtitle.textContent = 'TOP FRAGGERS';
+                    const limit = h > 1080 ? 12 : 7;
+                    rBody.innerHTML = currentData.players.slice(0, limit).map((p, i) => `
+                        <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
+                            <div class="gfx-rank">${i+1}</div>
+                            <div class="gfx-team">${p.player_name} <span style="font-size:1.2rem;color:rgba(255,255,255,0.4);margin-left:12px;">${p.team_name}</span></div>
+                            <div class="gfx-pts" style="color:var(--nova-green);">${p.kills} KILLS</div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            selectSession.addEventListener('change', e => loadData(e.target.value));
+            selectSize.addEventListener('change', renderPreview);
+            selectTemplate.addEventListener('change', renderPreview);
+            inpTitle.addEventListener('input', renderPreview);
+
+            document.getElementById('btn-export').addEventListener('click', async () => {
+                if (!currentData) return;
+                const btn = document.getElementById('btn-export');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spin">⟳</span> RENDERING...';
+                
+                try {
+                    // Ensure full scale before capture
+                    const target = document.getElementById('gfx-canvas');
+                    const canvasRender = await html2canvas(target, {
+                        scale: 2, // Retina export
+                        useCORS: true,
+                        backgroundColor: '#0A0A0A',
+                        logging: false,
+                        onclone: (clonedDoc) => {
+                            const cl = clonedDoc.getElementById('gfx-canvas');
+                            cl.style.transform = 'none';
+                        }
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.download = `Nova_GFX_${selectTemplate.value}_${currentData.session.date}.png`;
+                    link.href = canvasRender.toDataURL('image/png');
+                    link.click();
+                    showToast('Export successful!', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Failed to export image', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<iconify-icon icon="lucide:image-down"></iconify-icon> EXPORT PNG';
+                }
+            });
+
+            await init();
+        })();
     </script>
 </body>
 </html>

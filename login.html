@@ -187,11 +187,12 @@
         import { supabase } from '/src/supabase.js';
         import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword } from '/src/auth.js';
 
-        // If already logged in, redirect
-        const session = await getSession();
-        if (session) {
-            await redirectByRole();
-        }
+        (async () => {
+            const session = await getSession();
+            if (session) {
+                await redirectByRole();
+            }
+        })();
 
         async function redirectByRole() {
             let role = await getUserRole();

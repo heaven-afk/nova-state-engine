@@ -28,9 +28,11 @@
         import { requireRole } from '/src/auth.js';
         import { injectLayout } from '/src/layout.js';
 
-        const profile = await requireRole('mod');
-        if (!profile) throw new Error('Unauthorized');
-        injectLayout('weekly', 'WEEKLY STATS', profile);
+        (async () => {
+            const profile = await requireRole('mod');
+            if (!profile) return;
+            injectLayout('weekly', 'WEEKLY STATS', profile);
+        })();
     </script>
 </body>
 </html>

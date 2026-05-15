@@ -67,7 +67,7 @@
                 <div class="table-wrap">
                     <table class="data-table" id="kills-table">
                         <thead>
-                            <tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th></tr>
+                            <tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr>
                         </thead>
                         <tbody id="kills-tbody">
                             <tr><td colspan="4" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
@@ -83,51 +83,53 @@
         import { injectLayout } from '/src/layout.js';
         import { getDashboardStats, getTopFraggers } from '/src/db.js';
 
-        const profile = await requireRole('mod');
-        if (!profile) throw new Error('Unauthorized');
-        injectLayout('dashboard', 'DASHBOARD', profile);
+        (async () => {
+            const profile = await requireRole('mod');
+            if (!profile) return;
+            injectLayout('dashboard', 'DASHBOARD', profile);
 
-        try {
-            const stats = await getDashboardStats();
-            setText('m-sessions', stats.totalSessions);
-            setText('m-kills', stats.totalKills.toLocaleString());
-            setText('m-players', stats.activePlayers);
-            setText('m-latest', stats.latestSession?.session_name || 'No sessions yet');
+            try {
+                const stats = await getDashboardStats();
+                setText('m-sessions', stats.totalSessions);
+                setText('m-kills', stats.totalKills.toLocaleString());
+                setText('m-players', stats.activePlayers);
+                setText('m-latest', stats.latestSession?.session_name || 'No sessions yet');
 
-            // Recent sessions table
-            const tbody = document.getElementById('recent-tbody');
-            if (stats.recentSessions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No sessions yet</td></tr>';
-            } else {
-                tbody.innerHTML = stats.recentSessions.map(s => `<tr>
-                    <td style="font-weight:600;">${s.session_name}</td>
-                    <td class="font-data">${new Date(s.date).toLocaleDateString()}</td>
-                    <td class="font-data">${s.lobby_count}</td>
-                    <td class="hide-mobile"><span class="badge badge-green">Active</span></td>
-                </tr>`).join('');
-            }
-
-            // Top fraggers for latest session
-            if (stats.latestSession) {
-                const fraggers = await getTopFraggers(stats.latestSession.id, 5);
-                const ktbody = document.getElementById('kills-tbody');
-                if (fraggers.length === 0) {
-                    ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No player data yet</td></tr>';
+                // Recent sessions table
+                const tbody = document.getElementById('recent-tbody');
+                if (stats.recentSessions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No sessions yet</td></tr>';
                 } else {
-                    ktbody.innerHTML = fraggers.map((p, i) => {
-                        const rankClass = i < 3 ? ` rank-${i+1}` : '';
-                        return `<tr class="${rankClass}">
-                            <td>${i+1}</td>
-                            <td style="font-weight:600;">${p.player_name}</td>
-                            <td class="text-muted">${p.team_name}</td>
-                            <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
-                        </tr>`;
-                    }).join('');
+                    tbody.innerHTML = stats.recentSessions.map(s => `<tr>
+                        <td style="font-weight:600;">${s.session_name}</td>
+                        <td class="font-data">${new Date(s.date).toLocaleDateString()}</td>
+                        <td class="font-data">${s.lobby_count}</td>
+                        <td class="hide-mobile"><span class="badge badge-green">Active</span></td>
+                    </tr>`).join('');
                 }
+
+                // Top fraggers for latest session
+                if (stats.latestSession) {
+                    const fraggers = await getTopFraggers(stats.latestSession.id, 5);
+                    const ktbody = document.getElementById('kills-tbody');
+                    if (fraggers.length === 0) {
+                        ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No player data yet</td></tr>';
+                    } else {
+                        ktbody.innerHTML = fraggers.map((p, i) => {
+                            const rankClass = i < 3 ? ` rank-${i+1}` : '';
+                            return `<tr class="${rankClass}">
+                                <td>${i+1}</td>
+                                <td style="font-weight:600;">${p.player_name}</td>
+                                <td class="text-muted">${p.team_name}</td>
+                                <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
+                            </tr>`;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('Dashboard load error:', e);
             }
-        } catch (e) {
-            console.error('Dashboard load error:', e);
-        }
+        })();
 
         function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
     </script>

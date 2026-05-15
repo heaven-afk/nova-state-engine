@@ -56,7 +56,7 @@
                 <div class="card-body">
                     <div class="table-wrap">
                         <table class="data-table">
-                            <thead><tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th></tr></thead>
+                            <thead><tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr></thead>
                             <tbody id="player-tbody"></tbody>
                         </table>
                     </div>
@@ -75,28 +75,30 @@
         import { injectLayout } from '/src/layout.js';
         import { getAllSessions, getMatchResults, getPlayerStats } from '/src/db.js';
 
-        const profile = await requireRole('mod');
-        if (!profile) throw new Error('Unauthorized');
-        injectLayout('matches', 'MATCHES & LEADERBOARDS', profile);
-
         let sessions = [];
         const select = document.getElementById('inp-session');
 
-        try {
-            sessions = await getAllSessions();
-            if (sessions.length > 0) {
-                select.innerHTML = '<option value="">— Select a Session —</option>' + 
-                    sessions.map(s => `<option value="${s.id}">${s.session_name} (${new Date(s.date).toLocaleDateString()})</option>`).join('');
-                
-                // Auto-select latest
-                select.value = sessions[0].id;
-                await loadSessionData(sessions[0].id);
-            } else {
-                select.innerHTML = '<option value="">No sessions available</option>';
+        (async () => {
+            const profile = await requireRole('mod');
+            if (!profile) return;
+            injectLayout('matches', 'MATCHES & LEADERBOARDS', profile);
+
+            try {
+                sessions = await getAllSessions();
+                if (sessions.length > 0) {
+                    select.innerHTML = '<option value="">— Select a Session —</option>' + 
+                        sessions.map(s => `<option value="${s.id}">${s.session_name} (${new Date(s.date).toLocaleDateString()})</option>`).join('');
+                    
+                    // Auto-select latest
+                    select.value = sessions[0].id;
+                    await loadSessionData(sessions[0].id);
+                } else {
+                    select.innerHTML = '<option value="">No sessions available</option>';
+                }
+            } catch(e) {
+                console.error('Failed to load sessions:', e);
             }
-        } catch(e) {
-            console.error('Failed to load sessions:', e);
-        }
+        })();
 
         select.addEventListener('change', (e) => {
             if (e.target.value) loadSessionData(e.target.value);

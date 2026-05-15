@@ -6,12 +6,18 @@
     <title>Nova Gaming Network</title>
     <script type="module">
         import { getSession } from '/src/auth.js';
-        const session = await getSession();
-        if (session) {
-            window.location.href = '/dashboard.html';
-        } else {
-            window.location.href = '/stats.html';
-        }
+        (async () => {
+            try {
+                const session = await getSession();
+                if (session) {
+                    window.location.replace('/dashboard.html');
+                } else {
+                    window.location.replace('/stats.html');
+                }
+            } catch (e) {
+                window.location.replace('/stats.html');
+            }
+        })();
     </script>
 </head>
 <body style="background:#0A0A0A;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;">

@@ -58,32 +58,34 @@
         import { injectLayout, showToast } from '/src/layout.js';
         import { supabase } from '/src/supabase.js';
 
-        const profile = await requireRole('owner');
-        if (!profile) throw new Error('Unauthorized');
-        injectLayout('settings', 'SETTINGS', profile);
+        (async () => {
+            const profile = await requireRole('owner');
+            if (!profile) return;
+            injectLayout('settings', 'SETTINGS', profile);
 
-        // Load settings from local storage
-        const sense = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
-        document.getElementById('inp-ocr-sense').value = sense;
+            // Load settings from local storage
+            const sense = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
+            document.getElementById('inp-ocr-sense').value = sense;
 
-        document.getElementById('btn-save-ocr').addEventListener('click', () => {
-            const val = document.getElementById('inp-ocr-sense').value;
-            localStorage.setItem('nova_setting_ocr_sense', val);
-            showToast('OCR config saved', 'success');
-        });
+            document.getElementById('btn-save-ocr').addEventListener('click', () => {
+                const val = document.getElementById('inp-ocr-sense').value;
+                localStorage.setItem('nova_setting_ocr_sense', val);
+                showToast('OCR config saved', 'success');
+            });
 
-        document.getElementById('btn-reset').addEventListener('click', async () => {
-            if (prompt('Type "PURGE" to confirm complete data deletion:') !== 'PURGE') return;
-            
-            try {
-                // Delete all sessions (cascades to results and stats via foreign keys)
-                const { error } = await supabase.from('scrims_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-                if (error) throw error;
-                showToast('Database purged successfully', 'success');
-            } catch(e) {
-                showToast('Failed to purge: ' + e.message, 'error');
-            }
-        });
+            document.getElementById('btn-reset').addEventListener('click', async () => {
+                if (prompt('Type "PURGE" to confirm complete data deletion:') !== 'PURGE') return;
+                
+                try {
+                    // Delete all sessions (cascades to results and stats via foreign keys)
+                    const { error } = await supabase.from('scrims_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (error) throw error;
+                    showToast('Database purged successfully', 'success');
+                } catch(e) {
+                    showToast('Failed to purge: ' + e.message, 'error');
+                }
+            });
+        })();
     </script>
 </body>
 </html>

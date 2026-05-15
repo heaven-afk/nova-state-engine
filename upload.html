@@ -114,264 +114,266 @@
         import { createSession, insertMatchResults, insertPlayerStats } from '/src/db.js';
         import { runOCRExtraction } from '/src/ocr-engine.js';
 
-        const profile = await requireRole('admin');
-        if (!profile) throw new Error('Unauthorized');
-        injectLayout('upload', 'UPLOAD RESULTS', profile);
+        (async () => {
+            const profile = await requireRole('admin');
+            if (!profile) return;
+            injectLayout('upload', 'UPLOAD RESULTS', profile);
 
-        document.getElementById('inp-date').valueAsDate = new Date();
+            document.getElementById('inp-date').valueAsDate = new Date();
 
-        let selectedFiles = [];
-        let base64Images = [];
-        let ocrData = [];
+            let selectedFiles = [];
+            let base64Images = [];
+            let ocrData = [];
 
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const previewGrid = document.getElementById('preview-grid');
-        const btnProcess = document.getElementById('btn-process');
-        
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', e => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-        fileInput.addEventListener('change', e => handleFiles(e.target.files));
-
-        function handleFiles(files) {
-            const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 20);
-            selectedFiles = valid;
-            base64Images = [];
-            previewGrid.innerHTML = '';
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const previewGrid = document.getElementById('preview-grid');
+            const btnProcess = document.getElementById('btn-process');
             
-            if (valid.length > 0) {
-                btnProcess.classList.remove('hidden');
-                document.getElementById('ocr-container').classList.add('hidden');
-            } else {
-                btnProcess.classList.add('hidden');
-            }
-
-            valid.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    base64Images.push(e.target.result);
-                    previewGrid.innerHTML += `<div class="thumb" style="width:60px;height:60px;border-radius:4px;overflow:hidden;border:1px solid #333;"><img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" alt="Preview"></div>`;
-                };
-                reader.readAsDataURL(file);
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
             });
-        }
+            fileInput.addEventListener('change', e => handleFiles(e.target.files));
 
-        btnProcess.addEventListener('click', async () => {
-            if (base64Images.length === 0) return;
-            
-            const sessionName = document.getElementById('inp-session').value.trim();
-            if (!sessionName) { showToast('Please enter a Session Name first', 'error'); return; }
-
-            const btn = btnProcess;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spin">⟳</span> PROCESSING...';
-            document.getElementById('ocr-container').classList.remove('hidden');
-            document.getElementById('ocr-progress-container').classList.remove('hidden');
-            document.getElementById('ocr-results').innerHTML = '';
-            
-            const statusText = document.getElementById('ocr-status');
-            statusText.textContent = `Processing ${base64Images.length} images via AI Vision...`;
-            document.getElementById('ocr-progress').style.width = '30%';
-
-            try {
-                // Attach the JWT to auth the Vercel function
-                const { getSession } = await import('/src/auth.js');
-                const session = await getSession();
+            function handleFiles(files) {
+                const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 20);
+                selectedFiles = valid;
+                base64Images = [];
+                previewGrid.innerHTML = '';
                 
-                // OCR pipeline handles deduplication natively now
-                const rawRecords = await runOCRExtraction(base64Images, session.access_token);
-                document.getElementById('ocr-progress').style.width = '100%';
-                statusText.textContent = `Found ${rawRecords.length} unique players across screenshots. Please review and verify.`;
-                
-                ocrData = rawRecords;
-                renderOCRResults();
-            } catch (err) {
-                showToast(err.message, 'error', 6000);
-                statusText.textContent = `Error: ${err.message}`;
-                document.getElementById('ocr-progress').style.width = '0%';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS AGAIN';
-                setTimeout(() => document.getElementById('ocr-progress-container').classList.add('hidden'), 1000);
-            }
-        });
-
-        function renderOCRResults() {
-            const container = document.getElementById('ocr-results');
-            if (ocrData.length === 0) {
-                container.innerHTML = '<div class="empty-state">No players found or all were duplicates.</div>';
-                return;
-            }
-
-            // Group by team for better review
-            const teamMap = {};
-            ocrData.forEach((r, idx) => {
-                const t = r.teamSlot || 'Unknown Team';
-                if (!teamMap[t]) teamMap[t] = [];
-                teamMap[t].push({ ...r, _idx: idx });
-            });
-
-            let html = '';
-            for (const [teamName, players] of Object.entries(teamMap)) {
-                html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">${teamName}</div>`;
-                
-                players.forEach(p => {
-                    const isLowConf = p.confidence < 0.8;
-                    const cardClass = isLowConf ? 'ocr-card low-conf' : 'ocr-card';
-                    const warnIcon = isLowConf ? '<iconify-icon icon="lucide:alert-triangle" class="text-red" style="margin-left:8px;" title="Low Confidence read"></iconify-icon>' : '';
-
-                    html += `
-                    <div class="${cardClass}" data-idx="${p._idx}">
-                        <div class="ocr-row">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label" style="display:flex;align-items:center;">Player IGN ${warnIcon}</label>
-                                <input type="text" class="form-input inp-ign" value="${p.normalizedName}">
-                            </div>
-                            <div style="display:flex;gap:12px;">
-                                <div class="form-group" style="margin:0;flex:1;">
-                                    <label class="form-label">Kills</label>
-                                    <input type="number" class="form-input inp-kills" value="${p.normalizedKills}" min="0">
-                                </div>
-                                <div class="form-group" style="margin:0;flex:1;">
-                                    <label class="form-label">Team</label>
-                                    <input type="text" class="form-input inp-team" value="${p.teamSlot}">
-                                </div>
-                                <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-            }
-            container.innerHTML = html;
-
-            // Delete handlers
-            document.querySelectorAll('.btn-del-row').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const card = e.target.closest('.ocr-card');
-                    card.remove();
-                });
-            });
-        }
-
-        document.getElementById('btn-add-row').addEventListener('click', () => {
-            const container = document.getElementById('ocr-results');
-            const newIdx = Date.now();
-            const html = `
-            <div class="ocr-card" data-idx="${newIdx}">
-                <div class="ocr-row">
-                    <div class="form-group" style="margin:0;">
-                        <label class="form-label">Player IGN</label>
-                        <input type="text" class="form-input inp-ign" placeholder="Player Name">
-                    </div>
-                    <div style="display:flex;gap:12px;">
-                        <div class="form-group" style="margin:0;flex:1;">
-                            <label class="form-label">Kills</label>
-                            <input type="number" class="form-input inp-kills" value="0" min="0">
-                        </div>
-                        <div class="form-group" style="margin:0;flex:1;">
-                            <label class="form-label">Team</label>
-                            <input type="text" class="form-input inp-team" placeholder="Team X">
-                        </div>
-                        <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
-                    </div>
-                </div>
-            </div>`;
-            container.insertAdjacentHTML('afterbegin', html);
-            container.querySelector('.btn-del-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
-        });
-
-        document.getElementById('btn-save').addEventListener('click', async () => {
-            const sessionName = document.getElementById('inp-session').value.trim();
-            const date = document.getElementById('inp-date').value;
-            const lobbyCount = parseInt(document.getElementById('inp-lobbies').value);
-            const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
-            
-            if (!sessionName || !date) { showToast('Complete session setup above', 'error'); return; }
-
-            const cards = document.querySelectorAll('.ocr-card');
-            if (cards.length === 0) { showToast('No players to save', 'warning'); return; }
-
-            const finalData = [];
-            const teamMap = {}; // Aggregate team kills for match_results table
-
-            cards.forEach(card => {
-                const name = card.querySelector('.inp-ign').value.trim();
-                const kills = parseInt(card.querySelector('.inp-kills').value) || 0;
-                const team = card.querySelector('.inp-team').value.trim() || 'Unknown Team';
-                if (!name) return;
-
-                finalData.push({ player_name: name, kills, team_name: team, lobby_number: targetLobby });
-
-                if (!teamMap[team]) teamMap[team] = { team_name: team, kills: 0 };
-                teamMap[team].kills += kills;
-            });
-
-            if (finalData.length === 0) { showToast('All player rows are empty', 'error'); return; }
-
-            const btn = document.getElementById('btn-save');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spin">⟳</span> SAVING...';
-
-            try {
-                // 1. Check if session already exists, or create new
-                const { supabase } = await import('/src/supabase.js');
-                let dbSession;
-                
-                // Try to find exact match by name + date
-                const { data: existing } = await supabase.from('scrims_sessions')
-                    .select('*').eq('session_name', sessionName).eq('date', date).maybeSingle();
-                
-                if (existing) {
-                    dbSession = existing;
+                if (valid.length > 0) {
+                    btnProcess.classList.remove('hidden');
+                    document.getElementById('ocr-container').classList.add('hidden');
                 } else {
-                    dbSession = await createSession(sessionName, date, lobbyCount, profile.user.id);
+                    btnProcess.classList.add('hidden');
                 }
 
-                // 2. Clear old data for THIS lobby (allow re-uploads)
-                await supabase.from('player_stats')
-                    .delete().eq('session_id', dbSession.id).eq('lobby_number', targetLobby);
-                await supabase.from('match_results')
-                    .delete().eq('session_id', dbSession.id).eq('lobby_number', targetLobby);
-
-                // 3. Save Players
-                const playersToInsert = finalData.map(p => ({
-                    session_id: dbSession.id,
-                    lobby_number: targetLobby,
-                    player_name: p.player_name,
-                    team_name: p.team_name,
-                    kills: p.kills
-                }));
-                await insertPlayerStats(playersToInsert);
-
-                // 4. Save Teams (Match Results)
-                // Sort teams by kills for basic placement (points calc can happen later)
-                const sortedTeams = Object.values(teamMap).sort((a, b) => b.kills - a.kills);
-                const teamsToInsert = sortedTeams.map((t, i) => ({
-                    session_id: dbSession.id,
-                    lobby_number: targetLobby,
-                    team_name: t.team_name,
-                    kills: t.kills,
-                    placement: i + 1,
-                    points: Math.max(0, 15 - i) + t.kills // Simple dummy point calc: placement pts + kills
-                }));
-                await insertMatchResults(teamsToInsert);
-
-                showToast(`Lobby ${targetLobby} saved successfully!`, 'success');
-                setTimeout(() => window.location.href = '/matches.html', 1500);
-
-            } catch (err) {
-                console.error('Save error:', err);
-                showToast('Failed to save to database', 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
+                valid.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        base64Images.push(e.target.result);
+                        previewGrid.innerHTML += `<div class="thumb" style="width:60px;height:60px;border-radius:4px;overflow:hidden;border:1px solid #333;"><img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" alt="Preview"></div>`;
+                    };
+                    reader.readAsDataURL(file);
+                });
             }
-        });
+
+            btnProcess.addEventListener('click', async () => {
+                if (base64Images.length === 0) return;
+                
+                const sessionName = document.getElementById('inp-session').value.trim();
+                if (!sessionName) { showToast('Please enter a Session Name first', 'error'); return; }
+
+                const btn = btnProcess;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spin">⟳</span> PROCESSING...';
+                document.getElementById('ocr-container').classList.remove('hidden');
+                document.getElementById('ocr-progress-container').classList.remove('hidden');
+                document.getElementById('ocr-results').innerHTML = '';
+                
+                const statusText = document.getElementById('ocr-status');
+                statusText.textContent = `Processing ${base64Images.length} images via AI Vision...`;
+                document.getElementById('ocr-progress').style.width = '30%';
+
+                try {
+                    // Attach the JWT to auth the Vercel function
+                    const { getSession } = await import('/src/auth.js');
+                    const session = await getSession();
+                    
+                    // OCR pipeline handles deduplication natively now
+                    const rawRecords = await runOCRExtraction(base64Images, session.access_token);
+                    document.getElementById('ocr-progress').style.width = '100%';
+                    statusText.textContent = `Found ${rawRecords.length} unique players across screenshots. Please review and verify.`;
+                    
+                    ocrData = rawRecords;
+                    renderOCRResults();
+                } catch (err) {
+                    showToast(err.message, 'error', 6000);
+                    statusText.textContent = `Error: ${err.message}`;
+                    document.getElementById('ocr-progress').style.width = '0%';
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS AGAIN';
+                    setTimeout(() => document.getElementById('ocr-progress-container').classList.add('hidden'), 1000);
+                }
+            });
+
+            function renderOCRResults() {
+                const container = document.getElementById('ocr-results');
+                if (ocrData.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No players found or all were duplicates.</div>';
+                    return;
+                }
+
+                // Group by team for better review
+                const teamMap = {};
+                ocrData.forEach((r, idx) => {
+                    const t = r.teamSlot || 'Unknown Team';
+                    if (!teamMap[t]) teamMap[t] = [];
+                    teamMap[t].push({ ...r, _idx: idx });
+                });
+
+                let html = '';
+                for (const [teamName, players] of Object.entries(teamMap)) {
+                    html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">${teamName}</div>`;
+                    
+                    players.forEach(p => {
+                        const isLowConf = p.confidence < 0.8;
+                        const cardClass = isLowConf ? 'ocr-card low-conf' : 'ocr-card';
+                        const warnIcon = isLowConf ? '<iconify-icon icon="lucide:alert-triangle" class="text-red" style="margin-left:8px;" title="Low Confidence read"></iconify-icon>' : '';
+
+                        html += `
+                        <div class="${cardClass}" data-idx="${p._idx}">
+                            <div class="ocr-row">
+                                <div class="form-group" style="margin:0;">
+                                    <label class="form-label" style="display:flex;align-items:center;">Player IGN ${warnIcon}</label>
+                                    <input type="text" class="form-input inp-ign" value="${p.normalizedName}">
+                                </div>
+                                <div style="display:flex;gap:12px;">
+                                    <div class="form-group" style="margin:0;flex:1;">
+                                        <label class="form-label">Kills</label>
+                                        <input type="number" class="form-input inp-kills" value="${p.normalizedKills}" min="0">
+                                    </div>
+                                    <div class="form-group" style="margin:0;flex:1;">
+                                        <label class="form-label">Team</label>
+                                        <input type="text" class="form-input inp-team" value="${p.teamSlot}">
+                                    </div>
+                                    <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                }
+                container.innerHTML = html;
+
+                // Delete handlers
+                document.querySelectorAll('.btn-del-row').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const card = e.target.closest('.ocr-card');
+                        card.remove();
+                    });
+                });
+            }
+
+            document.getElementById('btn-add-row').addEventListener('click', () => {
+                const container = document.getElementById('ocr-results');
+                const newIdx = Date.now();
+                const html = `
+                <div class="ocr-card" data-idx="${newIdx}">
+                    <div class="ocr-row">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Player IGN</label>
+                            <input type="text" class="form-input inp-ign" placeholder="Player Name">
+                        </div>
+                        <div style="display:flex;gap:12px;">
+                            <div class="form-group" style="margin:0;flex:1;">
+                                <label class="form-label">Kills</label>
+                                <input type="number" class="form-input inp-kills" value="0" min="0">
+                            </div>
+                            <div class="form-group" style="margin:0;flex:1;">
+                                <label class="form-label">Team</label>
+                                <input type="text" class="form-input inp-team" placeholder="Team X">
+                            </div>
+                            <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                        </div>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('afterbegin', html);
+                container.querySelector('.btn-del-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
+            });
+
+            document.getElementById('btn-save').addEventListener('click', async () => {
+                const sessionName = document.getElementById('inp-session').value.trim();
+                const date = document.getElementById('inp-date').value;
+                const lobbyCount = parseInt(document.getElementById('inp-lobbies').value);
+                const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
+                
+                if (!sessionName || !date) { showToast('Complete session setup above', 'error'); return; }
+
+                const cards = document.querySelectorAll('.ocr-card');
+                if (cards.length === 0) { showToast('No players to save', 'warning'); return; }
+
+                const finalData = [];
+                const teamMap = {}; // Aggregate team kills for match_results table
+
+                cards.forEach(card => {
+                    const name = card.querySelector('.inp-ign').value.trim();
+                    const kills = parseInt(card.querySelector('.inp-kills').value) || 0;
+                    const team = card.querySelector('.inp-team').value.trim() || 'Unknown Team';
+                    if (!name) return;
+
+                    finalData.push({ player_name: name, kills, team_name: team, lobby_number: targetLobby });
+
+                    if (!teamMap[team]) teamMap[team] = { team_name: team, kills: 0 };
+                    teamMap[team].kills += kills;
+                });
+
+                if (finalData.length === 0) { showToast('All player rows are empty', 'error'); return; }
+
+                const btn = document.getElementById('btn-save');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spin">⟳</span> SAVING...';
+
+                try {
+                    // 1. Check if session already exists, or create new
+                    const { supabase } = await import('/src/supabase.js');
+                    let dbSession;
+                    
+                    // Try to find exact match by name + date
+                    const { data: existing } = await supabase.from('scrims_sessions')
+                        .select('*').eq('session_name', sessionName).eq('date', date).maybeSingle();
+                    
+                    if (existing) {
+                        dbSession = existing;
+                    } else {
+                        dbSession = await createSession(sessionName, date, lobbyCount, profile.user.id);
+                    }
+
+                    // 2. Clear old data for THIS lobby (allow re-uploads)
+                    await supabase.from('player_stats')
+                        .delete().eq('session_id', dbSession.id).eq('lobby_number', targetLobby);
+                    await supabase.from('match_results')
+                        .delete().eq('session_id', dbSession.id).eq('lobby_number', targetLobby);
+
+                    // 3. Save Players
+                    const playersToInsert = finalData.map(p => ({
+                        session_id: dbSession.id,
+                        lobby_number: targetLobby,
+                        player_name: p.player_name,
+                        team_name: p.team_name,
+                        kills: p.kills
+                    }));
+                    await insertPlayerStats(playersToInsert);
+
+                    // 4. Save Teams (Match Results)
+                    // Sort teams by kills for basic placement (points calc can happen later)
+                    const sortedTeams = Object.values(teamMap).sort((a, b) => b.kills - a.kills);
+                    const teamsToInsert = sortedTeams.map((t, i) => ({
+                        session_id: dbSession.id,
+                        lobby_number: targetLobby,
+                        team_name: t.team_name,
+                        kills: t.kills,
+                        placement: i + 1,
+                        points: Math.max(0, 15 - i) + t.kills // Simple dummy point calc: placement pts + kills
+                    }));
+                    await insertMatchResults(teamsToInsert);
+
+                    showToast(`Lobby ${targetLobby} saved successfully!`, 'success');
+                    setTimeout(() => window.location.href = '/matches.html', 1500);
+
+                } catch (err) {
+                    console.error('Save error:', err);
+                    showToast('Failed to save to database', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
+                }
+            });
+        })();
     </script>
 </body>
 </html>
