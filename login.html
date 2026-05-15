@@ -15,9 +15,12 @@
             background: #0A0A0A;
             color: #fff;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px 0;
+            overflow-y: auto;
             background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
             background-size: 24px 24px;
         }
@@ -84,6 +87,7 @@
             font-size: 0.9rem;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
+            min-height: 44px;
         }
         .form-input:focus {
             border-color: #6CB604;
@@ -109,6 +113,8 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
+            min-height: 46px;
+            touch-action: manipulation;
         }
         .btn-submit:hover { box-shadow: 0 0 20px rgba(108,182,4,0.4); }
         .btn-submit:active { transform: scale(0.98); }
@@ -138,6 +144,23 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+
+        @media (max-width: 480px) {
+            body {
+                align-items: flex-start;
+                padding: 16px 0;
+            }
+            .login-card {
+                margin: 0 12px;
+                padding: 28px 18px;
+            }
+            .login-logo { margin-bottom: 24px; }
+            .login-logo h1 {
+                font-size: 0.88rem;
+                line-height: 1.35;
+            }
+            .form-input { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -184,19 +207,29 @@
 
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script type="module">
-        import { supabase } from '/src/supabase.js';
         import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword } from '/src/auth.js';
 
         (async () => {
-            const session = await getSession();
-            if (session) {
-                await redirectByRole();
+            try {
+                const session = await withTimeout(getSession(), 7000, 'Session check timed out. Try signing in again.');
+                if (session) {
+                    await redirectByRole();
+                }
+            } catch (err) {
+                showError(err.message || 'Could not check your session. You can still sign in below.');
             }
         })();
 
+        function withTimeout(promise, ms, message) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+            ]);
+        }
+
         async function redirectByRole() {
-            let role = await getUserRole();
-            if (!role) role = await bootstrapOwner();
+            let role = await withTimeout(getUserRole(), 7000, 'Role lookup timed out.');
+            if (!role) role = await withTimeout(bootstrapOwner(), 9000, 'Owner bootstrap timed out.');
 
             if (role === 'owner') window.location.href = '/users.html';
             else if (role === 'admin') window.location.href = '/upload.html';
@@ -217,9 +250,10 @@
             document.getElementById('msg-error').style.display = 'none';
         }
 
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+        async function handleEmailSignIn(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
+            if (btn.disabled) return;
             btn.disabled = true;
             btn.innerHTML = '<span class="spin">⟳</span> SIGNING IN...';
 
@@ -227,7 +261,8 @@
             const password = document.getElementById('inp-password').value;
 
             try {
-                await signIn(email, password);
+                if (!email || !password) throw new Error('Enter your email and password.');
+                await withTimeout(signIn(email, password), 12000, 'Sign in timed out. Check your connection and try again.');
                 await redirectByRole();
             } catch (err) {
                 showError(err.message || 'Sign in failed.');
@@ -235,6 +270,12 @@
                 btn.disabled = false;
                 btn.textContent = 'SIGN IN';
             }
+        }
+
+        document.getElementById('auth-form').addEventListener('submit', handleEmailSignIn);
+        document.getElementById('btn-submit').addEventListener('click', (e) => {
+            if (!document.getElementById('auth-form').reportValidity()) return;
+            handleEmailSignIn(e);
         });
 
         document.getElementById('forgot-btn').addEventListener('click', async (e) => {

@@ -5,29 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Gaming Network</title>
     <script>
-        window.__novaRedirectFallback = setTimeout(() => {
-            window.location.replace('/stats.html');
-        }, 2500);
-    </script>
-    <script type="module">
-        (async () => {
-            const redirect = target => {
-                clearTimeout(window.__novaRedirectFallback);
-                window.location.replace(target);
-            };
-
-            try {
-                const { getSession } = await import('/src/auth.js');
-                const session = await getSession();
-                if (session) {
-                    redirect('/dashboard.html');
-                } else {
-                    redirect('/stats.html');
-                }
-            } catch (e) {
-                redirect('/stats.html');
-            }
-        })();
+        window.location.replace('/stats.html');
     </script>
     <noscript>
         <meta http-equiv="refresh" content="0; url=/stats.html">
