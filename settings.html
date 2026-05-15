@@ -2,120 +2,87 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Settings — Nova Stat Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <span class="brand-text">NOVA GAMING</span>
-            </div>
-            <nav class="sidebar-nav">
-                <div class="nav-section">MAIN</div>
-                <a href="/" class="nav-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
-                <a href="/weeks.html" class="nav-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
-                <div class="nav-section">ANALYSIS</div>
-                <a href="/ocr-review.html" class="nav-item" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
-                <a href="/leaderboards.html" class="nav-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
-                <a href="/exports.html" class="nav-item" data-page="exports"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
-                <div class="nav-section">SYSTEM</div>
-                <a href="/settings.html" class="nav-item active" data-page="settings"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
-            </nav>
-            <div class="sidebar-footer"><button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;"><iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out</button></div>
-        </aside>
-
-        <div class="main-wrapper">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
-                    <h1 class="page-title">Settings</h1>
-                </div>
-                <div class="topbar-right">
-                    <div class="user-profile"><div class="avatar">U</div><div class="user-info"><span class="user-name">User</span><span class="user-role">Member</span></div></div>
-                </div>
-            </header>
-
-            <main class="page-content">
-                <!-- OCR Settings -->
-                <div class="card card-body mb-md">
-                    <div class="flex items-center gap-sm mb-md">
-                        <iconify-icon icon="lucide:scan-eye" style="font-size:1.3rem;color:var(--accent-blue);"></iconify-icon>
-                        <h2 class="card-title">OCR Engine</h2>
-                        <span class="badge badge-completed" style="margin-left:auto;">Server-Side</span>
-                    </div>
-                    <p class="text-muted mb-md" style="font-size:0.85rem;">
-                        The OCR engine uses Gemini Flash Vision via a secure server-side proxy. No API key configuration needed — it's managed via Vercel environment variables.
-                    </p>
-
+    <div class="page-body">
+        <div style="max-width: 800px; margin: 0 auto;">
+            
+            <div class="card mb-md">
+                <div class="card-header"><span class="card-title">PLATFORM SETTINGS</span></div>
+                <div class="card-body">
                     <div class="form-group">
-                        <label class="form-label">OCR Sensitivity (Fuzzy Name Matching)</label>
-                        <div class="slider-row">
-                            <input type="range" id="ocr-sense" min="0.4" max="1.0" step="0.05" value="0.75">
-                            <span class="font-mono text-cyan" id="sense-val">0.75</span>
-                        </div>
-                        <p class="text-muted mt-sm" style="font-size:0.78rem;">Lower = more aggressive matching (may cause false positives)</p>
+                        <label class="form-label">Platform Name</label>
+                        <input type="text" class="form-input" value="NOVA GAMING NETWORK" disabled>
+                        <small class="text-muted mt-sm" style="display:block;">Currently locked to Nova brand tokens.</small>
                     </div>
                 </div>
+            </div>
 
-                <!-- Account Settings -->
-                <div class="card card-body mb-md">
-                    <div class="flex items-center gap-sm mb-md">
-                        <iconify-icon icon="lucide:user" style="font-size:1.3rem;color:var(--accent-purple);"></iconify-icon>
-                        <h2 class="card-title">Account</h2>
+            <div class="card mb-md">
+                <div class="card-header"><span class="card-title">OCR CONFIGURATION</span></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Name Matching Sensitivity (0.0 - 1.0)</label>
+                        <input type="number" class="form-input" id="inp-ocr-sense" value="0.75" step="0.05" min="0.1" max="1.0">
+                        <small class="text-muted mt-sm" style="display:block;">Lower values will aggressively group similar names as duplicates. Higher values require exact matches.</small>
                     </div>
-                    <div class="data-item" style="background:var(--bg-elevated);border:none;">
-                        <div class="data-item-content">
-                            <div class="data-item-title" id="profile-name">Loading...</div>
-                            <div class="data-item-subtitle" id="profile-email">—</div>
-                        </div>
-                    </div>
-                    <button class="btn btn-danger btn-block mt-md" data-action="signout">
-                        <iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out
-                    </button>
+                    <button class="btn btn-primary" id="btn-save-ocr">SAVE CONFIG</button>
                 </div>
+            </div>
 
-                <!-- Save -->
-                <button class="btn btn-primary btn-block" id="btn-save">
-                    <iconify-icon icon="lucide:save"></iconify-icon> Save Settings
-                </button>
-            </main>
+            <div class="card" style="border-top-color: var(--alert-red);">
+                <div class="card-header"><span class="card-title text-red">DANGER ZONE</span></div>
+                <div class="card-body">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:600; font-size:0.9rem;">Factory Reset Database</div>
+                            <div class="text-muted" style="font-size:0.8rem; margin-top:4px;">Deletes all sessions, match results, and player stats. Cannot be undone.</div>
+                        </div>
+                        <button class="btn btn-danger" id="btn-reset">PURGE DATA</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <nav class="bottom-tabs">
-        <a href="/" class="tab-item" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon><span>Home</span></a>
-        <a href="/weeks.html" class="tab-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days"></iconify-icon><span>Weeks</span></a>
-        <a href="/ocr-review.html" class="tab-item" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye"></iconify-icon><span>OCR</span></a>
-        <a href="/leaderboards.html" class="tab-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy"></iconify-icon><span>Ranks</span></a>
-        <a href="/settings.html" class="tab-item active" data-page="settings"><iconify-icon icon="lucide:settings"></iconify-icon><span>More</span></a>
-    </nav>
-
     <script type="module">
-        import { initApp, showToast, state } from '/src/router.js';
+        import { requireRole } from '/src/auth.js';
+        import { injectLayout, showToast } from '/src/layout.js';
+        import { supabase } from '/src/supabase.js';
 
-        await initApp('settings');
+        const profile = await requireRole('owner');
+        if (!profile) throw new Error('Unauthorized');
+        injectLayout('settings', 'SETTINGS', profile);
 
-        // Profile info
-        if (state.profile) {
-            document.getElementById('profile-name').textContent = state.profile.display_name || 'User';
-            document.getElementById('profile-email').textContent = state.profile.email || '—';
-        }
+        // Load settings from local storage
+        const sense = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
+        document.getElementById('inp-ocr-sense').value = sense;
 
-        // OCR sensitivity
-        const slider = document.getElementById('ocr-sense');
-        const valEl = document.getElementById('sense-val');
-        slider.value = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
-        valEl.textContent = parseFloat(slider.value).toFixed(2);
-        slider.addEventListener('input', () => valEl.textContent = parseFloat(slider.value).toFixed(2));
+        document.getElementById('btn-save-ocr').addEventListener('click', () => {
+            const val = document.getElementById('inp-ocr-sense').value;
+            localStorage.setItem('nova_setting_ocr_sense', val);
+            showToast('OCR config saved', 'success');
+        });
 
-        // Save
-        document.getElementById('btn-save').addEventListener('click', () => {
-            localStorage.setItem('nova_setting_ocr_sense', slider.value);
-            showToast('Settings saved!', 'success');
+        document.getElementById('btn-reset').addEventListener('click', async () => {
+            if (prompt('Type "PURGE" to confirm complete data deletion:') !== 'PURGE') return;
+            
+            try {
+                // Delete all sessions (cascades to results and stats via foreign keys)
+                const { error } = await supabase.from('scrims_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                if (error) throw error;
+                showToast('Database purged successfully', 'success');
+            } catch(e) {
+                showToast('Failed to purge: ' + e.message, 'error');
+            }
         });
     </script>
 </body>

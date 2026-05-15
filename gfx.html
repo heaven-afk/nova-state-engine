@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GFX Generator — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .studio-layout { display: flex; gap: 24px; align-items: flex-start; flex-direction: column; }
+        @media (min-width: 1024px) { .studio-layout { flex-direction: row; } }
+        
+        .panel-controls { flex: 0 0 320px; width: 100%; }
+        .panel-preview { flex: 1; width: 100%; min-width: 0; }
+        
+        .preview-wrapper {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-default);
+            border-radius: var(--radius);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            min-height: 500px;
+            position: relative;
+        }
+
+        /* ── GFX Render Container (Fixed Size) ── */
+        .gfx-canvas {
+            background: #0A0A0A;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            transform-origin: top left;
+            transition: transform 0.2s;
+            /* Dot-grid base */
+            background-image: radial-gradient(circle, rgba(108,182,4,0.1) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        
+        /* Render Target (invisible unless downloading, keeps high res) */
+        #gfx-render-target {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+        }
+
+        .gfx-logo-bg {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; height: 80%;
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        .gfx-header {
+            padding: 60px 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            z-index: 10;
+        }
+
+        .gfx-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 5rem;
+            color: #6CB604;
+            letter-spacing: 0.05em;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .gfx-subtitle {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 600;
+            font-size: 2.2rem;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-top: 12px;
+        }
+
+        .gfx-date {
+            font-family: 'Barlow', sans-serif;
+            font-size: 1.5rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .gfx-body {
+            padding: 0 80px 60px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* T01: Team Standings Row */
+        .gfx-row {
+            display: flex;
+            align-items: center;
+            background: rgba(15,15,15,0.8);
+            border-bottom: 2px solid rgba(108,182,4,0.2);
+            padding: 24px 40px;
+            margin-bottom: 8px;
+        }
+        .gfx-rank { width: 80px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.5rem; color: rgba(255,255,255,0.2); }
+        .gfx-team { flex: 1; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 2.5rem; text-transform: uppercase; }
+        .gfx-kills { width: 120px; font-family: 'Barlow', sans-serif; font-size: 1.8rem; color: rgba(255,255,255,0.5); text-align: center; }
+        .gfx-pts { width: 150px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 2.5rem; color: #6CB604; text-align: right; }
+
+        /* Podium variants */
+        .gfx-row.rank-1 .gfx-rank { color: #FFD700; }
+        .gfx-row.rank-2 .gfx-rank { color: #C0C0C0; }
+        .gfx-row.rank-3 .gfx-rank { color: #CD7F32; }
+    </style>
+</head>
+<body>
+    <div class="page-body">
+        <div class="studio-layout">
+            <!-- Controls -->
+            <div class="panel-controls card card-body">
+                <div class="form-group">
+                    <label class="form-label">Template</label>
+                    <select class="form-select" id="inp-template">
+                        <option value="t01">T01 - Team Standings</option>
+                        <option value="t02">T02 - Top Fraggers</option>
+                        <option value="t03">T03 - Match Summary</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Data Source (Session)</label>
+                    <select class="form-select" id="inp-session">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Export Size</label>
+                    <select class="form-select" id="inp-size">
+                        <option value="1920x1080">1920 × 1080 (Landscape)</option>
+                        <option value="1080x1080">1080 × 1080 (Square)</option>
+                        <option value="1080x1920">1080 × 1920 (Portrait)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Title Override</label>
+                    <input type="text" class="form-input" id="inp-title" placeholder="e.g. Scrims Finals">
+                </div>
+
+                <div style="margin-top: 32px; display:flex; flex-direction:column; gap:12px;">
+                    <button class="btn btn-primary" id="btn-export">
+                        <iconify-icon icon="lucide:image-down"></iconify-icon> EXPORT PNG
+                    </button>
+                    <button class="btn btn-secondary" id="btn-batch">
+                        <iconify-icon icon="lucide:file-archive"></iconify-icon> BATCH ZIP EXPORT
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="panel-preview">
+                <div class="preview-wrapper" id="preview-wrapper">
+                    <!-- Scaled visible preview -->
+                    <div id="preview-scaler" style="transform-origin: top left; transform: scale(0.4);">
+                        <div id="gfx-canvas" class="gfx-canvas" style="width: 1920px; height: 1080px;">
+                            <svg class="gfx-logo-bg" viewBox="0 0 28 28" fill="none">
+                                <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="#6CB604"/>
+                                <path d="M14 5L23 14L14 23L5 14L14 5Z" stroke="#6CB604" stroke-width="1.5"/>
+                            </svg>
+                            <div class="gfx-header">
+                                <div>
+                                    <div class="gfx-title" id="r-title">NOVA GAMING</div>
+                                    <div class="gfx-subtitle" id="r-subtitle">TEAM STANDINGS</div>
+                                </div>
+                                <div class="gfx-date" id="r-date">2026-05-15</div>
+                            </div>
+                            <div class="gfx-body" id="r-body">
+                                <!-- Data rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireRole } from '/src/auth.js';
+        import { injectLayout, showToast } from '/src/layout.js';
+        import { getAllSessions, getMatchResults, getPlayerStats } from '/src/db.js';
+        import html2canvas from 'html2canvas';
+
+        const profile = await requireRole('admin');
+        if (!profile) throw new Error('Unauthorized');
+        injectLayout('gfx', 'GFX STUDIO', profile);
+
+        let sessions = [];
+        let currentData = null;
+
+        const selectSession = document.getElementById('inp-session');
+        const selectSize = document.getElementById('inp-size');
+        const selectTemplate = document.getElementById('inp-template');
+        const inpTitle = document.getElementById('inp-title');
+        
+        const canvas = document.getElementById('gfx-canvas');
+        const rTitle = document.getElementById('r-title');
+        const rSubtitle = document.getElementById('r-subtitle');
+        const rDate = document.getElementById('r-date');
+        const rBody = document.getElementById('r-body');
+        const scaler = document.getElementById('preview-scaler');
+
+        // FontFace preload (critical for html2canvas)
+        async function preloadFonts() {
+            await document.fonts.ready;
+            console.log('Fonts preloaded.');
+        }
+
+        async function init() {
+            await preloadFonts();
+            sessions = await getAllSessions();
+            if (sessions.length > 0) {
+                selectSession.innerHTML = sessions.map(s => `<option value="${s.id}">${s.session_name}</option>`).join('');
+                await loadData(sessions[0].id);
+            }
+            updateScale();
+            window.addEventListener('resize', updateScale);
+        }
+
+        function updateScale() {
+            const wrapper = document.getElementById('preview-wrapper');
+            const [w, h] = selectSize.value.split('x').map(Number);
+            const scale = Math.min((wrapper.clientWidth - 48) / w, (wrapper.clientHeight - 48) / h);
+            scaler.style.transform = `scale(${scale})`;
+            wrapper.style.minHeight = `${h * scale + 48}px`;
+        }
+
+        async function loadData(sessionId) {
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+            
+            const [results, players] = await Promise.all([
+                getMatchResults(sessionId), getPlayerStats(sessionId)
+            ]);
+
+            // Aggregate teams
+            const teamMap = {};
+            results.forEach(r => {
+                if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, kills: 0, points: 0 };
+                teamMap[r.team_name].kills += r.kills;
+                teamMap[r.team_name].points += r.points;
+            });
+            
+            currentData = {
+                session,
+                teams: Object.values(teamMap).sort((a,b) => b.points - a.points),
+                players: players.slice(0, 10)
+            };
+            
+            renderPreview();
+        }
+
+        function renderPreview() {
+            if (!currentData) return;
+            
+            const [w, h] = selectSize.value.split('x').map(Number);
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+            updateScale();
+
+            const t = selectTemplate.value;
+            rTitle.textContent = inpTitle.value || currentData.session.session_name || 'NOVA GAMING';
+            rDate.textContent = new Date(currentData.session.date).toLocaleDateString();
+
+            if (t === 't01') {
+                rSubtitle.textContent = 'TEAM STANDINGS';
+                const limit = h > 1080 ? 12 : 7;
+                rBody.innerHTML = currentData.teams.slice(0, limit).map((t, i) => `
+                    <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
+                        <div class="gfx-rank">${i+1}</div>
+                        <div class="gfx-team">${t.team_name}</div>
+                        <div class="gfx-kills">${t.kills} KILLS</div>
+                        <div class="gfx-pts">${t.points} PTS</div>
+                    </div>
+                `).join('');
+            } 
+            else if (t === 't02') {
+                rSubtitle.textContent = 'TOP FRAGGERS';
+                const limit = h > 1080 ? 12 : 7;
+                rBody.innerHTML = currentData.players.slice(0, limit).map((p, i) => `
+                    <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
+                        <div class="gfx-rank">${i+1}</div>
+                        <div class="gfx-team">${p.player_name} <span style="font-size:1.2rem;color:rgba(255,255,255,0.4);margin-left:12px;">${p.team_name}</span></div>
+                        <div class="gfx-pts" style="color:var(--nova-green);">${p.kills} KILLS</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        selectSession.addEventListener('change', e => loadData(e.target.value));
+        selectSize.addEventListener('change', renderPreview);
+        selectTemplate.addEventListener('change', renderPreview);
+        inpTitle.addEventListener('input', renderPreview);
+
+        document.getElementById('btn-export').addEventListener('click', async () => {
+            if (!currentData) return;
+            const btn = document.getElementById('btn-export');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spin">⟳</span> RENDERING...';
+            
+            try {
+                // Ensure full scale before capture
+                const target = document.getElementById('gfx-canvas');
+                const canvas = await html2canvas(target, {
+                    scale: 2, // Retina export
+                    useCORS: true,
+                    backgroundColor: '#0A0A0A',
+                    logging: false,
+                    onclone: (clonedDoc) => {
+                        const cl = clonedDoc.getElementById('gfx-canvas');
+                        cl.style.transform = 'none';
+                    }
+                });
+                
+                const link = document.createElement('a');
+                link.download = `Nova_GFX_${selectTemplate.value}_${currentData.session.date}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('Export successful!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to export image', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<iconify-icon icon="lucide:image-down"></iconify-icon> EXPORT PNG';
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>

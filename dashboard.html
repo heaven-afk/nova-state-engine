@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="page-body">
+        <!-- Metric Cards -->
+        <div class="metrics-grid" id="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Sessions</div>
+                <div class="metric-value" id="m-sessions">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Kills</div>
+                <div class="metric-value" id="m-kills">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Active Players</div>
+                <div class="metric-value" id="m-players">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Latest Session</div>
+                <div class="metric-value" id="m-latest" style="font-size:1rem;">--</div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="card mb-md">
+            <div class="card-header">
+                <span class="card-title">RECENT SESSIONS</span>
+                <a href="/weekly.html" class="btn btn-secondary btn-sm">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-wrap">
+                    <table class="data-table" id="recent-table">
+                        <thead>
+                            <tr>
+                                <th>Session</th>
+                                <th>Date</th>
+                                <th>Lobbies</th>
+                                <th class="hide-mobile">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-tbody">
+                            <tr><td colspan="4" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Kill Leaderboard -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">TOP FRAGGERS — LATEST SESSION</span>
+                <a href="/matches.html" class="btn btn-secondary btn-sm">Full Board</a>
+            </div>
+            <div class="card-body">
+                <div class="table-wrap">
+                    <table class="data-table" id="kills-table">
+                        <thead>
+                            <tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th></tr>
+                        </thead>
+                        <tbody id="kills-tbody">
+                            <tr><td colspan="4" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireRole } from '/src/auth.js';
+        import { injectLayout } from '/src/layout.js';
+        import { getDashboardStats, getTopFraggers } from '/src/db.js';
+
+        const profile = await requireRole('mod');
+        if (!profile) throw new Error('Unauthorized');
+        injectLayout('dashboard', 'DASHBOARD', profile);
+
+        try {
+            const stats = await getDashboardStats();
+            setText('m-sessions', stats.totalSessions);
+            setText('m-kills', stats.totalKills.toLocaleString());
+            setText('m-players', stats.activePlayers);
+            setText('m-latest', stats.latestSession?.session_name || 'No sessions yet');
+
+            // Recent sessions table
+            const tbody = document.getElementById('recent-tbody');
+            if (stats.recentSessions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No sessions yet</td></tr>';
+            } else {
+                tbody.innerHTML = stats.recentSessions.map(s => `<tr>
+                    <td style="font-weight:600;">${s.session_name}</td>
+                    <td class="font-data">${new Date(s.date).toLocaleDateString()}</td>
+                    <td class="font-data">${s.lobby_count}</td>
+                    <td class="hide-mobile"><span class="badge badge-green">Active</span></td>
+                </tr>`).join('');
+            }
+
+            // Top fraggers for latest session
+            if (stats.latestSession) {
+                const fraggers = await getTopFraggers(stats.latestSession.id, 5);
+                const ktbody = document.getElementById('kills-tbody');
+                if (fraggers.length === 0) {
+                    ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No player data yet</td></tr>';
+                } else {
+                    ktbody.innerHTML = fraggers.map((p, i) => {
+                        const rankClass = i < 3 ? ` rank-${i+1}` : '';
+                        return `<tr class="${rankClass}">
+                            <td>${i+1}</td>
+                            <td style="font-weight:600;">${p.player_name}</td>
+                            <td class="text-muted">${p.team_name}</td>
+                            <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+        } catch (e) {
+            console.error('Dashboard load error:', e);
+        }
+
+        function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+    </script>
+</body>
+</html>

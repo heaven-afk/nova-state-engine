@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matches & Leaderboards — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="page-body">
+        <!-- Session Selector -->
+        <div class="card mb-md">
+            <div class="card-body">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Select Session</label>
+                    <select class="form-select" id="inp-session">
+                        <option value="">Loading sessions...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="data-container" style="display:none;">
+            <!-- Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-label">Lobbies</div><div class="metric-value" id="m-lobbies">0</div></div>
+                <div class="metric-card"><div class="metric-label">Total Teams</div><div class="metric-value" id="m-teams">0</div></div>
+                <div class="metric-card"><div class="metric-label">Total Players</div><div class="metric-value" id="m-players">0</div></div>
+                <div class="metric-card"><div class="metric-label">Total Kills</div><div class="metric-value" id="m-kills">0</div></div>
+            </div>
+
+            <!-- Team Leaderboard -->
+            <div class="card mb-md">
+                <div class="card-header">
+                    <span class="card-title">TEAM STANDINGS</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>Rank</th><th>Team</th><th>Total Kills</th><th>Total Points</th></tr></thead>
+                            <tbody id="team-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Leaderboard -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">PLAYER LEADERBOARD</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th></tr></thead>
+                            <tbody id="player-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="empty-state" class="empty-state">
+            <h3>No Session Selected</h3>
+            <p>Select a session above to view leaderboards.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireRole } from '/src/auth.js';
+        import { injectLayout } from '/src/layout.js';
+        import { getAllSessions, getMatchResults, getPlayerStats } from '/src/db.js';
+
+        const profile = await requireRole('mod');
+        if (!profile) throw new Error('Unauthorized');
+        injectLayout('matches', 'MATCHES & LEADERBOARDS', profile);
+
+        let sessions = [];
+        const select = document.getElementById('inp-session');
+
+        try {
+            sessions = await getAllSessions();
+            if (sessions.length > 0) {
+                select.innerHTML = '<option value="">— Select a Session —</option>' + 
+                    sessions.map(s => `<option value="${s.id}">${s.session_name} (${new Date(s.date).toLocaleDateString()})</option>`).join('');
+                
+                // Auto-select latest
+                select.value = sessions[0].id;
+                await loadSessionData(sessions[0].id);
+            } else {
+                select.innerHTML = '<option value="">No sessions available</option>';
+            }
+        } catch(e) {
+            console.error('Failed to load sessions:', e);
+        }
+
+        select.addEventListener('change', (e) => {
+            if (e.target.value) loadSessionData(e.target.value);
+            else {
+                document.getElementById('data-container').style.display = 'none';
+                document.getElementById('empty-state').style.display = 'block';
+            }
+        });
+
+        async function loadSessionData(sessionId) {
+            const container = document.getElementById('data-container');
+            const empty = document.getElementById('empty-state');
+            
+            try {
+                const session = sessions.find(s => s.id === sessionId);
+                const [results, players] = await Promise.all([
+                    getMatchResults(sessionId),
+                    getPlayerStats(sessionId)
+                ]);
+
+                // Aggregate teams
+                const teamMap = {};
+                let totalKills = 0;
+                results.forEach(r => {
+                    if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, kills: 0, points: 0 };
+                    teamMap[r.team_name].kills += r.kills;
+                    teamMap[r.team_name].points += r.points;
+                    totalKills += r.kills;
+                });
+                const teams = Object.values(teamMap).sort((a,b) => b.points - a.points);
+
+                // Populate metrics
+                document.getElementById('m-lobbies').textContent = session.lobby_count;
+                document.getElementById('m-teams').textContent = teams.length;
+                document.getElementById('m-players').textContent = players.length;
+                document.getElementById('m-kills').textContent = totalKills;
+
+                // Teams table
+                document.getElementById('team-tbody').innerHTML = teams.map((t, i) => {
+                    const rc = i < 3 ? ` rank-${i+1}` : '';
+                    return `<tr class="${rc}">
+                        <td>${i+1}</td>
+                        <td style="font-weight:700;">${t.team_name}</td>
+                        <td class="font-data">${t.kills}</td>
+                        <td class="text-green font-data" style="font-weight:700;">${t.points}</td>
+                    </tr>`;
+                }).join('');
+
+                // Players table
+                document.getElementById('player-tbody').innerHTML = players.map((p, i) => {
+                    const rc = i < 3 ? ` rank-${i+1}` : '';
+                    return `<tr class="${rc}">
+                        <td>${i+1}</td>
+                        <td style="font-weight:700;">${p.player_name}</td>
+                        <td class="text-muted">${p.team_name}</td>
+                        <td class="text-green font-data" style="font-weight:700;">${p.kills}</td>
+                    </tr>`;
+                }).join('');
+
+                empty.style.display = 'none';
+                container.style.display = 'block';
+
+            } catch (e) {
+                console.error('Data load error:', e);
+            }
+        }
+    </script>
+</body>
+</html>

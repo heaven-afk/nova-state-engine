@@ -1,33 +1,10 @@
 /**
  * ocr-engine.js — Nova Stat Engine
- * OCR Pipeline — calls /api/ocr Vercel serverless proxy
+ * Client-side pipeline for calling the OCR API and parsing results.
  */
-
 import stringSimilarity from 'string-similarity';
 
-const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
-
-Extract every visible player entry. Each row shows a player IGN and their kill count.
-The screenshots also contain Team Numbers (e.g., 1, 2, 3...) next to the players.
-
-Return ONLY a JSON array. No explanation, no markdown, no code fences. Example:
-[{"name": "Nova|Shadow", "kills": 14, "team": 1}, {"name": "T1_Viper", "kills": 9, "team": 1}]
-
-Rules:
-- Include ALL visible player rows
-- Extract the Team Number for each player:
-  - Max 4 players per team. If a team has more than 4, it is likely a misread.
-  - If a team number is missing/unclear, you can leave it out or return null for that player.
-- Player names may contain: letters, numbers, symbols like | . _ - [ ] > < ~
-- Kills are 0–40. If > 40, still include it
-- If you cannot read a name clearly, include your best guess
-- Do NOT include headers, total scores, or rankings — only individual player rows
-- If no valid players found, return: []`;
-
-/**
- * Main OCR Extraction — sends images to /api/ocr proxy
- */
-export async function runOCRExtraction(imageURIs) {
+export async function runOCRExtraction(imageURIs, authToken) {
     let allRecords = [];
     let lastError = null;
     let quotaExhausted = false;
@@ -40,14 +17,12 @@ export async function runOCRExtraction(imageURIs) {
         if (i > 0) await new Promise(r => setTimeout(r, 1500));
 
         try {
-            const records = await extractFromImage(uri, i);
+            const records = await extractFromImage(uri, i, authToken);
             console.log(`[OCR] Image ${i + 1}: extracted ${records.length} players`);
             allRecords = allRecords.concat(records);
         } catch (err) {
             console.error(`[OCR] Failed on image ${i + 1}:`, err.message);
             lastError = err.message;
-
-            // If quota is exhausted, skip remaining images — they'll all fail too
             if (err.isQuotaError) {
                 quotaExhausted = true;
                 break;
@@ -56,26 +31,24 @@ export async function runOCRExtraction(imageURIs) {
     }
 
     if (allRecords.length === 0) {
-        if (quotaExhausted) {
-            throw new Error('Gemini API quota exhausted. Please enable billing at ai.google.dev or wait for your daily limit to reset.');
-        }
+        if (quotaExhausted) throw new Error('API quota exhausted across all providers. Try again later.');
         throw new Error(`No player data could be extracted. Details: ${lastError || 'Unknown error'}`);
     }
 
     return resolveDuplicates(allRecords);
 }
 
-/**
- * Calls the /api/ocr Vercel serverless proxy
- */
-async function extractFromImage(base64DataURI, imageIndex) {
+async function extractFromImage(base64DataURI, imageIndex, authToken) {
     const base64Data = base64DataURI.split(',')[1];
     const mimeType = base64DataURI.split(';')[0].split(':')[1] || 'image/png';
 
     const resp = await fetch('/api/ocr', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Data, mimeType, prompt: OCR_PROMPT })
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ image: base64Data, mimeType })
     });
 
     if (!resp.ok) {
@@ -84,13 +57,7 @@ async function extractFromImage(base64DataURI, imageIndex) {
         try { errBody = JSON.parse(errText); } catch(e) {}
         const errMsg = errBody?.error || `OCR API error (${resp.status})`;
 
-        // Log key status if the server included it (helps debugging)
-        if (errBody?.keys) {
-            console.log('[OCR] API Key Status:', errBody.keys.join(' | '));
-        }
-
-        // Pass through the server's actual error message for transparency
-        const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit') || errMsg.toLowerCase().includes('all ocr providers');
+        const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('all ocr providers');
         if (isQuota) {
             const err = new Error(errMsg);
             err.isQuotaError = true;
@@ -99,29 +66,20 @@ async function extractFromImage(base64DataURI, imageIndex) {
         throw new Error(errMsg);
     }
 
-    const contentType = resp.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-        const errText = await resp.text();
-        throw new Error(`OCR API returned non-JSON response. Ensure you are running via 'vercel dev'. Content: ${errText.substring(0, 50)}...`);
-    }
-
     const data = await resp.json();
     const rawText = data?.text || '';
-    if (data?.model) console.log(`[OCR] Image ${imageIndex + 1} processed by model: ${data.model}`);
 
     let parsed = [];
     try {
-        if (!rawText) throw new Error("API returned empty string (possibly blocked by safety filters)");
+        if (!rawText) throw new Error("API returned empty string");
         const clean = rawText.replace(/```json\n?/gi, '').replace(/```/g, '').trim();
         parsed = JSON.parse(clean);
         if (!Array.isArray(parsed)) throw new Error("Parsed JSON is not an array");
     } catch (e) {
-        throw new Error(`Parse failed: ${e.message}. Raw Output: ${rawText.substring(0, 150)}`);
+        throw new Error(`Parse failed: ${e.message}`);
     }
 
-    if (parsed.length === 0) {
-        throw new Error(`Model returned an empty array. Raw Output: ${rawText.substring(0, 50)}`);
-    }
+    if (parsed.length === 0) throw new Error("Model returned an empty array");
 
     return parsed.map(entry => {
         const kills = parseInt(entry.kills, 10);
@@ -130,24 +88,18 @@ async function extractFromImage(base64DataURI, imageIndex) {
         
         return {
             sourceImage: `Image_${imageIndex + 1}`,
-            rawPlayerName: entry.name || 'Unknown',
             normalizedName: (entry.name || '').trim(),
             rawKills: isNaN(kills) ? 0 : kills,
             normalizedKills: isNaN(kills) ? 0 : kills,
             teamSlot: teamNum,
-            confidence: conf,
-            isDuplicate: false
+            confidence: conf
         };
     }).filter(r => r.normalizedName.length > 0);
 }
 
-/**
- * Deduplicate players across multiple screenshots
- */
 function resolveDuplicates(records) {
     const unique = [];
-    const sensitivityStr = localStorage.getItem('nova_setting_ocr_sense') || '0.75';
-    const THRESHOLD = parseFloat(sensitivityStr);
+    const THRESHOLD = 0.75; // Sensitivity for matching names
 
     records.forEach(current => {
         let isMatch = false;
@@ -157,12 +109,10 @@ function resolveDuplicates(records) {
                 current.normalizedName.toLowerCase(),
                 existing.normalizedName.toLowerCase()
             );
+            // If name is very similar AND kills are identical, it's a true duplicate
             if (dist >= THRESHOLD && current.rawKills === existing.rawKills) {
                 isMatch = true;
                 break;
-            } else if (dist >= THRESHOLD && current.rawKills !== existing.rawKills) {
-                current.confidence = 0.5;
-                current.isDuplicate = true;
             }
         }
         if (!isMatch) unique.push(current);

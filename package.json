@@ -1,7 +1,7 @@
 {
-  "name": "nova-stat-engine",
+  "name": "nova-gaming-network",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,9 +12,10 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "chart.js": "^4.4.0",
-    "firebase": "^12.11.0",
     "html2canvas": "^1.4.1",
+    "jszip": "^3.10.1",
     "string-similarity": "^4.0.4",
     "xlsx": "^0.18.5"
   }

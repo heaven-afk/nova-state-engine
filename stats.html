@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Gaming Network — Competitive CODM Scrims</title>
+    <meta name="description" content="Competitive Call of Duty Mobile Battle Royale Scrims Stats Platform by Nova Gaming Network">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="public-layout">
+        <!-- Public Navbar -->
+        <nav class="public-navbar">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <svg viewBox="0 0 28 28" fill="none" width="24" height="24">
+                    <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="rgba(108,182,4,0.2)"/>
+                    <path d="M14 5L23 14L14 23L5 14L14 5Z" stroke="#6CB604" stroke-width="1.5" fill="none"/>
+                    <text x="14" y="18" text-anchor="middle" fill="#6CB604" font-family="Orbitron" font-weight="900" font-size="10">N</text>
+                </svg>
+                <span class="brand-wordmark" style="font-size:0.72rem;">NOVA GAMING NETWORK</span>
+            </div>
+            <a href="/login.html" class="btn btn-secondary btn-sm">Staff Login →</a>
+        </nav>
+
+        <div class="public-body">
+            <!-- Hero -->
+            <div style="text-align:center;margin-bottom:48px;padding:40px 0;">
+                <h1 style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:2rem;color:#6CB604;letter-spacing:0.06em;margin-bottom:8px;">NOVA GAMING NETWORK</h1>
+                <p style="font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;color:rgba(255,255,255,0.5);letter-spacing:0.15em;text-transform:uppercase;">Competitive Call of Duty Mobile — Battle Royale Scrims Platform</p>
+                <p style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:12px;" id="last-updated"></p>
+            </div>
+
+            <!-- Latest Session Summary -->
+            <div class="card mb-md" id="session-card" style="display:none;">
+                <div class="card-header">
+                    <span class="card-title" id="session-title">LATEST SESSION</span>
+                    <span class="badge badge-green" id="session-date"></span>
+                </div>
+                <div class="card-body">
+                    <div class="metrics-grid" style="margin-bottom:20px;">
+                        <div class="metric-card"><div class="metric-label">Session</div><div class="metric-value" id="s-name" style="font-size:1rem;">--</div></div>
+                        <div class="metric-card"><div class="metric-label">Lobbies</div><div class="metric-value" id="s-lobbies">--</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Leaderboard -->
+            <div class="card mb-md" id="team-card" style="display:none;">
+                <div class="card-header">
+                    <span class="card-title">TEAM LEADERBOARD</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>Rank</th><th>Team</th><th>Kills</th><th>Points</th></tr></thead>
+                            <tbody id="team-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Kill Leaderboard -->
+            <div class="card" id="player-card" style="display:none;">
+                <div class="card-header">
+                    <span class="card-title">TOP FRAGGERS</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th></tr></thead>
+                            <tbody id="player-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No data state -->
+            <div class="empty-state" id="empty-state">
+                <h3>No scrims data yet</h3>
+                <p style="color:rgba(255,255,255,0.4);">Check back soon for the latest results.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="text-align:center;padding:40px;border-top:0.5px solid rgba(108,182,4,0.08);color:rgba(255,255,255,0.25);font-size:0.75rem;">
+            © 2026 Nova Gaming Network. All rights reserved.
+        </footer>
+    </div>
+
+    <script type="module">
+        import { getLatestSessionStats } from '/src/db.js';
+
+        async function loadPublicStats() {
+            try {
+                const data = await getLatestSessionStats();
+                if (!data) return;
+
+                document.getElementById('empty-state').style.display = 'none';
+
+                // Session summary
+                document.getElementById('session-card').style.display = '';
+                document.getElementById('s-name').textContent = data.session.session_name;
+                document.getElementById('s-lobbies').textContent = data.session.lobby_count;
+                document.getElementById('session-date').textContent = new Date(data.session.date).toLocaleDateString();
+
+                // Teams
+                if (data.teams.length > 0) {
+                    document.getElementById('team-card').style.display = '';
+                    document.getElementById('team-tbody').innerHTML = data.teams.map((t, i) => {
+                        const rc = i < 3 ? ` rank-${i+1}` : '';
+                        return `<tr class="${rc}">
+                            <td>${i+1}</td>
+                            <td style="font-weight:700;">${t.team_name}</td>
+                            <td class="font-data">${t.total_kills}</td>
+                            <td class="text-green font-data" style="font-weight:700;">${t.total_points}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                // Players
+                if (data.topFraggers.length > 0) {
+                    document.getElementById('player-card').style.display = '';
+                    document.getElementById('player-tbody').innerHTML = data.topFraggers.map((p, i) => {
+                        const rc = i < 3 ? ` rank-${i+1}` : '';
+                        return `<tr class="${rc}">
+                            <td>${i+1}</td>
+                            <td style="font-weight:700;">${p.player_name}</td>
+                            <td class="text-muted">${p.team_name}</td>
+                            <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()}`;
+            } catch (e) {
+                console.error('Public stats error:', e);
+            }
+        }
+
+        await loadPublicStats();
+        // Auto-refresh every 60 seconds
+        setInterval(loadPublicStats, 60000);
+    </script>
+</body>
+</html>

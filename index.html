@@ -2,133 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Nova Stat Engine — Scrims Analytics Dashboard">
-    <title>Nova Stat Engine</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-    <link rel="stylesheet" href="/src/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Gaming Network</title>
+    <script type="module">
+        import { getSession } from '/src/auth.js';
+        const session = await getSession();
+        if (session) {
+            window.location.href = '/dashboard.html';
+        } else {
+            window.location.href = '/stats.html';
+        }
+    </script>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Sidebar (Desktop) -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <span class="brand-text">NOVA GAMING</span>
-            </div>
-            <nav class="sidebar-nav">
-                <div class="nav-section">MAIN</div>
-                <a href="/" class="nav-item active" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon><span>Dashboard</span></a>
-                <a href="/weeks.html" class="nav-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days" class="nav-icon"></iconify-icon><span>Weeks</span></a>
-                <div class="nav-section">ANALYSIS</div>
-                <a href="/ocr-review.html" class="nav-item" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye" class="nav-icon"></iconify-icon><span>OCR Review</span></a>
-                <a href="/leaderboards.html" class="nav-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy" class="nav-icon"></iconify-icon><span>Leaderboards</span></a>
-                <a href="/exports.html" class="nav-item" data-page="exports"><iconify-icon icon="lucide:download-cloud" class="nav-icon"></iconify-icon><span>Exports</span></a>
-                <div class="nav-section">SYSTEM</div>
-                <a href="/settings.html" class="nav-item" data-page="settings"><iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon><span>Settings</span></a>
-            </nav>
-            <div class="sidebar-footer">
-                <button data-action="signout" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;">
-                    <iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out
-                </button>
-            </div>
-        </aside>
-
-        <div class="main-wrapper">
-            <!-- Topbar -->
-            <header class="topbar">
-                <div class="topbar-left">
-                    <button class="btn-icon mobile-menu-btn" id="mobile-menu-toggle"><iconify-icon icon="lucide:menu"></iconify-icon></button>
-                    <h1 class="page-title">Dashboard</h1>
-                </div>
-                <div class="topbar-right">
-                    <div class="user-profile">
-                        <div class="avatar">U</div>
-                        <div class="user-info">
-                            <span class="user-name">User</span>
-                            <span class="user-role">Member</span>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Page Content -->
-            <main class="page-content">
-                <!-- Metric Cards -->
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon" style="color: var(--accent-cyan); background: rgba(0,255,136,0.1);">
-                            <iconify-icon icon="lucide:calendar-clock"></iconify-icon>
-                        </div>
-                        <div class="metric-info">
-                            <p class="metric-label">Active Week</p>
-                            <div class="metric-value" id="dash-active-week">--</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="color: var(--accent-purple); background: rgba(186,85,211,0.1);">
-                            <iconify-icon icon="lucide:layers"></iconify-icon>
-                        </div>
-                        <div class="metric-info">
-                            <p class="metric-label">Days Done</p>
-                            <div class="metric-value" id="dash-days">--</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="color: var(--accent-blue); background: rgba(0,191,255,0.1);">
-                            <iconify-icon icon="lucide:users-2"></iconify-icon>
-                        </div>
-                        <div class="metric-info">
-                            <p class="metric-label">Players</p>
-                            <div class="metric-value" id="dash-players">--</div>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="color: var(--accent-pink); background: rgba(255,20,147,0.1);">
-                            <iconify-icon icon="lucide:gallery-horizontal-end"></iconify-icon>
-                        </div>
-                        <div class="metric-info">
-                            <p class="metric-label">Lobbies</p>
-                            <div class="metric-value" id="dash-lobbies">--</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top Players -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Top Players This Week</h2>
-                        <a href="/leaderboards.html" class="btn btn-secondary btn-xs">View All</a>
-                    </div>
-                    <!-- Mobile: Data List -->
-                    <div class="card-body">
-                        <div class="data-list desktop-table" id="dash-top-list">
-                            <p class="text-muted text-center" style="padding: 24px;">Loading stats...</p>
-                        </div>
-                    </div>
-                    <!-- Desktop: Table -->
-                    <div class="table-container">
-                        <table class="data-table" id="dash-top-table">
-                            <thead><tr><th>Rank</th><th>Player IGN</th><th>Weekly Kills</th></tr></thead>
-                            <tbody><tr><td colspan="3" class="text-muted text-center" style="padding:24px;">Loading...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <!-- Bottom Tabs (Mobile) -->
-    <nav class="bottom-tabs">
-        <a href="/" class="tab-item active" data-page="dashboard"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon><span>Home</span></a>
-        <a href="/weeks.html" class="tab-item" data-page="weeks"><iconify-icon icon="lucide:calendar-days"></iconify-icon><span>Weeks</span></a>
-        <a href="/ocr-review.html" class="tab-item" data-page="ocr-review"><iconify-icon icon="lucide:scan-eye"></iconify-icon><span>OCR</span></a>
-        <a href="/leaderboards.html" class="tab-item" data-page="leaderboards"><iconify-icon icon="lucide:trophy"></iconify-icon><span>Ranks</span></a>
-        <a href="/settings.html" class="tab-item" data-page="settings"><iconify-icon icon="lucide:settings"></iconify-icon><span>More</span></a>
-    </nav>
-
-    <script type="module" src="/src/main.js"></script>
+<body style="background:#0A0A0A;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;">
+    <p style="opacity:0.4;">Redirecting...</p>
 </body>
 </html>

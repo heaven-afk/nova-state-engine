@@ -1,231 +1,164 @@
 /**
- * db.js — Nova Stat Engine
- * Firebase Firestore Database Layer
+ * db.js — Nova Gaming Network
+ * Supabase Database Layer
  */
+import { supabase } from './supabase.js';
 
-import { db } from './firebase.js';
-import { collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from 'firebase/firestore';
+/* ── SCRIMS SESSIONS ───────────────────────────── */
 
-/* ── WEEKS ──────────────────────────────────────────── */
+export async function createSession(sessionName, date, lobbyCount, userId) {
+    const { data, error } = await supabase.from('scrims_sessions').insert({
+        session_name: sessionName, date, lobby_count: lobbyCount, created_by: userId
+    }).select().single();
+    if (error) throw error;
+    return data;
+}
 
-export async function createWeek(name, totalDays = 7) {
-    const weekRef = await addDoc(collection(db, 'weeks'), {
-        name,
-        total_days: totalDays,
-        status: 'active',
-        created_at: new Date().toISOString()
+export async function getAllSessions() {
+    const { data, error } = await supabase.from('scrims_sessions')
+        .select('*').order('date', { ascending: false });
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getSession(id) {
+    const { data, error } = await supabase.from('scrims_sessions')
+        .select('*').eq('id', id).single();
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteSession(id) {
+    const { error } = await supabase.from('scrims_sessions').delete().eq('id', id);
+    if (error) throw error;
+}
+
+/* ── MATCH RESULTS ─────────────────────────────── */
+
+export async function insertMatchResults(results) {
+    const { data, error } = await supabase.from('match_results').insert(results).select();
+    if (error) throw error;
+    return data;
+}
+
+export async function getMatchResults(sessionId) {
+    const { data, error } = await supabase.from('match_results')
+        .select('*').eq('session_id', sessionId).order('lobby_number').order('placement');
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getMatchResultsByLobby(sessionId, lobbyNumber) {
+    const { data, error } = await supabase.from('match_results')
+        .select('*').eq('session_id', sessionId).eq('lobby_number', lobbyNumber).order('placement');
+    if (error) throw error;
+    return data || [];
+}
+
+/* ── PLAYER STATS ──────────────────────────────── */
+
+export async function insertPlayerStats(stats) {
+    const { data, error } = await supabase.from('player_stats').insert(stats).select();
+    if (error) throw error;
+    return data;
+}
+
+export async function getPlayerStats(sessionId) {
+    const { data, error } = await supabase.from('player_stats')
+        .select('*').eq('session_id', sessionId).order('kills', { ascending: false });
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getTopFraggers(sessionId, limit = 10) {
+    const { data, error } = await supabase.from('player_stats')
+        .select('player_name, team_name, kills').eq('session_id', sessionId)
+        .order('kills', { ascending: false }).limit(limit);
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getGlobalPlayerStats() {
+    const { data, error } = await supabase.from('player_stats')
+        .select('player_name, team_name, kills, session_id');
+    if (error) throw error;
+    return data || [];
+}
+
+/* ── UPLOAD SESSIONS ───────────────────────────── */
+
+export async function createUploadSession(userId, sessionId) {
+    const { data, error } = await supabase.from('upload_sessions').insert({
+        user_id: userId, session_id: sessionId, status: 'pending'
+    }).select().single();
+    if (error) throw error;
+    return data;
+}
+
+export async function updateUploadSession(id, updates) {
+    const { error } = await supabase.from('upload_sessions').update(updates).eq('id', id);
+    if (error) throw error;
+}
+
+/* ── GFX EXPORTS ───────────────────────────────── */
+
+export async function logGfxExport(userId, templateId, sessionId, configJson) {
+    const { error } = await supabase.from('gfx_exports').insert({
+        user_id: userId, template_id: templateId, session_id: sessionId, config_json: configJson
     });
-    const week = { id: weekRef.id, name, total_days: totalDays, status: 'active' };
-
-    const batch = writeBatch(db);
-
-    for (let i = 0; i < totalDays; i++) {
-        const dayRef = doc(collection(db, 'days'));
-        batch.set(dayRef, {
-            week_id: week.id,
-            day_number: i + 1,
-            status: 'pending'
-        });
-
-        for (let n = 1; n <= 3; n++) {
-            const lobbyRef = doc(collection(db, 'lobbies'));
-            batch.set(lobbyRef, {
-                day_id: dayRef.id,
-                lobby_number: n,
-                status: 'pending'
-            });
-        }
-    }
-    await batch.commit();
-    return week;
+    if (error) console.error('[DB] GFX export log failed:', error);
 }
 
-export async function getAllWeeks() {
-    const q = query(collection(db, 'weeks'), orderBy('created_at', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
-export async function getAllWeeksWithDays() {
-    const weeks = await getAllWeeks();
-    const daysSnapshot = await getDocs(collection(db, 'days'));
-    const days = daysSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    
-    return weeks.map(w => ({
-        ...w,
-        days: days.filter(d => d.week_id === w.id).sort((a,b) => a.day_number - b.day_number)
-    }));
-}
-
-export async function getWeek(weekId) {
-    const d = await getDoc(doc(db, 'weeks', weekId));
-    if (!d.exists()) throw new Error("Week not found");
-    return { id: d.id, ...d.data() };
-}
-
-export async function deleteWeek(weekId) {
-    await deleteDoc(doc(db, 'weeks', weekId));
-}
-
-export async function updateWeekStatus(weekId, status) {
-    await updateDoc(doc(db, 'weeks', weekId), { status });
-}
-
-/* ── DAYS ───────────────────────────────────────────── */
-
-export async function getDaysByWeek(weekId) {
-    const q = query(collection(db, 'days'), where('week_id', '==', weekId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => a.day_number - b.day_number);
-}
-
-export async function updateDayStatus(dayId, status) {
-    await updateDoc(doc(db, 'days', dayId), { status });
-}
-
-/* ── LOBBIES ────────────────────────────────────────── */
-
-export async function getLobby(lobbyId) {
-    const d = await getDoc(doc(db, 'lobbies', lobbyId));
-    if (!d.exists()) throw new Error("Lobby not found");
-    return { id: d.id, ...d.data() };
-}
-
-export async function getLobbiesByDay(dayId) {
-    const q = query(collection(db, 'lobbies'), where('day_id', '==', dayId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => a.lobby_number - b.lobby_number);
-}
-
-export async function getLobbiesByDayLight(dayId) {
-    // Firestore lacks fine-grained column picking, return standard
-    return getLobbiesByDay(dayId);
-}
-
-export async function updateLobbyImages(lobbyId, imagesBase64) {
-    await updateDoc(doc(db, 'lobbies', lobbyId), { images: imagesBase64, status: 'uploaded' });
-}
-
-export async function updateLobbyStatus(lobbyId, status) {
-    await updateDoc(doc(db, 'lobbies', lobbyId), { status });
-}
-
-/* ── OCR RECORDS ────────────────────────────────────── */
-
-export async function saveOCRRecords(lobbyId, records) {
-    const batch = writeBatch(db);
-    // Delete old
-    const oldQ = query(collection(db, 'ocr_records'), where('lobby_id', '==', lobbyId));
-    const oldDocs = await getDocs(oldQ);
-    oldDocs.forEach(d => batch.delete(d.ref));
-
-    // Save new
-    records.forEach(r => {
-        const ref = doc(collection(db, 'ocr_records'));
-        batch.set(ref, {
-            lobby_id: lobbyId,
-            source_image: r.sourceImage,
-            raw_player_name: r.rawPlayerName,
-            normalized_name: r.normalizedName,
-            raw_kills: String(r.rawKills || '0'),
-            normalized_kills: parseInt(r.normalizedKills) || 0,
-            team_slot: r.teamSlot === 'Unknown' ? null : (parseInt(String(r.teamSlot).replace(/\D/g, '')) || null),
-            confidence: r.confidence ?? 0.95,
-            is_duplicate: r.isDuplicate || false
-        });
-    });
-    
-    await batch.commit();
-    await updateLobbyStatus(lobbyId, 'reviewing');
-}
-
-export async function getOCRRecordsByLobby(lobbyId) {
-    const q = query(collection(db, 'ocr_records'), where('lobby_id', '==', lobbyId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => {
-        const r = d.data();
-        return {
-            id: d.id, lobbyId: r.lobby_id, sourceImage: r.source_image,
-            rawPlayerName: r.raw_player_name, normalizedName: r.normalized_name,
-            rawKills: r.raw_kills, normalizedKills: r.normalized_kills,
-            teamSlot: r.team_slot, confidence: r.confidence,
-            isDuplicate: r.is_duplicate
-        };
-    });
-}
-
-export async function updateOCRRecord(recordId, updates) {
-    await updateDoc(doc(db, 'ocr_records', recordId), {
-        normalized_name: updates.normalizedName,
-        normalized_kills: updates.normalizedKills
-    });
-}
-
-export async function deleteOCRRecord(recordId) {
-    await deleteDoc(doc(db, 'ocr_records', recordId));
-}
-
-/* ── PLAYER STATS ───────────────────────────────────── */
-
-export async function approveLobbyStats(weekId, dayId, lobbyId, players) {
-    const batch = writeBatch(db);
-    // Delete old
-    const oldQ = query(collection(db, 'player_stats'), where('lobby_id', '==', lobbyId));
-    const oldDocs = await getDocs(oldQ);
-    oldDocs.forEach(d => batch.delete(d.ref));
-
-    // Save new
-    players.forEach(p => {
-        const ref = doc(collection(db, 'player_stats'));
-        batch.set(ref, {
-            week_id: weekId, day_id: dayId, lobby_id: lobbyId,
-            player_ign: p.normalizedName || p.playerIgn,
-            kills: p.normalizedKills ?? p.kills ?? 0,
-            team_slot: p.teamSlot || null
-        });
-    });
-    
-    await batch.commit();
-    await updateLobbyStatus(lobbyId, 'approved');
-    
-    const allLobbies = await getLobbiesByDay(dayId);
-    if (allLobbies.every(l => l.status === 'approved')) {
-        await updateDayStatus(dayId, 'completed');
-    }
-}
-
-export async function getWeeklyStats(weekId) {
-    const q = query(collection(db, 'player_stats'), where('week_id', '==', weekId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => d.data());
-}
-
-export async function getDailyStats(dayId) {
-    const q = query(collection(db, 'player_stats'), where('day_id', '==', dayId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => d.data());
-}
-
-/* ── DASHBOARD ──────────────────────────────────────── */
+/* ── DASHBOARD AGGREGATES ──────────────────────── */
 
 export async function getDashboardStats() {
-    const [weeksSnap, daysSnap, playersSnap, lobbiesSnap] = await Promise.all([
-        getDocs(query(collection(db, 'weeks'), orderBy('created_at', 'desc'))),
-        getDocs(collection(db, 'days')),
-        getDocs(collection(db, 'player_stats')),
-        getDocs(collection(db, 'lobbies'))
+    const [sessionsRes, resultsRes, playersRes] = await Promise.all([
+        supabase.from('scrims_sessions').select('id, session_name, date, lobby_count', { count: 'exact' }),
+        supabase.from('match_results').select('kills', { count: 'exact' }),
+        supabase.from('player_stats').select('player_name')
     ]);
-    
-    const weeks = weeksSnap.docs.map(d => ({id: d.id, ...d.data()}));
-    const activeWeek = weeks.find(w => w.status === 'active');
-    
-    const uniquePlayers = new Set(playersSnap.docs.map(d => d.data().player_ign));
-    
+
+    const sessions = sessionsRes.data || [];
+    const totalKills = (resultsRes.data || []).reduce((sum, r) => sum + (r.kills || 0), 0);
+    const uniquePlayers = new Set((playersRes.data || []).map(p => p.player_name));
+    const latestSession = sessions.length > 0 ? sessions[0] : null;
+
     return {
-        activeWeek,
-        totalWeeks: weeks.length,
-        totalDays: daysSnap.docs.filter(d => d.data().status === 'completed').length,
-        totalPlayers: uniquePlayers.size,
-        totalLobbies: lobbiesSnap.docs.filter(d => d.data().status === 'approved').length
+        totalSessions: sessions.length,
+        totalKills,
+        activePlayers: uniquePlayers.size,
+        latestSession,
+        recentSessions: sessions.slice(0, 5)
+    };
+}
+
+/* ── PUBLIC STATS ──────────────────────────────── */
+
+export async function getLatestSessionStats() {
+    const { data: sessions } = await supabase.from('scrims_sessions')
+        .select('*').order('date', { ascending: false }).limit(1);
+
+    if (!sessions || sessions.length === 0) return null;
+    const session = sessions[0];
+
+    const [resultsRes, playersRes] = await Promise.all([
+        supabase.from('match_results').select('*').eq('session_id', session.id).order('points', { ascending: false }),
+        supabase.from('player_stats').select('*').eq('session_id', session.id).order('kills', { ascending: false })
+    ]);
+
+    // Aggregate team standings
+    const teamMap = {};
+    (resultsRes.data || []).forEach(r => {
+        if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, total_kills: 0, total_points: 0 };
+        teamMap[r.team_name].total_kills += r.kills;
+        teamMap[r.team_name].total_points += r.points;
+    });
+    const teams = Object.values(teamMap).sort((a, b) => b.total_points - a.total_points);
+
+    return {
+        session,
+        teams,
+        topFraggers: (playersRes.data || []).slice(0, 10),
+        matchResults: resultsRes.data || []
     };
 }

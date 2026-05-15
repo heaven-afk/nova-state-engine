@@ -2,356 +2,241 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nova Stat Engine — Sign In</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Gaming Network — Staff Portal</title>
+    <meta name="description" content="Staff login for Nova Gaming Network Scrims Stats Platform">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Inter', sans-serif;
-            background: #07080f;
+            font-family: 'Barlow', sans-serif;
+            background: #0A0A0A;
             color: #fff;
             min-height: 100vh;
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ── Mobile: Form only ─────────────────────── */
-        .brand-panel { display: none; }
-
-        .form-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 32px 24px;
-            max-width: 100%;
-        }
-
-        .mobile-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 40px;
-        }
-        .mobile-brand-icon {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, #8a2be2, #00bfff);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700; font-size: 1.2rem;
-        }
-        .mobile-brand-text {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700; font-size: 0.9rem;
-            letter-spacing: 0.05em;
-            color: rgba(255,255,255,0.7);
+            justify-content: center;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
         }
 
-        .form-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem; font-weight: 700;
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px;
+            background: #0F0F0F;
+            border: 0.5px solid rgba(108,182,4,0.20);
+            border-top: 2px solid #6CB604;
+            border-radius: 4px;
+            padding: 40px 32px;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-logo svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+        }
+
+        .login-logo h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            color: #6CB604;
+            letter-spacing: 0.1em;
             margin-bottom: 6px;
         }
-        .form-subtitle { font-size: 0.88rem; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
 
-        /* Tabs */
-        .tab-row {
-            display: flex;
-            background: rgba(255,255,255,0.04);
-            border-radius: 8px;
-            padding: 4px;
-            margin-bottom: 24px;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: none;
-            border: none;
+        .login-logo p {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 600;
+            font-size: 0.7rem;
             color: rgba(255,255,255,0.4);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.88rem;
-            font-weight: 500;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
         }
-        .tab-btn.active { background: rgba(138,43,226,0.2); color: #fff; }
 
-        /* Fields */
         .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 0.82rem; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+        .form-label {
+            display: block;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
         .form-input {
             width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: #0A0A0A;
+            border: 0.5px solid rgba(108,182,4,0.20);
             color: #fff;
-            padding: 14px 16px;
-            border-radius: 10px;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
+            padding: 12px 14px;
+            border-radius: 4px;
+            font-family: 'Barlow', sans-serif;
+            font-size: 0.9rem;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-input:focus { border-color: #8a2be2; box-shadow: 0 0 0 3px rgba(138,43,226,0.15); }
+        .form-input:focus {
+            border-color: #6CB604;
+            box-shadow: 0 0 0 2px rgba(108,182,4,0.15);
+        }
         .form-input::placeholder { color: rgba(255,255,255,0.2); }
-
-        .signup-only { display: none; }
 
         .btn-submit {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #8a2be2, #6a1fc2);
-            color: #fff;
+            background: #6CB604;
+            color: #0A0A0A;
             border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.06em;
             cursor: pointer;
             margin-top: 8px;
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.2s;
         }
-        .btn-submit:hover { box-shadow: 0 6px 20px rgba(138,43,226,0.4); }
+        .btn-submit:hover { box-shadow: 0 0 20px rgba(108,182,4,0.4); }
         .btn-submit:active { transform: scale(0.98); }
-        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .msg-box {
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 0.85rem;
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: 0.82rem;
             margin-bottom: 16px;
             display: none;
         }
-        .msg-error { background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.25); color: #ff6b8a; }
-        .msg-success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; }
+        .msg-error { background: rgba(255,76,0,0.1); border: 0.5px solid rgba(255,76,0,0.3); color: #FF6B4A; }
+        .msg-success { background: rgba(108,182,4,0.1); border: 0.5px solid rgba(108,182,4,0.3); color: #6CB604; }
 
-        .forgot-link { text-align: right; margin-top: -8px; margin-bottom: 16px; }
-        .forgot-link a { font-size: 0.8rem; color: rgba(138,43,226,0.8); }
-
-        /* ── Desktop: Split layout ─────────────────── */
-        @media (min-width: 769px) {
-            body { flex-direction: row; overflow: hidden; }
-            .mobile-brand { display: none; }
-
-            .brand-panel {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                padding: 80px;
-                background: linear-gradient(135deg, #0d0415 0%, #130d2a 40%, #0a1628 100%);
-                position: relative;
-                overflow: hidden;
-            }
-            .brand-panel::before {
-                content: '';
-                position: absolute;
-                top: -200px; left: -200px;
-                width: 600px; height: 600px;
-                background: radial-gradient(circle, rgba(138,43,226,0.12) 0%, transparent 70%);
-                pointer-events: none;
-            }
-            .brand-logo-wrap { display: flex; align-items: center; gap: 14px; margin-bottom: 60px; }
-            .brand-logo-icon {
-                width: 44px; height: 44px;
-                background: linear-gradient(135deg, #8a2be2, #00bfff);
-                border-radius: 10px;
-                display: flex; align-items: center; justify-content: center;
-                font-family: 'Space Grotesk', sans-serif;
-                font-weight: 700; font-size: 1.4rem;
-            }
-            .brand-logo-text {
-                font-family: 'Space Grotesk', sans-serif;
-                font-weight: 700; font-size: 1.05rem;
-                letter-spacing: 0.08em;
-                background: linear-gradient(90deg, #fff, #a0a5b5);
-                -webkit-background-clip: text;
-                background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .brand-headline {
-                font-family: 'Sora', sans-serif;
-                font-size: 2.8rem;
-                font-weight: 700;
-                line-height: 1.15;
-                letter-spacing: -0.03em;
-                margin-bottom: 16px;
-                background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
-                -webkit-background-clip: text;
-                background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .brand-tag { font-size: 0.95rem; color: rgba(255,255,255,0.4); margin-bottom: 48px; }
-            .feature-list { display: flex; flex-direction: column; gap: 16px; }
-            .feature-item { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: rgba(255,255,255,0.55); }
-            .feature-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #8a2be2, #00bfff); flex-shrink: 0; }
-
-            .form-panel {
-                width: 460px;
-                flex-shrink: 0;
-                padding: 60px 48px;
-                border-left: 1px solid rgba(255,255,255,0.05);
-                background: #0d0e18;
-            }
+        .forgot-link {
+            text-align: right;
+            margin-top: -8px;
+            margin-bottom: 16px;
         }
+        .forgot-link a {
+            font-size: 0.75rem;
+            color: rgba(108,182,4,0.7);
+            transition: color 0.2s;
+        }
+        .forgot-link a:hover { color: #6CB604; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; display: inline-block; }
     </style>
 </head>
 <body>
-    <!-- Brand Panel (Desktop only) -->
-    <div class="brand-panel">
-        <div class="brand-logo-wrap">
-            <div class="brand-logo-icon">N</div>
-            <span class="brand-logo-text">NOVA STAT ENGINE</span>
-        </div>
-        <div class="brand-headline">Scrim Analytics<br>Built for Champions</div>
-        <div class="brand-tag">Professional Esports Analytics Platform</div>
-        <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div> AI-powered scoreboard OCR extraction</div>
-            <div class="feature-item"><div class="feature-dot"></div> Automated leaderboard generation</div>
-            <div class="feature-item"><div class="feature-dot"></div> Daily and weekly stat aggregation</div>
-            <div class="feature-item"><div class="feature-dot"></div> Branded export graphics for teams</div>
-        </div>
-    </div>
-
-    <!-- Form Panel -->
-    <div class="form-panel">
-        <div class="mobile-brand">
-            <div class="mobile-brand-icon">N</div>
-            <span class="mobile-brand-text">NOVA STAT ENGINE</span>
-        </div>
-
-        <div class="form-title" id="form-title">Welcome back</div>
-        <div class="form-subtitle" id="form-subtitle">Sign in to your workspace</div>
-
-        <div class="tab-row">
-            <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
-            <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    <div class="login-card">
+        <div class="login-logo">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 4L44 24L24 44L4 24L24 4Z" fill="rgba(108,182,4,0.15)"/>
+                <path d="M24 8L40 24L24 40L8 24L24 8Z" stroke="#6CB604" stroke-width="1.5" fill="none"/>
+                <text x="24" y="29" text-anchor="middle" fill="#6CB604" font-family="Orbitron" font-weight="900" font-size="16">N</text>
+            </svg>
+            <h1>NOVA GAMING NETWORK</h1>
+            <p>Staff Portal</p>
         </div>
 
         <div class="msg-box msg-error" id="msg-error"></div>
         <div class="msg-box msg-success" id="msg-success"></div>
 
         <form id="auth-form">
-            <div class="form-group signup-only">
-                <label class="form-label">Display Name</label>
-                <input type="text" class="form-input" id="inp-name" placeholder="Your team name">
-            </div>
             <div class="form-group">
                 <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="inp-email" placeholder="you@team.com" required>
+                <input type="email" class="form-input" id="inp-email" placeholder="you@nova.gg" required autocomplete="email">
             </div>
             <div class="form-group">
                 <label class="form-label">Password</label>
-                <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required>
+                <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required autocomplete="current-password">
             </div>
-            <div class="forgot-link" id="forgot-wrap">
-                <a href="#" onclick="handleForgotPassword()">Forgot password?</a>
+            <div class="forgot-link">
+                <a href="#" id="forgot-btn">Forgot password?</a>
             </div>
             <button type="submit" class="btn-submit" id="btn-submit">
-                <iconify-icon icon="lucide:log-in"></iconify-icon>
-                <span id="btn-text">Sign In</span>
-            </button>
-
-            <div style="display:flex;align-items:center;gap:12px;margin:24px 0;">
-                <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
-                <span class="text-muted" style="font-size:0.85rem;">or</span>
-                <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
-            </div>
-
-            <button type="button" class="btn-submit" id="btn-google" style="background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.1);margin-top:0;" onclick="handleGoogleSignIn()">
-                <iconify-icon icon="logos:google-icon"></iconify-icon> Continue with Google
+                SIGN IN
             </button>
         </form>
     </div>
 
     <script type="module">
-        import { signIn, signUp, getSession } from '/src/auth.js';
+        import { supabase } from '/src/supabase.js';
+        import { signIn, getSession, getUserRole, bootstrapOwner, resetPassword } from '/src/auth.js';
 
-        getSession().then(s => { if (s) window.location.href = '/'; });
+        // If already logged in, redirect
+        const session = await getSession();
+        if (session) {
+            await redirectByRole();
+        }
 
-        let mode = 'login';
+        async function redirectByRole() {
+            let role = await getUserRole();
+            if (!role) role = await bootstrapOwner();
 
-        window.switchTab = function(tab) {
-            mode = tab;
-            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-            document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
-            document.querySelectorAll('.signup-only').forEach(el => el.style.display = tab === 'signup' ? 'block' : 'none');
-            document.getElementById('forgot-wrap').style.display = tab === 'login' ? 'block' : 'none';
-            document.getElementById('btn-text').textContent = tab === 'login' ? 'Sign In' : 'Create Account';
-            document.getElementById('form-title').textContent = tab === 'login' ? 'Welcome back' : 'Create your account';
-            document.getElementById('form-subtitle').textContent = tab === 'login' ? 'Sign in to your workspace' : 'Set up your team workspace';
-            clearMsg();
-        };
+            if (role === 'owner') window.location.href = '/users.html';
+            else if (role === 'admin') window.location.href = '/upload.html';
+            else if (role === 'mod') window.location.href = '/dashboard.html';
+            else {
+                showError('Access Restricted. Contact equeszero@gmail.com to request access.');
+            }
+        }
 
-        function showError(m) { const e = document.getElementById('msg-error'); e.textContent = m; e.style.display = 'block'; document.getElementById('msg-success').style.display = 'none'; }
-        function showSuccess(m) { const e = document.getElementById('msg-success'); e.textContent = m; e.style.display = 'block'; document.getElementById('msg-error').style.display = 'none'; }
-        function clearMsg() { document.getElementById('msg-error').style.display = 'none'; document.getElementById('msg-success').style.display = 'none'; }
+        function showError(m) {
+            const e = document.getElementById('msg-error');
+            e.textContent = m; e.style.display = 'block';
+            document.getElementById('msg-success').style.display = 'none';
+        }
+        function showSuccess(m) {
+            const e = document.getElementById('msg-success');
+            e.textContent = m; e.style.display = 'block';
+            document.getElementById('msg-error').style.display = 'none';
+        }
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            clearMsg();
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
-            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> <span>Please wait...</span>';
+            btn.innerHTML = '<span class="spin">⟳</span> SIGNING IN...';
 
             const email = document.getElementById('inp-email').value.trim();
             const password = document.getElementById('inp-password').value;
-            const name = document.getElementById('inp-name')?.value?.trim();
 
             try {
-                if (mode === 'login') {
-                    await signIn(email, password);
-                    window.location.href = '/';
-                } else {
-                    await signUp(email, password, name);
-                    window.location.href = '/';
-                }
+                await signIn(email, password);
+                await redirectByRole();
             } catch (err) {
-                showError(err.message || 'An error occurred.');
+                showError(err.message || 'Sign in failed.');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<iconify-icon icon="lucide:log-in"></iconify-icon><span id="btn-text">${mode === 'login' ? 'Sign In' : 'Create Account'}</span>`;
+                btn.textContent = 'SIGN IN';
             }
         });
 
-        window.handleForgotPassword = async function() {
+        document.getElementById('forgot-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
             const email = document.getElementById('inp-email').value.trim();
             if (!email) { showError('Enter your email first.'); return; }
-            const { resetPassword } = await import('/src/auth.js');
             try {
                 await resetPassword(email);
                 showSuccess('Password reset email sent!');
-            } catch (e) {
-                showError(e.message || 'Failed to send reset email');
-            }
-        };
-
-        window.handleGoogleSignIn = async function() {
-            clearMsg();
-            const btn = document.getElementById('btn-google');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon> Connecting...';
-            
-            const { signInWithGoogle } = await import('/src/auth.js');
-            try {
-                await signInWithGoogle();
-                window.location.href = '/';
             } catch (err) {
-                showError(err.message || 'Google sign in failed');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
+                showError(err.message || 'Failed to send reset email.');
             }
-        };
+        });
     </script>
-    <style>@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; display: inline-block; }</style>
 </body>
 </html>

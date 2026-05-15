@@ -6,14 +6,15 @@ export default defineConfig({
     target: 'esnext',
     rollupOptions: {
       input: {
-        main:         resolve(__dirname, 'index.html'),
+        index:        resolve(__dirname, 'index.html'),
         login:        resolve(__dirname, 'login.html'),
-        weeks:        resolve(__dirname, 'weeks.html'),
-        weekView:     resolve(__dirname, 'week-view.html'),
-        dayView:      resolve(__dirname, 'day-view.html'),
-        ocrReview:    resolve(__dirname, 'ocr-review.html'),
-        leaderboards: resolve(__dirname, 'leaderboards.html'),
-        exports:      resolve(__dirname, 'exports.html'),
+        dashboard:    resolve(__dirname, 'dashboard.html'),
+        stats:        resolve(__dirname, 'stats.html'),
+        matches:      resolve(__dirname, 'matches.html'),
+        weekly:       resolve(__dirname, 'weekly.html'),
+        upload:       resolve(__dirname, 'upload.html'),
+        gfx:          resolve(__dirname, 'gfx.html'),
+        users:        resolve(__dirname, 'users.html'),
         settings:     resolve(__dirname, 'settings.html')
       }
     }

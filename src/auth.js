@@ -1,124 +1,82 @@
 /**
- * auth.js — Nova Stat Engine
- * Firebase Authentication
+ * auth.js — Nova Gaming Network
+ * Supabase Authentication (Email/Password only)
  */
+import { supabase } from './supabase.js';
 
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fbSignOut, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from './firebase.js';
+/* ── Session ─────────────────────────────────────── */
 
-/* ── Session ────────────────────────────────────────── */
-
-export function getSession() {
-    return new Promise((resolve) => {
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            resolve(user);
-        });
-    });
+export async function getSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
 }
 
 export async function getUser() {
-    return await getSession();
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
 }
 
-/* ── Sign In / Up / Out ─────────────────────────────── */
+/* ── Sign In / Out ───────────────────────────────── */
 
 export async function signIn(email, password) {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return { user: userCredential.user };
-}
-
-export async function signUp(email, password, displayName) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    
-    // Update Firebase Profile
-    if (displayName) {
-        await updateProfile(user, { displayName });
-    }
-
-    // Provision Firestore Profile
-    await setDoc(doc(db, 'user_profiles', user.uid), {
-        id: user.uid,
-        display_name: displayName || email.split('@')[0],
-        role: 'member',
-        created_at: new Date().toISOString()
-    });
-
-    return { user };
-}
-
-export async function signInWithGoogle() {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    const user = userCredential.user;
-
-    // Check/provision Firestore profile
-    const docRef = doc(db, 'user_profiles', user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-        await setDoc(docRef, {
-            id: user.uid,
-            display_name: user.displayName || user.email?.split('@')[0] || 'User',
-            role: 'member',
-            created_at: new Date().toISOString()
-        });
-    }
-
-    return { user };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
 }
 
 export async function signOut() {
-    try {
-        await fbSignOut(auth);
-    } catch (e) {
-        console.error('Sign out error:', e);
-    } finally {
-        window.location.href = '/login.html';
-    }
+    await supabase.auth.signOut();
+    window.location.href = '/login.html';
 }
 
 export async function resetPassword(email) {
-    await sendPasswordResetEmail(auth, email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
 }
 
-/* ── Profile ────────────────────────────────────────── */
+/* ── Role Lookup ─────────────────────────────────── */
 
-export async function getUserProfile() {
+export async function getUserRole() {
     const user = await getUser();
     if (!user) return null;
 
-    try {
-        const docRef = doc(db, 'user_profiles', user.uid);
-        const docSnap = await getDoc(docRef);
+    const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-        if (!docSnap.exists()) {
-            // Auto-create profile if missing
-            const fallbackProfile = {
-                id: user.uid,
-                display_name: user.displayName || user.email?.split('@')[0] || 'User',
-                role: 'member'
-            };
-            await setDoc(docRef, fallbackProfile);
-            return { ...fallbackProfile, email: user.email };
-        }
-
-        return { ...docSnap.data(), email: user.email };
-    } catch (e) {
-        console.error("Failed to fetch user profile", e);
-        // Fallback for UI resilience
-        return {
-            id: user.uid,
-            display_name: user.displayName || user.email?.split('@')[0] || 'User',
-            role: 'member',
-            email: user.email
-        };
-    }
+    if (error) { console.error('[Auth] Role lookup failed:', error); return null; }
+    return data?.role || null;
 }
 
-/* ── Auth Guard ─────────────────────────────────────── */
+/* ── Owner Bootstrap ─────────────────────────────── */
+
+export async function bootstrapOwner() {
+    const user = await getUser();
+    if (!user) return null;
+
+    // Call serverless function to check if this user should be owner
+    try {
+        const session = await getSession();
+        const resp = await fetch('/api/bootstrap-owner', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+        if (resp.ok) {
+            const result = await resp.json();
+            return result.role;
+        }
+    } catch (e) {
+        console.error('[Auth] Owner bootstrap failed:', e);
+    }
+    return null;
+}
+
+/* ── Auth Guard ──────────────────────────────────── */
 
 export async function requireAuth() {
     const session = await getSession();
@@ -126,5 +84,39 @@ export async function requireAuth() {
         window.location.href = '/login.html';
         return null;
     }
-    return getUserProfile();
+    return session;
+}
+
+export async function requireRole(minimumRole) {
+    const session = await requireAuth();
+    if (!session) return null;
+
+    // Try owner bootstrap first
+    let role = await getUserRole();
+    if (!role) {
+        role = await bootstrapOwner();
+    }
+
+    const hierarchy = { owner: 3, admin: 2, mod: 1 };
+    const userLevel = hierarchy[role] || 0;
+    const requiredLevel = hierarchy[minimumRole] || 0;
+
+    if (userLevel < requiredLevel) {
+        window.location.href = '/dashboard.html';
+        return null;
+    }
+
+    const user = await getUser();
+    return {
+        user,
+        role,
+        displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+        email: user.email
+    };
+}
+
+/* ── Auth State Listener ─────────────────────────── */
+
+export function onAuthStateChange(callback) {
+    return supabase.auth.onAuthStateChange(callback);
 }
