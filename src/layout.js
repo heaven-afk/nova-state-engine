@@ -2,7 +2,7 @@
  * layout.js — Nova Gaming Network
  * Shared layout shell: sidebar, topbar, role-gated navigation
  */
-import { signOut, getUserRole, getUser } from './auth.js';
+import { signOut, getUserRole, getUser, watchSessionExpiry } from './auth.js';
 
 const NOVA_LOGO_SVG = `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="#6CB604" opacity="0.2"/>
@@ -126,6 +126,9 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     // Wire up sign out
     document.getElementById('btn-signout')?.addEventListener('click', () => signOut());
+
+    // Watch for session expiry — shows modal instead of exposing login URL
+    watchSessionExpiry();
 }
 
 /* ── Toast System ──────────────────────────────── */

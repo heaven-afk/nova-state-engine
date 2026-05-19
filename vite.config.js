@@ -7,7 +7,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index:        resolve(__dirname, 'index.html'),
-        login:        resolve(__dirname, 'login.html'),
+        'ngn-access': resolve(__dirname, 'ngn-access.html'),
+        '404':        resolve(__dirname, '404.html'),
         dashboard:    resolve(__dirname, 'dashboard.html'),
         stats:        resolve(__dirname, 'stats.html'),
         matches:      resolve(__dirname, 'matches.html'),

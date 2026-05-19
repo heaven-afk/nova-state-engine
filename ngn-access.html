@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Gaming Network — Staff Portal</title>
-    <meta name="description" content="Staff login for Nova Gaming Network Scrims Stats Platform">
+    <title>Nova Gaming Network</title>
+    <meta name="description" content="Nova Gaming Network — Competitive CODM Scrims Stats Platform">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -172,7 +172,6 @@
                 <text x="24" y="29" text-anchor="middle" fill="#6CB604" font-family="Orbitron" font-weight="900" font-size="16">N</text>
             </svg>
             <h1>NOVA GAMING NETWORK</h1>
-            <p>Staff Portal</p>
         </div>
 
         <div class="msg-box msg-error" id="msg-error"></div>
@@ -287,7 +286,7 @@
                 await withTimeout(signIn(email, password), 12000, 'Sign in timed out. Check your connection and try again.');
                 await redirectByRole();
             } catch (err) {
-                showError(err.message || 'Sign in failed.');
+                showError('Invalid credentials.');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'SIGN IN';

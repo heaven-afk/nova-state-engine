@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /ngn-access
+Disallow: /dashboard
+Disallow: /upload
+Disallow: /settings
+Disallow: /users
+Disallow: /weekly
+Disallow: /matches
+Disallow: /gfx
+Disallow: /profile

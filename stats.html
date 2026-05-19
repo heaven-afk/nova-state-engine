@@ -22,7 +22,6 @@
                 </svg>
                 <span class="brand-wordmark" style="font-size:0.72rem;">NOVA GAMING NETWORK</span>
             </div>
-            <a href="/login.html" class="btn btn-secondary btn-sm">Staff Login →</a>
         </nav>
 
         <div class="public-body">
@@ -89,6 +88,24 @@
             © 2026 Nova Gaming Network. All rights reserved.
         </footer>
     </div>
+
+    <!-- Secret access: type "nova" on this page to navigate to staff login -->
+    <script>
+        (function() {
+            const secret = 'nova';
+            let buffer = '';
+            let timer;
+            document.addEventListener('keypress', function(e) {
+                buffer += e.key.toLowerCase();
+                if (buffer.includes(secret)) {
+                    window.location.href = '/ngn-access.html';
+                    buffer = '';
+                }
+                clearTimeout(timer);
+                timer = setTimeout(function() { buffer = ''; }, 2000);
+            });
+        })();
+    </script>
 
     <script type="module">
         import { getLatestSessionStats } from '/src/db.js';
