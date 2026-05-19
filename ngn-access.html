@@ -156,11 +156,10 @@
             100% { opacity: 1; transform: translateY(0); }
         }
         .login-logo {
-            animation: loginLogoIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: loginLogoIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         .login-card {
-            animation: loginFormIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
-            opacity: 0;
+            animation: loginFormIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -300,11 +299,18 @@
             const password = document.getElementById('inp-password').value;
 
             try {
-                if (!email || !password) throw new Error('Enter your email and password.');
+                if (!email || !password) throw new Error('empty');
                 await withTimeout(signIn(email, password), 12000, 'Sign in timed out. Check your connection and try again.');
                 await redirectByRole();
             } catch (err) {
-                showError('Invalid credentials.');
+                const msg = err.message || '';
+                if (msg === 'empty') {
+                    showError('Enter your email and password.');
+                } else if (msg.includes('timed out')) {
+                    showError(msg);
+                } else {
+                    showError('Incorrect email or password.');
+                }
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'SIGN IN';
