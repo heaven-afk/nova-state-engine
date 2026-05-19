@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/assets/brand/nova_favicon_64.png">
     <title>Dashboard — Nova Gaming Network</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,26 +15,26 @@
     <div class="page-body">
         <!-- Metric Cards -->
         <div class="metrics-grid" id="metrics-grid">
-            <div class="metric-card">
+            <div class="metric-card stat-card">
                 <div class="metric-label">Total Sessions</div>
                 <div class="metric-value" id="m-sessions">--</div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card stat-card">
                 <div class="metric-label">Total Kills</div>
                 <div class="metric-value" id="m-kills">--</div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card stat-card">
                 <div class="metric-label">Active Players</div>
                 <div class="metric-value" id="m-players">--</div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card stat-card">
                 <div class="metric-label">Latest Session</div>
                 <div class="metric-value" id="m-latest" style="font-size:1rem;">--</div>
             </div>
         </div>
 
         <!-- Recent Sessions -->
-        <div class="card mb-md">
+        <div class="card mb-md stat-card">
             <div class="card-header">
                 <span class="card-title">RECENT SESSIONS</span>
                 <a href="/weekly.html" class="btn btn-secondary btn-sm">View All</a>
@@ -58,7 +59,7 @@
         </div>
 
         <!-- Quick Kill Leaderboard -->
-        <div class="card">
+        <div class="card stat-card">
             <div class="card-header">
                 <span class="card-title">TOP FRAGGERS — LATEST SESSION</span>
                 <a href="/matches.html" class="btn btn-secondary btn-sm">Full Board</a>
@@ -129,6 +130,10 @@
             } catch (e) {
                 console.error('Dashboard load error:', e);
             }
+            // Stagger card entrance animations
+            document.querySelectorAll('.stat-card').forEach((card, i) => {
+                setTimeout(() => card.classList.add('visible'), i * 60);
+            });
         })();
 
         function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }

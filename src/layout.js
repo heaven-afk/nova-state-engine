@@ -4,11 +4,7 @@
  */
 import { signOut, getUserRole, getUser, watchSessionExpiry } from './auth.js';
 
-const NOVA_LOGO_SVG = `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="#6CB604" opacity="0.2"/>
-  <path d="M14 5L23 14L14 23L5 14L14 5Z" stroke="#6CB604" stroke-width="1.5" fill="none"/>
-  <text x="14" y="18" text-anchor="middle" fill="#6CB604" font-family="Orbitron" font-weight="900" font-size="10">N</text>
-</svg>`;
+const NOVA_LOGO_HTML = `<img src="/assets/brand/nova_logo_nmark.png" alt="Nova Gaming" width="28" height="28" class="sidebar-logo">`;
 
 const NAV_ITEMS = [
     { section: 'OVERVIEW' },
@@ -55,7 +51,7 @@ export function injectLayout(activePageId, pageTitle, profile) {
     const sidebarHTML = `
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <div class="brand-logo">${NOVA_LOGO_SVG}</div>
+            <div class="brand-logo">${NOVA_LOGO_HTML}</div>
             <div class="brand-wordmark">NOVA GAMING<br>NETWORK</div>
         </div>
         <nav class="sidebar-nav">${navHTML}</nav>

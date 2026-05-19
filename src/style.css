@@ -772,3 +772,150 @@ img, svg, canvas { max-width: 100%; }
         width: 100%;
     }
 }
+
+/* ══════════════════════════════════════════════════
+   v3.4 — LOGO ASSETS & MOTION DESIGN
+   ══════════════════════════════════════════════════ */
+
+/* ── Logo Asset References ────────────────────── */
+:root {
+    --logo-full:     url('/assets/brand/nova_logo_full_transparent.png');
+    --logo-nmark:    url('/assets/brand/nova_logo_nmark.png');
+    --logo-wordmark: url('/assets/brand/nova_wordmark_only.png');
+}
+
+/* ── Navbar N Mark — Idle Pulse Glow ──────────── */
+@keyframes logoPulse {
+    0%   { filter: drop-shadow(0 0 0px rgba(108,182,4,0)); }
+    50%  { filter: drop-shadow(0 0 6px rgba(108,182,4,0.33)); }
+    100% { filter: drop-shadow(0 0 0px rgba(108,182,4,0)); }
+}
+
+.navbar-logo {
+    animation: logoPulse 4s ease-in-out infinite;
+}
+
+/* ── Sidebar N Mark — Hover Glow ─────────────── */
+.sidebar-logo {
+    transition: filter 0.3s ease;
+}
+
+.sidebar-logo:hover {
+    filter: drop-shadow(0 0 8px rgba(108,182,4,0.53)) brightness(1.15);
+    cursor: default;
+}
+
+/* ── Hero Logo Entrance ──────────────────────── */
+@keyframes logoEntrance {
+    0%   { opacity: 0; transform: translateY(20px) scale(0.92); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hero-logo {
+    animation: logoEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-wordmark {
+    animation: logoEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+    opacity: 0;
+}
+
+.hero-subtitle {
+    animation: logoEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+    opacity: 0;
+}
+
+/* ── Hero Accent Scan Line ───────────────────── */
+@keyframes scanLine {
+    0%   { background-position: -100% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.hero-accent-line {
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        #6CB604 0%,
+        #6CB604 40%,
+        #ffffff88 50%,
+        #6CB604 60%,
+        #6CB604 100%
+    );
+    background-size: 200% 100%;
+    animation: scanLine 3s linear infinite;
+    margin-bottom: 32px;
+}
+
+/* ── Login Page Animations ───────────────────── */
+@keyframes loginLogoIn {
+    0%   { opacity: 0; transform: scale(0.85); filter: blur(4px); }
+    100% { opacity: 1; transform: scale(1);    filter: blur(0px); }
+}
+
+@keyframes loginFormIn {
+    0%   { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Card / Stat Entrance ────────────────────── */
+@keyframes cardEntrance {
+    0%   { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card {
+    opacity: 0;
+}
+
+.stat-card.visible {
+    animation: cardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Row Update Flash ────────────────────────── */
+@keyframes rowUpdate {
+    0%   { background: rgba(108,182,4,0.12); }
+    100% { background: transparent; }
+}
+
+.row-updated {
+    animation: rowUpdate 1.2s ease-out forwards;
+}
+
+/* ── Page Transition Fade ────────────────────── */
+@keyframes pageFadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.page-body {
+    animation: pageFadeIn 0.3s ease forwards;
+}
+
+/* ── GFX Export Button Loading ────────────────── */
+@keyframes exportSpin {
+    to { transform: rotate(360deg); }
+}
+
+.export-btn.loading .btn-icon {
+    animation: exportSpin 0.8s linear infinite;
+}
+
+.export-btn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* ── 404 Ghost Logo ──────────────────────────── */
+.ghost-logo {
+    opacity: 0.4;
+    margin-bottom: 20px;
+}
+
+/* ── Reduced Motion ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}
