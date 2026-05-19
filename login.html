@@ -186,8 +186,9 @@
             <div class="form-group" style="position: relative;">
                 <label class="form-label">Password</label>
                 <input type="password" class="form-input" id="inp-password" placeholder="••••••••" required autocomplete="current-password">
-                <button type="button" id="toggle-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; height: 30px;">
-                    <iconify-icon icon="lucide:eye" id="eye-icon"></iconify-icon>
+                <button type="button" id="toggle-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
+                    <svg id="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg id="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
                 </button>
             </div>
             <div class="forgot-link">
@@ -210,12 +211,33 @@
 
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script type="module">
-        import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword } from '/src/auth.js';
+        import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword, onAuthStateChange } from '/src/auth.js';
 
+        // Handle OAuth redirects (Google Sign-In callback) and existing sessions
+        let redirecting = false;
+        const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+            if (redirecting) return;
+            if (event === 'SIGNED_IN' && session) {
+                redirecting = true;
+                // Clean hash fragments from URL left by OAuth redirect
+                if (window.location.hash) {
+                    history.replaceState(null, '', window.location.pathname);
+                }
+                try {
+                    await redirectByRole();
+                } catch (err) {
+                    redirecting = false;
+                    showError(err.message || 'Signed in, but failed to redirect.');
+                }
+            }
+        });
+
+        // Also check for an existing session on page load
         (async () => {
             try {
                 const session = await withTimeout(getSession(), 7000, 'Session check timed out. Try signing in again.');
-                if (session) {
+                if (session && !redirecting) {
+                    redirecting = true;
                     await redirectByRole();
                 }
             } catch (err) {
@@ -276,17 +298,16 @@
         
         const togglePassword = document.getElementById('toggle-password');
         const passwordInput = document.getElementById('inp-password');
-        const eyeIcon = document.getElementById('eye-icon');
+        const eyeOpen = document.getElementById('eye-open');
+        const eyeClosed = document.getElementById('eye-closed');
 
-        togglePassword.addEventListener('click', () => {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            eyeIcon.setAttribute('icon', type === 'password' ? 'lucide:eye' : 'lucide:eye-off');
-        });
-
-        document.getElementById('btn-submit').addEventListener('click', (e) => {
-            if (!document.getElementById('auth-form').reportValidity()) return;
-            handleEmailSignIn(e);
+        togglePassword.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            eyeOpen.style.display = isPassword ? 'none' : 'block';
+            eyeClosed.style.display = isPassword ? 'block' : 'none';
         });
 
         document.getElementById('forgot-btn').addEventListener('click', async (e) => {
