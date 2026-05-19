@@ -51,14 +51,13 @@ export async function getUserRole() {
     const user = await getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-    if (error) { console.error('[Auth] Role lookup failed:', error); return null; }
-    return data?.role || null;
+    const { data, error } = await supabase.rpc('get_my_role');
+    
+    if (error) { 
+        console.error('[Auth] Role lookup failed via RPC:', error);
+        return null; 
+    }
+    return data || null;
 }
 
 /* ── Owner Bootstrap ─────────────────────────────── */
@@ -67,24 +66,17 @@ export async function bootstrapOwner() {
     const user = await getUser();
     if (!user) return null;
 
-    // Call serverless function to check if this user should be owner
-    try {
-        const session = await getSession();
-        const resp = await fetch('/api/bootstrap-owner', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
-        if (resp.ok) {
-            const result = await resp.json();
-            return result.role;
-        }
-    } catch (e) {
-        console.error('[Auth] Owner bootstrap failed:', e);
+    // Call RPC to bootstrap owner (bypasses RLS). Note: replace with your actual owner email if needed.
+    const { data, error } = await supabase.rpc('bootstrap_owner_role', { 
+        owner_email: 'equeszero@gmail.com' 
+    });
+
+    if (error) {
+        console.error('[Auth] Owner bootstrap failed via RPC:', error);
+        return null;
     }
-    return null;
+    
+    return data || null;
 }
 
 /* ── Auth Guard ──────────────────────────────────── */
