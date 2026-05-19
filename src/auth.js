@@ -47,8 +47,8 @@ export async function resetPassword(email) {
 
 /* ── Role Lookup ─────────────────────────────────── */
 
-export async function getUserRole() {
-    const user = await getUser();
+export async function getUserRole(providedUser = null) {
+    const user = providedUser || await getUser();
     if (!user) return null;
 
     const { data, error } = await supabase.rpc('get_my_role');
@@ -62,8 +62,8 @@ export async function getUserRole() {
 
 /* ── Owner Bootstrap ─────────────────────────────── */
 
-export async function bootstrapOwner() {
-    const user = await getUser();
+export async function bootstrapOwner(providedUser = null) {
+    const user = providedUser || await getUser();
     if (!user) return null;
 
     // Call RPC to bootstrap owner (bypasses RLS). Note: replace with your actual owner email if needed.
