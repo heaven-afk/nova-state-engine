@@ -68,12 +68,18 @@ export default async function handler(req, res) {
         const KEYS = [
             { name: 'Gemini Primary', key: process.env.GEMINI_API_KEY, type: 'gemini' },
             { name: 'Gemini Backup', key: process.env.GEMINI_API_KEY_2, type: 'gemini' },
-            { name: 'Groq LLamaVision', key: process.env.GROQ_API_KEY, type: 'groq' }
+            { name: 'Groq Llama4 Scout', key: process.env.GROQ_API_KEY, type: 'groq', groq_model: 'meta-llama/llama-4-scout-17b-16e-instruct' },
+            { name: 'Groq Qwen3 VL', key: process.env.GROQ_API_KEY, type: 'groq', groq_model: 'qwen/qwen-2.5-vl-32b-instruct' }
         ].filter(k => k.key);
 
         if (KEYS.length === 0) {
-            return res.status(500).json({ error: 'No OCR API keys configured. Add GEMINI_API_KEY to Vercel env vars.' });
+            return res.status(500).json({ error: 'No OCR API keys configured. Add GEMINI_API_KEY or GROQ_API_KEY to Vercel env vars.' });
         }
+
+        // Groq has a 4MB base64 limit — check size
+        const imageSizeBytes = Math.ceil(image.length * 3 / 4);
+        const imageSizeMB = (imageSizeBytes / (1024 * 1024)).toFixed(2);
+        console.log(`[OCR] Image size: ${imageSizeMB}MB`);
 
         for (let i = 0; i < KEYS.length; i++) {
             const provider = KEYS[i];
@@ -105,6 +111,10 @@ export default async function handler(req, res) {
                     text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 } 
                 else if (provider.type === 'groq') {
+                    // Skip Groq if image exceeds 4MB limit
+                    if (imageSizeBytes > 4 * 1024 * 1024) {
+                        throw new Error(`Image too large for Groq (${imageSizeMB}MB > 4MB limit)`);
+                    }
                     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                         method: 'POST',
                         headers: {
@@ -112,7 +122,7 @@ export default async function handler(req, res) {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+                            model: provider.groq_model,
                             messages: [
                                 {
                                     role: "user",
