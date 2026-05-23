@@ -16,6 +16,26 @@ export async function getUser() {
     return user;
 }
 
+/* ── Profile Check ───────────────────────────────── */
+
+/**
+ * Checks whether a user has completed their profile setup.
+ * A profile is "complete" if the user has a display_name or username in metadata.
+ */
+export function isProfileComplete(user) {
+    if (!user) return false;
+    const meta = user.user_metadata || {};
+    return !!(meta.display_name || meta.username || meta.full_name);
+}
+
+/**
+ * Returns the auth provider for the user (e.g. 'google', 'email')
+ */
+export function getAuthProvider(user) {
+    if (!user) return null;
+    return user.app_metadata?.provider || 'email';
+}
+
 /* ── Sign In / Out ───────────────────────────────── */
 
 export async function signIn(email, password) {

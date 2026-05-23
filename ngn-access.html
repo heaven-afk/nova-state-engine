@@ -227,7 +227,7 @@
 
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script type="module">
-        import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword, onAuthStateChange } from '/src/auth.js';
+        import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword, onAuthStateChange, isProfileComplete, getAuthProvider } from '/src/auth.js';
 
         // Handle OAuth redirects (Google Sign-In callback) and existing sessions
         let redirecting = false;
@@ -271,6 +271,20 @@
         async function redirectByRole(user = null) {
             let role = await withTimeout(getUserRole(user), 15000, 'Role lookup timed out.');
             if (!role) role = await withTimeout(bootstrapOwner(user), 15000, 'Owner bootstrap timed out.');
+
+            // If the user has no role, they are a new user
+            // Check if they need to complete their profile first
+            if (!role) {
+                // New user with no role — send to profile page to complete setup
+                window.location.href = '/profile.html';
+                return;
+            }
+
+            // User has a role — check if profile is complete
+            if (!isProfileComplete(user)) {
+                window.location.href = '/profile.html';
+                return;
+            }
 
             if (role === 'owner') window.location.href = '/users.html';
             else if (role === 'admin') window.location.href = '/upload.html';
