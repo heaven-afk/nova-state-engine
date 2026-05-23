@@ -278,16 +278,14 @@
 
             const profileUrl = isInvite ? '/profile.html?invite=true' : '/profile.html';
 
-            // If the user has no role, they are a new user
-            // Check if they need to complete their profile first
+            // If the user has no role, they are a new user — send to profile page to complete setup
             if (!role) {
-                // New user with no role — send to profile page to complete setup
                 window.location.href = profileUrl;
                 return;
             }
 
-            // User has a role — check if profile is complete
-            if (!isProfileComplete(user)) {
+            // User has a role — only force profile/password page if they are completing an invite link
+            if (isInvite) {
                 window.location.href = profileUrl;
                 return;
             }
