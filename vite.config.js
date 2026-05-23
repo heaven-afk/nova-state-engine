@@ -17,7 +17,8 @@ export default defineConfig({
         gfx:          resolve(__dirname, 'gfx.html'),
         users:        resolve(__dirname, 'users.html'),
         settings:     resolve(__dirname, 'settings.html'),
-        profile:      resolve(__dirname, 'profile.html')
+        profile:      resolve(__dirname, 'profile.html'),
+        'reset-password': resolve(__dirname, 'reset-password.html')
       }
     }
   }
