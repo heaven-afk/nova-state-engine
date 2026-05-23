@@ -255,15 +255,25 @@
             }
 
             // ── Show/Hide Password Section ──────────────────
+            const urlParams = new URLSearchParams(window.location.search);
+            const isInviteFlow = urlParams.get('invite') === 'true';
+
             if (isGoogleUser) {
                 // Google users don't need password fields
                 document.getElementById('password-section').style.display = 'none';
                 document.getElementById('info-text').textContent = 'Your Google account is linked. Just set a display name to get started.';
-            } else {
-                // Email/invite users: make password fields required
+            } else if (isInviteFlow) {
+                // Invited email users: must set a password
+                document.getElementById('password-section').style.display = 'block';
                 document.getElementById('inp-password').required = true;
                 document.getElementById('inp-password-confirm').required = true;
                 document.getElementById('info-text').textContent = 'Set your credentials to access the platform.';
+            } else {
+                // Existing email users: password is optional
+                document.getElementById('password-section').style.display = 'block';
+                document.getElementById('inp-password').required = false;
+                document.getElementById('inp-password-confirm').required = false;
+                document.getElementById('info-text').textContent = 'Update your display name. Leave password blank if you do not want to change it.';
             }
 
             // ── Pre-fill username if available ──────────────
@@ -306,15 +316,17 @@
 
                 // Validate password match (only for email users)
                 if (!isGoogleUser) {
-                    if (!password) {
+                    if (isInviteFlow && !password) {
                         errBox.textContent = 'Please set a password.';
                         errBox.style.display = 'block';
                         return;
                     }
-                    if (password !== passwordConfirm) {
-                        errBox.textContent = 'Passwords do not match.';
-                        errBox.style.display = 'block';
-                        return;
+                    if (password || passwordConfirm) {
+                        if (password !== passwordConfirm) {
+                            errBox.textContent = 'Passwords do not match.';
+                            errBox.style.display = 'block';
+                            return;
+                        }
                     }
                 }
 
