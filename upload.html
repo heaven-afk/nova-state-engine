@@ -398,7 +398,7 @@
                 if (!ocrTeam) return { match: null, conf: 0, status: 'red', label: 'No team read' };
                 const slotMatch = String(ocrTeam).trim().match(/^(?:team|slot)?\s*#?\s*(\d+)$/i);
                 if (slotMatch) {
-                    const slotTeam = activeTeams.find(t => Number(t.slot_number) === Number(slotMatch[0]));
+                    const slotTeam = activeTeams.find(t => Number(t.slot_number) === Number(slotMatch[1]));
                     if (slotTeam) return { match: slotTeam.team_name, conf: 1, status: 'green', label: `Slot ${slotTeam.slot_number}` };
                 }
 
@@ -505,6 +505,34 @@
                     btn.addEventListener('click', (e) => {
                         const card = e.target.closest('.ocr-card');
                         card.remove();
+                    });
+                });
+
+                // Team dropdown change handlers to auto-confirm and styling updates
+                document.querySelectorAll('.inp-team').forEach(select => {
+                    select.addEventListener('change', (e) => {
+                        const card = e.target.closest('.ocr-card');
+                        const selectedVal = e.target.value;
+                        const confirmCheckbox = card.querySelector('.inp-confirm-match');
+                        const indicator = card.querySelector('.match-indicator');
+
+                        if (selectedVal) {
+                            if (confirmCheckbox) confirmCheckbox.checked = true;
+                            card.className = "ocr-card auto-conf";
+                            card.dataset.matchStatus = "green";
+                            if (indicator) {
+                                indicator.className = "match-indicator text-green";
+                                indicator.innerHTML = '<iconify-icon icon="lucide:check-circle-2"></iconify-icon> Selected manually';
+                            }
+                        } else {
+                            if (confirmCheckbox) confirmCheckbox.checked = false;
+                            card.className = "ocr-card no-conf";
+                            card.dataset.matchStatus = "red";
+                            if (indicator) {
+                                indicator.className = "match-indicator text-red";
+                                indicator.innerHTML = '<iconify-icon icon="lucide:alert-triangle"></iconify-icon> No match';
+                            }
+                        }
                     });
                 });
             }

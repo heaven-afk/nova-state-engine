@@ -72,7 +72,14 @@ async function extractFromImage(base64DataURI, imageIndex, authToken) {
     let parsed = [];
     try {
         if (!rawText) throw new Error("API returned empty string");
-        const clean = rawText.replace(/```json\n?/gi, '').replace(/```/g, '').trim();
+        let clean = rawText.replace(/```json\n?/gi, '').replace(/```/g, '').trim();
+        
+        // Escape invalid backslashes that break JSON.parse
+        clean = clean.replace(/\\(?!["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '\\\\');
+        
+        // Remove raw control characters that are invalid in JSON
+        clean = clean.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+        
         parsed = JSON.parse(clean);
         if (!Array.isArray(parsed)) throw new Error("Parsed JSON is not an array");
     } catch (e) {
