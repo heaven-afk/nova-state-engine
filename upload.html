@@ -281,6 +281,32 @@
 
             dropZone.addEventListener('click', () => fileInput.click());
 
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleFiles(e.target.files);
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--nova-green)';
+                dropZone.style.background = 'rgba(108,182,4,0.08)';
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = '';
+                dropZone.style.background = '';
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = '';
+                dropZone.style.background = '';
+                if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+            });
+
             function handleFiles(files) {
                 const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 20);
                 selectedFiles = valid;
