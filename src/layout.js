@@ -11,6 +11,7 @@ const NAV_ITEMS = [
     { id: 'dashboard', href: '/dashboard.html', icon: 'lucide:layout-dashboard', label: 'Dashboard', minRole: 'mod' },
     { id: 'weekly', href: '/weekly.html', icon: 'lucide:calendar-days', label: 'Weekly Stats', minRole: 'mod' },
     { id: 'matches', href: '/matches.html', icon: 'lucide:trophy', label: 'Leaderboard', minRole: 'mod' },
+    { id: 'profile', href: '/profile.html', icon: 'lucide:user', label: 'My Profile', minRole: 'mod' },
     { section: 'ADMIN' },
     { id: 'upload', href: '/upload.html', icon: 'lucide:upload', label: 'Upload Results', minRole: 'admin' },
     { id: 'gfx', href: '/gfx.html', icon: 'lucide:palette', label: 'GFX Generator', minRole: 'admin' },
@@ -30,6 +31,10 @@ const ROLE_HIERARCHY = { owner: 3, admin: 2, mod: 1 };
 export function injectLayout(activePageId, pageTitle, profile) {
     const userLevel = ROLE_HIERARCHY[profile.role] || 0;
     const initial = (profile.displayName || 'U')[0].toUpperCase();
+    const avatarUrl = profile.user?.user_metadata?.avatar_url;
+    const avatarHTML = avatarUrl 
+        ? `<img src="${avatarUrl}" alt="Avatar" class="avatar-img" style="width:100%;height:100%;border-radius:inherit;object-fit:cover;">`
+        : initial;
 
     let navHTML = '';
     for (const item of NAV_ITEMS) {
@@ -57,7 +62,7 @@ export function injectLayout(activePageId, pageTitle, profile) {
         <nav class="sidebar-nav">${navHTML}</nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
-                <div class="user-avatar">${initial}</div>
+                <div class="user-avatar">${avatarHTML}</div>
                 <div class="user-meta">
                     <div class="user-name">${profile.displayName}</div>
                     <span class="role-badge ${roleBadgeClass}">${profile.role}</span>
@@ -78,7 +83,7 @@ export function injectLayout(activePageId, pageTitle, profile) {
             <span class="topbar-title">${pageTitle}</span>
         </div>
         <div class="topbar-right">
-            <div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">${initial}</div>
+            <div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">${avatarHTML}</div>
         </div>
     </div>`;
 

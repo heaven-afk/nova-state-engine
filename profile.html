@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/assets/brand/nova_favicon_64.png">
-    <title>Profile Setup — Nova Gaming Network</title>
+    <title>Profile Settings — Nova Gaming Network</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -22,6 +22,14 @@
             background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
             background-size: 24px 24px;
         }
+
+        /* Override body centering when integrated in dashboard layout */
+        body.has-layout {
+            display: block;
+            min-height: 100vh;
+            background-image: none;
+        }
+
         .profile-card {
             width: 100%;
             max-width: 400px;
@@ -162,72 +170,113 @@
             60% { content: '..'; }
             80%, 100% { content: '...'; }
         }
+
+        .avatar-preview-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(108,182,4,0.20);
+            background: #0A0A0A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s;
+        }
+        .avatar-preview-container:hover {
+            border-color: #6CB604;
+        }
+
+        /* Mobile specific layouts */
+        @media (max-width: 600px) {
+            .profile-flex {
+                flex-direction: column;
+                align-items: center !important;
+                gap: 16px !important;
+            }
+            .profile-flex > div:first-child {
+                width: 100% !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="profile-card loading" id="profile-card">
-        <div class="logo-area">
-            <img src="/assets/brand/nova_logo_full_transparent.png" alt="Nova Gaming Network" width="120" height="120">
-            <h1>NETWORK</h1>
-            <p>Complete Your Profile</p>
+    <div id="profile-container" style="width: 100%; display: flex; justify-content: center;">
+        <!-- Standalone profile card default (for new users) -->
+        <div class="profile-card loading" id="profile-card">
+            <div class="logo-area">
+                <img src="/assets/brand/nova_logo_full_transparent.png" alt="Nova Gaming Network" width="120" height="120">
+                <h1>NETWORK</h1>
+                <p>Complete Your Profile</p>
+            </div>
+
+            <div id="msg-error" class="card mb-md" style="background:rgba(255,76,0,0.1); border-color:rgba(255,76,0,0.3); color:#FF6B4A; padding:10px; font-size:0.85rem; display:none; border-radius:4px; border:0.5px solid rgba(255,76,0,0.3);"></div>
+            <div id="msg-success" class="card mb-md" style="background:rgba(108,182,4,0.1); border-color:rgba(108,182,4,0.3); color:#6CB604; padding:10px; font-size:0.85rem; display:none; border-radius:4px; border:0.5px solid rgba(108,182,4,0.3);"></div>
+
+            <div id="provider-info" style="text-align:center; display:none;"></div>
+
+            <form id="profile-form" style="display:none;">
+                <!-- Avatar Setup -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <label class="form-label" style="margin-bottom: 2px;">Profile Picture</label>
+                    <div class="avatar-preview-container" id="card-avatar-preview-btn" style="cursor: pointer;">
+                        <span id="card-avatar-initial" style="font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.2rem; color: #6CB604;">U</span>
+                        <img id="card-avatar-img" style="display: none; width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
+                        <input type="file" id="inp-card-avatar" accept="image/*" style="display: none;">
+                    </div>
+                    <span class="text-muted" style="font-size: 0.65rem;">Click icon to upload</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="inp-email" placeholder="you@nova.gg" disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" class="form-input" id="inp-username" placeholder="Enter your display name" required minlength="3">
+                </div>
+
+                <div id="password-section">
+                    <div class="form-group" style="position: relative;">
+                        <label class="form-label">Set Password</label>
+                        <input type="password" class="form-input" id="inp-password" placeholder="••••••••" minlength="6">
+                        <button type="button" class="toggle-password" data-target="inp-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
+                            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                        </button>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-input" id="inp-password-confirm" placeholder="••••••••" minlength="6">
+                        <button type="button" class="toggle-password" data-target="inp-password-confirm" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
+                            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btn-submit">
+                    SAVE PROFILE
+                </button>
+
+                <p class="info-text" id="info-text"></p>
+            </form>
         </div>
-
-        <div id="msg-error" class="card mb-md" style="background:rgba(255,76,0,0.1); border-color:rgba(255,76,0,0.3); color:#FF6B4A; padding:10px; font-size:0.85rem; display:none; border-radius:4px; border:0.5px solid rgba(255,76,0,0.3);"></div>
-        <div id="msg-success" class="card mb-md" style="background:rgba(108,182,4,0.1); border-color:rgba(108,182,4,0.3); color:#6CB604; padding:10px; font-size:0.85rem; display:none; border-radius:4px; border:0.5px solid rgba(108,182,4,0.3);"></div>
-
-        <!-- Provider badge (shown after session loads) -->
-        <div id="provider-info" style="text-align:center; display:none;"></div>
-
-        <form id="profile-form" style="display:none;">
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="inp-email" placeholder="you@nova.gg" disabled>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Display Name</label>
-                <input type="text" class="form-input" id="inp-username" placeholder="Enter your display name" required minlength="3">
-            </div>
-
-            <!-- Password fields — only shown for email/invite users -->
-            <div id="password-section">
-                <div class="form-group" style="position: relative;">
-                    <label class="form-label">Set Password</label>
-                    <input type="password" class="form-input" id="inp-password" placeholder="••••••••" minlength="6">
-                    <button type="button" class="toggle-password" data-target="inp-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
-                        <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
-                    </button>
-                </div>
-                <div class="form-group" style="position: relative;">
-                    <label class="form-label">Confirm Password</label>
-                    <input type="password" class="form-input" id="inp-password-confirm" placeholder="••••••••" minlength="6">
-                    <button type="button" class="toggle-password" data-target="inp-password-confirm" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
-                        <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
-                    </button>
-                </div>
-            </div>
-
-            <button type="submit" class="btn-submit" id="btn-submit">
-                SAVE PROFILE
-            </button>
-
-            <p class="info-text" id="info-text"></p>
-        </form>
     </div>
 
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script type="module">
         import { supabase } from '/src/supabase.js';
         import { getSession, getUser, getAuthProvider, getUserRole, bootstrapOwner } from '/src/auth.js';
+        import { injectLayout, showToast } from '/src/layout.js';
 
         let isGoogleUser = false;
         let currentUser = null;
+        let avatarBase64 = null;
 
         (async () => {
             // ── Auth Guard ──────────────────────────────────
-            // This page requires an active session.
-            // If no session, redirect to 404 (don't reveal this route exists).
             const session = await getSession();
             if (!session) {
                 window.location.replace('/404.html');
@@ -235,16 +284,74 @@
             }
 
             currentUser = session.user;
+            avatarBase64 = currentUser.user_metadata?.avatar_url || null;
             const provider = getAuthProvider(currentUser);
             isGoogleUser = (provider === 'google');
 
-            // Remove loading state
+            // Check if user has a role
+            let role = await getUserRole(currentUser);
+            if (!role) role = await bootstrapOwner(currentUser);
+
+            if (role) {
+                // User has a role -> show in-dashboard profile page
+                document.body.classList.add('has-layout');
+                setupDashboardProfile(role);
+            } else {
+                // New user -> show standalone setup card
+                setupStandaloneCard();
+            }
+        })();
+
+        // ── Helper: Process Selected Image File ──────────
+        function handleImageSelection(file, previewImg, previewInitial, fileInput) {
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Image must be under 2MB.', 'error');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create a canvas to downscale/compress the image
+                    const canvas = document.createElement('canvas');
+                    const size = 120; // 120x120px is perfect for tiny base64 storage
+                    canvas.width = size;
+                    canvas.height = size;
+
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Center crop and draw
+                    const scale = Math.max(size / img.width, size / img.height);
+                    const x = (size - img.width * scale) / 2;
+                    const y = (size - img.height * scale) / 2;
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+                    // Compress to JPEG format with 0.75 quality (highly optimized file size)
+                    avatarBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                    
+                    // Show preview
+                    previewImg.src = avatarBase64;
+                    previewImg.style.display = 'block';
+                    if (previewInitial) previewInitial.style.display = 'none';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ── Flow 1: Standalone Card (New/Invited Users) ──
+        function setupStandaloneCard() {
+            // Remove loading class
             document.getElementById('profile-card').classList.remove('loading');
 
-            // ── Populate Email ──────────────────────────────
+            // Populate current values
             document.getElementById('inp-email').value = currentUser.email;
 
-            // ── Provider Badge ──────────────────────────────
+            // Display provider badge
             const providerInfo = document.getElementById('provider-info');
             if (isGoogleUser) {
                 providerInfo.innerHTML = '<span class="provider-badge provider-google"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Signed in with Google</span>';
@@ -254,39 +361,53 @@
                 providerInfo.style.display = 'block';
             }
 
-            // ── Show/Hide Password Section ──────────────────
+            // Determine invite vs normal redirect
             const urlParams = new URLSearchParams(window.location.search);
             const isInviteFlow = urlParams.get('invite') === 'true';
 
             if (isGoogleUser) {
-                // Google users don't need password fields
                 document.getElementById('password-section').style.display = 'none';
                 document.getElementById('info-text').textContent = 'Your Google account is linked. Just set a display name to get started.';
             } else if (isInviteFlow) {
-                // Invited email users: must set a password
-                document.getElementById('password-section').style.display = 'block';
                 document.getElementById('inp-password').required = true;
                 document.getElementById('inp-password-confirm').required = true;
-                document.getElementById('info-text').textContent = 'Set your credentials to access the platform.';
+                document.getElementById('info-text').textContent = 'Set your password and display name to activate your account.';
             } else {
-                // Existing email users: password is optional
-                document.getElementById('password-section').style.display = 'block';
                 document.getElementById('inp-password').required = false;
                 document.getElementById('inp-password-confirm').required = false;
-                document.getElementById('info-text').textContent = 'Update your display name. Leave password blank if you do not want to change it.';
+                document.getElementById('info-text').textContent = 'Set your credentials to access the platform.';
             }
 
-            // ── Pre-fill username if available ──────────────
+            // Prefill username / display name
             const meta = currentUser.user_metadata || {};
             const existingName = meta.display_name || meta.username || meta.full_name || '';
             if (existingName) {
                 document.getElementById('inp-username').value = existingName;
             }
 
-            // ── Show form ───────────────────────────────────
-            document.getElementById('profile-form').style.display = 'block';
+            // Render existing avatar if they have one
+            if (avatarBase64) {
+                document.getElementById('card-avatar-img').src = avatarBase64;
+                document.getElementById('card-avatar-img').style.display = 'block';
+                document.getElementById('card-avatar-initial').style.display = 'none';
+            } else if (existingName) {
+                document.getElementById('card-avatar-initial').textContent = existingName[0].toUpperCase();
+            }
 
-            // ── Password Toggle ─────────────────────────────
+            // Hook up avatar file picker
+            const fileInput = document.getElementById('inp-card-avatar');
+            const previewContainer = document.getElementById('card-avatar-preview-btn');
+            previewContainer.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => {
+                handleImageSelection(
+                    fileInput.files[0],
+                    document.getElementById('card-avatar-img'),
+                    document.getElementById('card-avatar-initial'),
+                    fileInput
+                );
+            });
+
+            // Password toggles
             document.querySelectorAll('.toggle-password').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -302,7 +423,10 @@
                 });
             });
 
-            // ── Form Submit ─────────────────────────────────
+            // Show Form
+            document.getElementById('profile-form').style.display = 'block';
+
+            // Submit Handler
             document.getElementById('profile-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const username = document.getElementById('inp-username').value.trim();
@@ -314,7 +438,6 @@
                 errBox.style.display = 'none';
                 successBox.style.display = 'none';
 
-                // Validate password match (only for email users)
                 if (!isGoogleUser) {
                     if (isInviteFlow && !password) {
                         errBox.textContent = 'Please set a password.';
@@ -335,15 +458,14 @@
                 btn.textContent = 'SAVING...';
 
                 try {
-                    // Build update payload
                     const updatePayload = {
                         data: {
                             display_name: username,
-                            username: username
+                            username: username,
+                            avatar_url: avatarBase64
                         }
                     };
 
-                    // Include password update for email users
                     if (!isGoogleUser && password) {
                         updatePayload.password = password;
                     }
@@ -354,8 +476,6 @@
                     successBox.textContent = 'Profile saved! Redirecting...';
                     successBox.style.display = 'block';
 
-                    // Determine where to redirect
-                    // Check user's role to decide destination
                     let role = await getUserRole(currentUser);
                     if (!role) role = await bootstrapOwner(currentUser);
 
@@ -363,7 +483,7 @@
                         if (role === 'owner') window.location.href = '/users.html';
                         else if (role === 'admin') window.location.href = '/upload.html';
                         else if (role === 'mod') window.location.href = '/dashboard.html';
-                        else window.location.href = '/stats.html'; // No role yet — public stats
+                        else window.location.href = '/stats.html';
                     }, 1500);
                 } catch (err) {
                     errBox.textContent = err.message || 'Failed to save profile.';
@@ -372,7 +492,189 @@
                     btn.textContent = 'SAVE PROFILE';
                 }
             });
-        })();
+        }
+
+        // ── Flow 2: Dashboard Settings (Authenticated Staff) 
+        function setupDashboardProfile(role) {
+            const container = document.getElementById('profile-container');
+            
+            const meta = currentUser.user_metadata || {};
+            const displayName = meta.display_name || meta.username || meta.full_name || currentUser.email.split('@')[0];
+            const initial = displayName[0].toUpperCase();
+
+            // Set up badge class
+            const badgeLabel = role.toUpperCase();
+            const badgeClass = role === 'owner' ? 'role-owner' : role === 'admin' ? 'role-admin' : 'role-mod';
+
+            // Build dashboard UI markup
+            container.innerHTML = `
+                <div class="page-body" style="width: 100%;">
+                    <div class="profile-dashboard-wrapper" style="max-width: 600px; margin: 0 auto;">
+                        <div class="card mb-md">
+                            <div class="card-header">
+                                <span class="card-title text-green">MY ACCOUNT PROFILE</span>
+                            </div>
+                            <div class="card-body">
+                                <form id="dashboard-profile-form">
+                                    <div style="display: flex; gap: 32px; align-items: flex-start; margin-bottom: 24px;" class="profile-flex">
+                                        
+                                        <!-- Avatar Upload Area -->
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 120px; flex-shrink: 0;">
+                                            <div class="avatar-preview-container" id="db-avatar-btn" style="width: 96px; height: 96px; border-radius: 4px; border: 1.5px solid rgba(108,182,4,0.3); background: #0A0A0A; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                                <span id="db-avatar-initial" style="font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.2rem; color: #6CB604;">${initial}</span>
+                                                <img id="db-avatar-img" style="display: none; width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
+                                                <input type="file" id="inp-db-avatar" accept="image/*" style="display: none;">
+                                            </div>
+                                            <span class="text-muted" style="font-size: 0.65rem; text-align: center;">Click avatar to change</span>
+                                        </div>
+
+                                        <!-- Details Area -->
+                                        <div style="flex: 1; min-width: 0; width: 100%;">
+                                            <div class="form-group">
+                                                <label class="form-label">Email Address</label>
+                                                <input type="email" class="form-input" id="db-email" value="${currentUser.email}" disabled style="opacity: 0.6;">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Display Name</label>
+                                                <input type="text" class="form-input" id="db-username" value="${displayName}" required minlength="3">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Role / Group</label>
+                                                <div>
+                                                    <span class="role-badge ${badgeClass}">${badgeLabel}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Password Updates (Only for email provider users) -->
+                                    <div id="db-password-area" style="display: none; border-top: 0.5px solid rgba(108,182,4,0.1); padding-top: 20px; margin-top: 20px;">
+                                        <h4 style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 16px;">Change Password</h4>
+                                        <div class="form-group" style="position: relative;">
+                                            <label class="form-label">New Password</label>
+                                            <input type="password" class="form-input" id="db-password" placeholder="Leave blank to keep current" minlength="6">
+                                            <button type="button" class="toggle-password" data-target="db-password" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
+                                                <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                                            </button>
+                                        </div>
+                                        <div class="form-group" style="position: relative;">
+                                            <label class="form-label">Confirm New Password</label>
+                                            <input type="password" class="form-input" id="db-password-confirm" placeholder="Confirm new password" minlength="6">
+                                            <button type="button" class="toggle-password" data-target="db-password-confirm" style="position: absolute; right: 12px; top: 30px; background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; height: 30px; width: 30px; z-index: 2; padding: 4px;">
+                                                <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
+                                        <button type="submit" class="btn btn-primary" id="db-btn-submit">SAVE PROFILE</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Inject the layout wrapper
+            injectLayout('profile', 'MY PROFILE', {
+                user: currentUser,
+                role: role,
+                displayName: displayName,
+                email: currentUser.email
+            });
+
+            // Render existing avatar image
+            if (avatarBase64) {
+                const imgEl = document.getElementById('db-avatar-img');
+                imgEl.src = avatarBase64;
+                imgEl.style.display = 'block';
+                document.getElementById('db-avatar-initial').style.display = 'none';
+            }
+
+            // Hook up avatar file picker
+            const fileInput = document.getElementById('inp-db-avatar');
+            const previewContainer = document.getElementById('db-avatar-btn');
+            previewContainer.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => {
+                handleImageSelection(
+                    fileInput.files[0],
+                    document.getElementById('db-avatar-img'),
+                    document.getElementById('db-avatar-initial'),
+                    fileInput
+                );
+            });
+
+            // Show password block only if they signed in with email/password
+            if (!isGoogleUser) {
+                document.getElementById('db-password-area').style.display = 'block';
+            }
+
+            // Toggle password visibility events
+            document.querySelectorAll('.toggle-password').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const targetId = btn.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const eyeOpen = btn.querySelector('.eye-open');
+                    const eyeClosed = btn.querySelector('.eye-closed');
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    eyeOpen.style.display = isPassword ? 'none' : 'block';
+                    eyeClosed.style.display = isPassword ? 'block' : 'none';
+                });
+            });
+
+            // Form submission listener
+            document.getElementById('dashboard-profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('db-username').value.trim();
+                const password = document.getElementById('db-password').value;
+                const passwordConfirm = document.getElementById('db-password-confirm').value;
+
+                if (!isGoogleUser && (password || passwordConfirm)) {
+                    if (password !== passwordConfirm) {
+                        return showToast('Passwords do not match.', 'error');
+                    }
+                }
+
+                const submitBtn = document.getElementById('db-btn-submit');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'SAVING...';
+
+                try {
+                    const updatePayload = {
+                        data: {
+                            display_name: username,
+                            username: username,
+                            avatar_url: avatarBase64
+                        }
+                    };
+
+                    if (!isGoogleUser && password) {
+                        updatePayload.password = password;
+                    }
+
+                    const { error } = await supabase.auth.updateUser(updatePayload);
+                    if (error) throw error;
+
+                    showToast('Profile updated successfully!', 'success');
+                    
+                    // Reload after a brief delay to refresh layout details
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+
+                } catch (err) {
+                    showToast(err.message || 'Failed to update profile.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'SAVE PROFILE';
+                }
+            });
+        }
     </script>
 </body>
 </html>
