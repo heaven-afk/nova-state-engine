@@ -54,7 +54,8 @@ async function extractFromImage(base64DataURI, imageIndex, authToken) {
         const errText = await resp.text().catch(() => '');
         let errBody = {};
         try { errBody = JSON.parse(errText); } catch(e) {}
-        const errMsg = errBody?.error || `OCR API error (${resp.status})`;
+        const detail = errBody?.details || errBody?.detail || '';
+        const errMsg = (errBody?.error || `OCR API error (${resp.status})`) + (detail ? ` — ${detail}` : '');
 
         const isQuota = resp.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('all ocr providers');
         if (isQuota) {
