@@ -112,7 +112,7 @@ export default async function handler(req, res) {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            model: "llama-3.2-11b-vision-preview",
+                            model: "meta-llama/llama-4-scout-17b-16e-instruct",
                             messages: [
                                 {
                                     role: "user",
@@ -127,8 +127,9 @@ export default async function handler(req, res) {
                     });
 
                     if (!response.ok) {
+                        const errBody = await response.text().catch(() => '');
                         if (response.status === 429) throw new Error('Quota Exceeded');
-                        throw new Error(`Groq API Error: ${response.status}`);
+                        throw new Error(`Groq API Error: ${response.status} ${errBody.slice(0, 200)}`);
                     }
 
                     const data = await response.json();
