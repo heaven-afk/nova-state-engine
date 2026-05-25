@@ -174,6 +174,46 @@
             let pendingParsedTeams = [];
             let teamSlotsConfirmed = false;
 
+            // Check for pre-loaded session ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const preloadedSessionId = urlParams.get('session_id');
+            if (preloadedSessionId) {
+                try {
+                    // Fetch the session from the database
+                    const { data: session, error: sErr } = await supabase.from('scrims_sessions')
+                        .select('*').eq('id', preloadedSessionId).single();
+                    if (sErr || !session) throw sErr || new Error("Session not found");
+
+                    // Fetch the teams
+                    const { data: tData, error: tErr } = await supabase.from('session_teams')
+                        .select('*').eq('session_id', preloadedSessionId).order('slot_number');
+                    if (tErr) throw tErr;
+
+                    // Populate fields
+                    document.getElementById('inp-session').value = session.session_name;
+                    document.getElementById('inp-date').value = session.date;
+                    document.getElementById('inp-lobbies').value = session.lobby_count;
+                    document.getElementById('inp-teams').value = (tData || []).map(t => `${t.slot_number}. ${t.team_name}`).join('\n');
+
+                    // Pre-fill state
+                    activeDbSession = session;
+                    activeTeams = tData || [];
+                    pendingParsedTeams = activeTeams.map(t => ({ slot_number: t.slot_number, team_name: t.team_name }));
+                    teamSlotsConfirmed = true;
+
+                    // Show team slots preview
+                    renderTeamSlotPreview(pendingParsedTeams);
+
+                    // Re-style session setup button
+                    const btn = document.getElementById('btn-create-session');
+                    btn.innerHTML = '<iconify-icon icon="lucide:check-circle"></iconify-icon> CONFIRM SLOTS & ACTIVATE SESSION';
+                    
+                    showToast('Pre-loaded session details. Click Confirm to activate.', 'info');
+                } catch (err) {
+                    showToast('Failed to pre-load session: ' + err.message, 'error');
+                }
+            }
+
             const dropZone = document.getElementById('drop-zone');
             const fileInput = document.getElementById('file-input');
             const previewGrid = document.getElementById('preview-grid');
@@ -239,16 +279,22 @@
                 btn.innerHTML = 'CREATING...';
 
                 try {
-                    // Try to find exact match by name + date
-                    const { data: existing } = await supabase.from('scrims_sessions')
-                        .select('*').eq('session_name', sessionName).eq('date', date).maybeSingle();
+                    // Try to find exact match by name + date OR use preloaded session
+                    let existing = null;
+                    if (activeDbSession) {
+                        existing = activeDbSession;
+                    } else {
+                        const { data } = await supabase.from('scrims_sessions')
+                            .select('*').eq('session_name', sessionName).eq('date', date).maybeSingle();
+                        existing = data;
+                    }
                     
                     if (existing) {
                         activeDbSession = existing;
-                        // Update total lobbies if they changed
-                        if (existing.lobby_count !== lobbyCount) {
+                        // Update session details if changed
+                        if (existing.session_name !== sessionName || existing.date !== date || existing.lobby_count !== lobbyCount) {
                             const { data: updated, error: updateErr } = await supabase.from('scrims_sessions')
-                                .update({ lobby_count: lobbyCount })
+                                .update({ session_name: sessionName, date: date, lobby_count: lobbyCount })
                                 .eq('id', existing.id)
                                 .select()
                                 .single();
