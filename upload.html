@@ -64,18 +64,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Total Lobbies</label>
-                            <select class="form-select" id="inp-lobbies">
-                                <option value="1">1 Lobby</option>
-                                <option value="2">2 Lobbies</option>
-                                <option value="3" selected>3 Lobbies</option>
-                                <option value="4">4 Lobbies</option>
-                                <option value="5">5 Lobbies</option>
-                                <option value="6">6 Lobbies</option>
-                                <option value="7">7 Lobbies</option>
-                                <option value="8">8 Lobbies</option>
-                                <option value="9">9 Lobbies</option>
-                                <option value="10">10 Lobbies</option>
-                            </select>
+                            <input type="number" class="form-input" id="inp-lobbies" min="1" max="10" value="3" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Paste Today's Team Slots (numbered list)</label>
@@ -238,6 +227,16 @@
                     
                     if (existing) {
                         activeDbSession = existing;
+                        // Update total lobbies if they changed
+                        if (existing.lobby_count !== lobbyCount) {
+                            const { data: updated, error: updateErr } = await supabase.from('scrims_sessions')
+                                .update({ lobby_count: lobbyCount })
+                                .eq('id', existing.id)
+                                .select()
+                                .single();
+                            if (updateErr) throw updateErr;
+                            activeDbSession = updated;
+                        }
                         // Fetch existing teams
                         const { data: tData } = await supabase.from('session_teams').select('*').eq('session_id', activeDbSession.id).order('slot_number');
                         activeTeams = tData || [];
@@ -277,6 +276,23 @@
                 pendingParsedTeams = [];
                 document.getElementById('team-preview-panel').classList.add('hidden');
                 document.getElementById('btn-create-session').innerHTML = '<iconify-icon icon="lucide:list-checks"></iconify-icon> PREVIEW TEAM SLOTS';
+            });
+
+            document.getElementById('inp-target-lobby').addEventListener('change', () => {
+                // Clear state for the newly selected lobby
+                fileInput.value = '';
+                selectedFiles = [];
+                base64Images = [];
+                previewGrid.innerHTML = '';
+                btnProcess.classList.add('hidden');
+                document.getElementById('ocr-container').classList.add('hidden');
+                ocrData = [];
+                document.getElementById('ocr-results').innerHTML = '';
+                btnProcess.disabled = false;
+                btnProcess.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS WITH OCR';
+                const btnSave = document.getElementById('btn-save');
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
             });
 
             dropZone.addEventListener('click', () => fileInput.click());
@@ -641,7 +657,35 @@
                     await insertMatchResults(teamsToInsert);
 
                     showToast(`Lobby ${targetLobby} saved successfully!`, 'success');
-                    setTimeout(() => window.location.href = '/matches.html', 1500);
+                    const nextLobby = targetLobby + 1;
+                    if (nextLobby <= activeDbSession.lobby_count) {
+                        setTimeout(() => {
+                            // Select next lobby
+                            const lobbySelect = document.getElementById('inp-target-lobby');
+                            lobbySelect.value = nextLobby;
+                            
+                            // Reset state for next lobby upload
+                            fileInput.value = '';
+                            selectedFiles = [];
+                            base64Images = [];
+                            previewGrid.innerHTML = '';
+                            btnProcess.classList.add('hidden');
+                            document.getElementById('ocr-container').classList.add('hidden');
+                            ocrData = [];
+                            document.getElementById('ocr-results').innerHTML = '';
+                            
+                            btnProcess.disabled = false;
+                            btnProcess.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS WITH OCR';
+                            
+                            btn.disabled = false;
+                            btn.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
+                            
+                            document.getElementById('active-session-banner').scrollIntoView({ behavior: 'smooth' });
+                            showToast(`Ready to upload Lobby ${nextLobby}`, 'info');
+                        }, 1500);
+                    } else {
+                        setTimeout(() => window.location.href = '/matches.html', 1500);
+                    }
 
                 } catch (err) {
                     console.error('Save error:', err);
