@@ -20,7 +20,20 @@
         .ocr-card.auto-conf { border-color: rgba(108, 182, 4, 0.45); background: rgba(108, 182, 4, 0.04); }
         .ocr-card.low-conf { border-color: rgba(255, 165, 0, 0.4); background: rgba(255, 165, 0, 0.05); }
         .ocr-card.no-conf { border-color: rgba(255, 76, 0, 0.45); background: rgba(255, 76, 0, 0.06); }
-        .ocr-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: center; }
+        .ocr-row { display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 16px; align-items: center; }
+        .inp-kills {
+            padding-right: 12px !important;
+            padding-left: 12px !important;
+            text-align: center;
+        }
+        .inp-kills::-webkit-outer-spin-button,
+        .inp-kills::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .inp-kills {
+            -moz-appearance: textfield;
+        }
         .slot-preview { max-height: 260px; overflow: auto; margin: 12px 0 16px; border: 0.5px solid var(--border-default); border-radius: var(--radius); }
         .slot-preview-row { display: grid; grid-template-columns: 48px 1fr; gap: 10px; padding: 8px 12px; border-bottom: 0.5px solid var(--border-subtle); font-family: var(--font-data); font-weight: 700; }
         .slot-preview-row:last-child { border-bottom: 0; }
@@ -86,7 +99,12 @@
                 <div class="card-body" style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <div style="font-size:0.8rem; color:var(--nova-green); font-weight:700;">ACTIVE SESSION</div>
-                        <div id="active-session-name" style="font-size:1.2rem; font-weight:700;"></div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div id="active-session-name" style="font-size:1.2rem; font-weight:700;"></div>
+                            <button class="btn btn-secondary btn-sm" id="btn-edit-session" style="padding: 4px 8px; min-height: 26px; font-size: 0.65rem; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                                <iconify-icon icon="lucide:edit-3"></iconify-icon> Edit Setup
+                            </button>
+                        </div>
                     </div>
                     <div style="text-align:right;">
                         <select class="form-select" id="inp-target-lobby" style="margin-bottom:0; width:150px;">
@@ -237,9 +255,14 @@
                             if (updateErr) throw updateErr;
                             activeDbSession = updated;
                         }
-                        // Fetch existing teams
-                        const { data: tData } = await supabase.from('session_teams').select('*').eq('session_id', activeDbSession.id).order('slot_number');
-                        activeTeams = tData || [];
+                        // Update teams list: delete current ones and save the new list
+                        await supabase.from('session_teams').delete().eq('session_id', activeDbSession.id);
+                        activeTeams = pendingParsedTeams.map(team => ({
+                            session_id: activeDbSession.id,
+                            slot_number: team.slot_number,
+                            team_name: team.team_name
+                        }));
+                        await saveSessionTeams(activeTeams);
                     } else {
                         activeDbSession = await createSession(sessionName, date, lobbyCount, profile.user.id);
                         
@@ -260,7 +283,15 @@
                     document.getElementById('active-session-name').textContent = activeDbSession.session_name;
                     
                     const lobbySelect = document.getElementById('inp-target-lobby');
+                    const currentSelectedLobby = lobbySelect.value;
                     lobbySelect.innerHTML = Array.from({length: activeDbSession.lobby_count}, (_, i) => `<option value="${i+1}">Lobby ${i+1}</option>`).join('');
+                    if (currentSelectedLobby && parseInt(currentSelectedLobby) <= activeDbSession.lobby_count) {
+                        lobbySelect.value = currentSelectedLobby;
+                    }
+
+                    if (ocrData && ocrData.length > 0) {
+                        renderOCRResults();
+                    }
 
                     showToast('Session Active! Ready for uploads.', 'success');
                 } catch(err) {
@@ -293,6 +324,11 @@
                 const btnSave = document.getElementById('btn-save');
                 btnSave.disabled = false;
                 btnSave.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
+            });
+
+            document.getElementById('btn-edit-session').addEventListener('click', () => {
+                document.getElementById('setup-form').parentElement.parentElement.classList.remove('hidden');
+                document.getElementById('setup-form').scrollIntoView({ behavior: 'smooth' });
             });
 
             dropZone.addEventListener('click', () => fileInput.click());
