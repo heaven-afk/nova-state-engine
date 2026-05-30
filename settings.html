@@ -111,18 +111,82 @@
             let currentPointRecord = null;
             let pendingPointConfig = null;
 
+            function getPointSystemRanges(placementPoints) {
+                const flatPoints = {};
+                for (const key of Object.keys(placementPoints)) {
+                    if (key.includes('-')) {
+                        const [start, end] = key.split('-').map(Number);
+                        if (!isNaN(start) && !isNaN(end)) {
+                            for (let p = start; p <= end; p++) {
+                                flatPoints[String(p)] = Number(placementPoints[key]);
+                            }
+                        }
+                    } else {
+                        const p = Number(key);
+                        if (!isNaN(p)) {
+                            flatPoints[String(p)] = Number(placementPoints[key]);
+                        }
+                    }
+                }
+
+                const placements = Object.keys(flatPoints)
+                    .map(Number)
+                    .sort((a, b) => a - b);
+                if (placements.length === 0) return [];
+
+                const ranges = [];
+                let i = 0;
+                while (i < placements.length) {
+                    const start = placements[i];
+                    const val = flatPoints[String(start)];
+                    let end = start;
+                    while (i + 1 < placements.length && placements[i + 1] === end + 1 && flatPoints[String(placements[i + 1])] === val) {
+                        end = placements[i + 1];
+                        i++;
+                    }
+                    ranges.push({ start, end, points: val });
+                    i++;
+                }
+                return ranges;
+            }
+
+            function formatPointSystemToText(config) {
+                const placementPoints = config?.placement_points || {};
+                const ranges = getPointSystemRanges(placementPoints);
+                let text = '';
+                ranges.forEach(r => {
+                    if (r.start === r.end) {
+                        text += `${r.start} = ${r.points}\n`;
+                    } else {
+                        text += `${r.start} - ${r.end} = ${r.points}\n`;
+                    }
+                });
+                text += `Kill = ${config?.kill_points ?? 2}`;
+                return text;
+            }
+
             function renderPointTable(config) {
-                const placement = config?.placement_points || {};
+                const placementPoints = config?.placement_points || {};
+                const ranges = getPointSystemRanges(placementPoints);
+                
+                let rowsHtml = '';
+                ranges.forEach(r => {
+                    const ordinal = (n) => {
+                        const s = ["th", "st", "nd", "rd"];
+                        const v = n % 100;
+                        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                    };
+                    const label = r.start === r.end ? ordinal(r.start) + ' Place' : `${ordinal(r.start)} - ${ordinal(r.end)} Place`;
+                    rowsHtml += `<tr><td>${label}</td><td>${r.points}</td></tr>`;
+                });
+
+                rowsHtml += `<tr><td>Points per Kill</td><td>${config?.kill_points ?? 0}</td></tr>`;
+
                 return `
                     <table class="data-table">
                         <thead><tr><th>Rule</th><th>Points</th></tr></thead>
                         <tbody>
-                            <tr><td>1st Place</td><td>${placement["1"] ?? 0}</td></tr>
-                            <tr><td>2nd Place</td><td>${placement["2"] ?? 0}</td></tr>
-                            <tr><td>3rd Place</td><td>${placement["3"] ?? 0}</td></tr>
-                            <tr><td>4th - 9th Place</td><td>${placement["4-9"] ?? 0}</td></tr>
-                            <tr><td>10th - 25th Place</td><td>${placement["10-25"] ?? 0}</td></tr>
-                            <tr><td>Points per Kill</td><td>${config?.kill_points ?? 0}</td></tr>
+                            ${rowsHtml}
                         </tbody>
                     </table>
                 `;
@@ -135,28 +199,50 @@
                 lines.forEach(line => {
                     const pointsMatch = line.match(/(\d+)\s*(?:pts?|points?)/);
                     const allNumbers = [...line.matchAll(/\d+/g)].map(match => Number(match[0]));
-                    const points = pointsMatch ? Number(pointsMatch[1]) : allNumbers.at(-1);
-                    if (typeof points !== 'number' || Number.isNaN(points)) return;
-
+                    
                     if (line.includes('kill')) {
-                        config.kill_points = points;
+                        const points = pointsMatch ? Number(pointsMatch[1]) : allNumbers.at(-1);
+                        if (typeof points === 'number' && !isNaN(points)) {
+                            config.kill_points = points;
+                        }
                         return;
                     }
 
-                    const placementMatch = line.match(/^(\d+)(?:st|nd|rd|th)?\s*(?:-|to|–|—)?\s*(\d+)?(?:st|nd|rd|th)?/);
-                    if (!placementMatch) return;
+                    // Extract placement numbers and points
+                    let lineWithoutPoints = line;
+                    let points = null;
+                    if (pointsMatch) {
+                        points = Number(pointsMatch[1]);
+                        lineWithoutPoints = line.replace(pointsMatch[0], '');
+                    } else if (allNumbers.length > 0) {
+                        points = allNumbers.at(-1);
+                        const lastNumIdx = line.lastIndexOf(String(points));
+                        if (lastNumIdx !== -1) {
+                            lineWithoutPoints = line.substring(0, lastNumIdx) + line.substring(lastNumIdx + String(points).length);
+                        }
+                    }
 
-                    const start = placementMatch[1];
-                    const end = placementMatch[2];
-                    const key = end ? `${start}-${end}` : start;
-                    config.placement_points[key] = points;
+                    if (typeof points !== 'number' || isNaN(points)) return;
+
+                    const placementNumbers = [...lineWithoutPoints.matchAll(/\d+/g)].map(match => Number(match[0]));
+                    if (placementNumbers.length === 1) {
+                        config.placement_points[String(placementNumbers[0])] = points;
+                    } else if (placementNumbers.length >= 2) {
+                        const start = Math.min(placementNumbers[0], placementNumbers[1]);
+                        const end = Math.max(placementNumbers[0], placementNumbers[1]);
+                        for (let p = start; p <= end; p++) {
+                            config.placement_points[String(p)] = points;
+                        }
+                    }
                 });
 
-                const requiredKeys = ["1", "2", "3", "4-9", "10-25"];
-                const missing = requiredKeys.filter(key => typeof config.placement_points[key] !== 'number');
-                if (missing.length || typeof config.kill_points !== 'number') {
-                    throw new Error(`Missing point rules: ${[...missing, typeof config.kill_points !== 'number' ? 'kill' : null].filter(Boolean).join(', ')}`);
+                if (Object.keys(config.placement_points).length === 0) {
+                    throw new Error("Could not parse any placement points rules.");
                 }
+                if (typeof config.kill_points !== 'number') {
+                    throw new Error("Missing kill points rule (e.g., 'Kill = 2').");
+                }
+
                 return config;
             }
 
@@ -178,6 +264,12 @@
                 document.getElementById('btn-save-points').style.display = 'inline-block';
                 document.getElementById('btn-save-points').textContent = 'PREVIEW POINT SYSTEM';
                 document.getElementById('point-preview-panel').classList.add('hidden');
+                
+                // Pre-populate input with current configuration format
+                if (currentPointRecord && currentPointRecord.config) {
+                    document.getElementById('inp-point-text').value = formatPointSystemToText(currentPointRecord.config);
+                }
+                
                 pendingPointConfig = null;
             });
 

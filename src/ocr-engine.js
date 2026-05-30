@@ -134,7 +134,8 @@ function calculateSimilarity(s1, s2) {
 
 function resolveDuplicates(records) {
     const unique = [];
-    const THRESHOLD = 0.75; // Sensitivity for matching names
+    const senseSetting = typeof window !== 'undefined' ? localStorage.getItem('nova_setting_ocr_sense') : null;
+    const THRESHOLD = senseSetting ? parseFloat(senseSetting) : 0.75;
 
     records.forEach(current => {
         let isMatch = false;
@@ -144,9 +145,14 @@ function resolveDuplicates(records) {
                 current.normalizedName.toLowerCase(),
                 existing.normalizedName.toLowerCase()
             );
-            // If name is very similar AND kills are identical, it's a true duplicate
-            if (dist >= THRESHOLD && current.rawKills === existing.rawKills) {
+            // If name is very similar, it is a duplicate!
+            if (dist >= THRESHOLD) {
                 isMatch = true;
+                // Merge duplicate entries: keep the one with higher confidence, or more kills if confidence is equal
+                if (current.confidence > existing.confidence || 
+                    (current.confidence === existing.confidence && current.normalizedKills > existing.normalizedKills)) {
+                    unique[i] = current;
+                }
                 break;
             }
         }

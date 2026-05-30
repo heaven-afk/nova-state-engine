@@ -61,11 +61,47 @@ export function calculatePoints(placement, kills, pointSystem) {
     const killPoints = Number(pointSystem?.kill_points ?? 2);
 
     let placementPts = 0;
-    if (placement === 1) placementPts = placementPoints["1"] || 0;
-    else if (placement === 2) placementPts = placementPoints["2"] || 0;
-    else if (placement === 3) placementPts = placementPoints["3"] || 0;
-    else if (placement >= 4 && placement <= 9) placementPts = placementPoints["4-9"] || 0;
-    else if (placement >= 10) placementPts = placementPoints["10-25"] || 0;
+    const placementStr = String(placement);
+
+    if (placementStr in placementPoints) {
+        placementPts = Number(placementPoints[placementStr]);
+    } else {
+        // Fallback for legacy format: check if placement falls within range keys like "4-9" or "10-25"
+        let found = false;
+        for (const key of Object.keys(placementPoints)) {
+            if (key.includes('-')) {
+                const [start, end] = key.split('-').map(Number);
+                if (!isNaN(start) && !isNaN(end) && placement >= start && placement <= end) {
+                    placementPts = Number(placementPoints[key]);
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            // Fallback: use the points value of the highest defined placement position
+            const numericKeys = Object.keys(placementPoints)
+                .flatMap(key => key.includes('-') ? key.split('-').map(Number) : [Number(key)])
+                .filter(n => !isNaN(n));
+            if (numericKeys.length > 0) {
+                const maxKey = Math.max(...numericKeys);
+                let fallbackVal = 0;
+                for (const key of Object.keys(placementPoints)) {
+                    if (key.includes('-')) {
+                        const [start, end] = key.split('-').map(Number);
+                        if (!isNaN(start) && !isNaN(end) && maxKey >= start && maxKey <= end) {
+                            fallbackVal = Number(placementPoints[key]);
+                            break;
+                        }
+                    } else if (Number(key) === maxKey) {
+                        fallbackVal = Number(placementPoints[key]);
+                        break;
+                    }
+                }
+                placementPts = fallbackVal;
+            }
+        }
+    }
 
     return placementPts + ((Number(kills) || 0) * killPoints);
 }

@@ -9,22 +9,31 @@ export const config = {
 
 const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
 
-Extract every visible player entry. Each row shows a player IGN and their kill count.
-The screenshots may contain Team Names or Team Numbers (e.g., 1, 2, 3...) next to the players.
+Extract every visible player entry. Each row shows a player IGN (In-Game Name), their kill count, and their team number or team name.
 
 Return ONLY a JSON array. No explanation, no markdown, no code fences. Example:
 [{"name": "Nova|Shadow", "kills": 14, "team": "44 Regents"}, {"name": "T1_Viper", "kills": 9, "team": 1}]
 
-Rules:
-- Include ALL visible player rows
-- Extract the team name for each player if visible. If only a team number/slot is visible, return that number:
-  - Max 4 players per team. If a team has more than 4, it is likely a misread.
-  - If a team number is missing/unclear, you can leave it out or return null for that player.
-- Player names may contain: letters, numbers, symbols like | . _ - [ ] > < ~
-- Kills are 0-40. If > 40, still include it
-- If you cannot read a name clearly, include your best guess
-- Do NOT include headers, total scores, or rankings - only individual player rows
-- If no valid players found, return: []`;
+CRITICAL ACCURACY RULES:
+1. PLAYER KILLS ACCURACY:
+   - Carefully read the player's kill count. This is typically a number from 0 to 40.
+   - Do NOT confuse kills with damage (damage is usually hundreds/thousands, like 450, 1200) or placement rank (like #1, #2).
+   - If a player has 0 kills, write 0. Do not skip or read as another character.
+2. PLAYER NAME (IGN) ACCURACY:
+   - Player names may contain special characters, clan tags, and symbols (e.g. |, ., _, -, [, ], >, <, ~, *).
+   - Pay close attention to characters that look similar (e.g., '0' vs 'O', 'l' vs '1' vs 'I', '|' vs 'I').
+   - Extract the name exactly as it is shown. Do not strip tags unless they are clearly separate from the IGN.
+3. TEAM ASSIGNMENT & GROUPING:
+   - Extract the team name or team slot/number (e.g., 1, 2, 3...) next to the player.
+   - In Battle Royale scrims, players are grouped in teams of up to 4. Pay attention to the visual grouping or background colors.
+   - If a player is clearly part of a team but their row doesn't have the team number visible, assign them to the same team as their teammates.
+   - If only a team slot/number is visible, return that number. If a team name is visible, return the team name.
+   - If a team slot/number is missing or unclear, return null.
+4. NO DUPLICATE PLAYERS:
+   - Ensure each player is listed exactly once per image.
+   - Do NOT include headers, total team scores, or lobby rankings — only individual player rows.
+5. EMPTY STATE:
+   - If no valid player rows are found, return: []`;
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

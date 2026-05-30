@@ -38,9 +38,6 @@
             overflow: hidden;
             transform-origin: top left;
             transition: transform 0.2s;
-            /* Dot-grid base */
-            background-image: radial-gradient(circle, rgba(108,182,4,0.1) 1px, transparent 1px);
-            background-size: 32px 32px;
         }
         
         /* Render Target (invisible unless downloading, keeps high res) */
@@ -183,6 +180,15 @@
                     <!-- Scaled visible preview -->
                     <div id="preview-scaler" style="transform-origin: top left; transform: scale(0.4);">
                         <div id="gfx-canvas" class="gfx-canvas" style="width: 1920px; height: 1080px;">
+                            <!-- SVG Dot-Grid Background -->
+                            <svg width="100%" height="100%" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0.15; z-index:1;">
+                                <defs>
+                                    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                                        <circle cx="2" cy="2" r="1.5" fill="#6CB604" />
+                                    </pattern>
+                                </defs>
+                                <rect width="100%" height="100%" fill="url(#grid)" />
+                            </svg>
                             <svg class="gfx-logo-bg" viewBox="0 0 28 28" fill="none">
                                 <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="#6CB604"/>
                                 <path d="M14 5L23 14L14 23L5 14L14 5Z" stroke="#6CB604" stroke-width="1.5"/>
@@ -337,8 +343,23 @@
                         backgroundColor: '#0A0A0A',
                         logging: false,
                         onclone: (clonedDoc) => {
+                            const scaler = clonedDoc.getElementById('preview-scaler');
+                            if (scaler) {
+                                scaler.style.transform = 'none';
+                                scaler.style.width = 'auto';
+                                scaler.style.height = 'auto';
+                                scaler.style.padding = '0';
+                                scaler.style.margin = '0';
+                            }
                             const cl = clonedDoc.getElementById('gfx-canvas');
-                            cl.style.transform = 'none';
+                            if (cl) {
+                                cl.style.transform = 'none';
+                                cl.style.position = 'absolute';
+                                cl.style.top = '0';
+                                cl.style.left = '0';
+                                cl.style.margin = '0';
+                                clonedDoc.body.appendChild(cl);
+                            }
                         }
                     });
                     
