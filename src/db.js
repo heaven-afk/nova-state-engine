@@ -172,17 +172,40 @@ export async function insertPlayerStats(stats) {
 
 export async function getPlayerStats(sessionId) {
     const { data, error } = await supabase.from('player_stats')
-        .select('*').eq('session_id', sessionId).order('kills', { ascending: false });
+        .select('*').eq('session_id', sessionId);
     if (error) throw error;
-    return data || [];
+    if (!data) return [];
+
+    const playerMap = {};
+    data.forEach(p => {
+        const name = p.player_name;
+        if (!playerMap[name]) {
+            playerMap[name] = { player_name: name, team_name: p.team_name, kills: 0 };
+        }
+        playerMap[name].kills += p.kills;
+    });
+
+    return Object.values(playerMap).sort((a, b) => b.kills - a.kills);
 }
 
 export async function getTopFraggers(sessionId, limit = 10) {
     const { data, error } = await supabase.from('player_stats')
-        .select('player_name, team_name, kills').eq('session_id', sessionId)
-        .order('kills', { ascending: false }).limit(limit);
+        .select('player_name, team_name, kills').eq('session_id', sessionId);
     if (error) throw error;
-    return data || [];
+    if (!data) return [];
+
+    const playerMap = {};
+    data.forEach(p => {
+        const name = p.player_name;
+        if (!playerMap[name]) {
+            playerMap[name] = { player_name: name, team_name: p.team_name, kills: 0 };
+        }
+        playerMap[name].kills += p.kills;
+    });
+
+    return Object.values(playerMap)
+        .sort((a, b) => b.kills - a.kills)
+        .slice(0, limit);
 }
 
 export async function getGlobalPlayerStats() {
@@ -250,7 +273,7 @@ export async function getLatestSessionStats() {
 
     const [resultsRes, playersRes] = await Promise.all([
         supabase.from('match_results').select('*').eq('session_id', session.id).order('points', { ascending: false }),
-        supabase.from('player_stats').select('*').eq('session_id', session.id).order('kills', { ascending: false })
+        supabase.from('player_stats').select('*').eq('session_id', session.id)
     ]);
 
     // Aggregate team standings
@@ -262,10 +285,23 @@ export async function getLatestSessionStats() {
     });
     const teams = Object.values(teamMap).sort((a, b) => b.total_points - a.total_points);
 
+    // Aggregate player stats
+    const playerMap = {};
+    (playersRes.data || []).forEach(p => {
+        const name = p.player_name;
+        if (!playerMap[name]) {
+            playerMap[name] = { player_name: name, team_name: p.team_name, kills: 0 };
+        }
+        playerMap[name].kills += p.kills;
+    });
+    const topFraggers = Object.values(playerMap)
+        .sort((a, b) => b.kills - a.kills)
+        .slice(0, 10);
+
     return {
         session,
         teams,
-        topFraggers: (playersRes.data || []).slice(0, 10),
+        topFraggers,
         matchResults: resultsRes.data || []
     };
 }
