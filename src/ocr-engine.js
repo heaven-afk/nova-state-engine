@@ -3,21 +3,21 @@
  * Client-side pipeline for calling the OCR API and parsing results.
  */
 
-export async function runOCRExtraction(imageURIs, authToken) {
+export async function runOCRExtraction(imageURIs, authToken, ocrType = 'players') {
     let allRecords = [];
     let lastError = null;
     let quotaExhausted = false;
 
     for (let i = 0; i < imageURIs.length; i++) {
         const uri = imageURIs[i];
-        console.log(`[OCR] Processing image ${i + 1} of ${imageURIs.length}...`);
+        console.log(`[OCR] Processing image ${i + 1} of ${imageURIs.length} (${ocrType})...`);
 
         // Small delay between images to reduce rate limit pressure
         if (i > 0) await new Promise(r => setTimeout(r, 1500));
 
         try {
-            const records = await extractFromImage(uri, i, authToken);
-            console.log(`[OCR] Image ${i + 1}: extracted ${records.length} players`);
+            const records = await extractFromImage(uri, i, authToken, ocrType);
+            console.log(`[OCR] Image ${i + 1}: extracted ${records.length} items`);
             allRecords = allRecords.concat(records);
         } catch (err) {
             console.error(`[OCR] Failed on image ${i + 1}:`, err.message);
@@ -31,13 +31,13 @@ export async function runOCRExtraction(imageURIs, authToken) {
 
     if (allRecords.length === 0) {
         if (quotaExhausted) throw new Error('API quota exhausted across all providers. Try again later.');
-        throw new Error(`No player data could be extracted. Details: ${lastError || 'Unknown error'}`);
+        throw new Error(`No ${ocrType === 'teams' ? 'team' : 'player'} data could be extracted. Details: ${lastError || 'Unknown error'}`);
     }
 
-    return resolveDuplicates(allRecords);
+    return resolveDuplicates(allRecords, ocrType);
 }
 
-async function extractFromImage(base64DataURI, imageIndex, authToken) {
+async function extractFromImage(base64DataURI, imageIndex, authToken, ocrType = 'players') {
     const base64Data = base64DataURI.split(',')[1];
     const mimeType = base64DataURI.split(';')[0].split(':')[1] || 'image/png';
 
@@ -47,7 +47,7 @@ async function extractFromImage(base64DataURI, imageIndex, authToken) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ image: base64Data, mimeType })
+        body: JSON.stringify({ image: base64Data, mimeType, type: ocrType })
     });
 
     if (!resp.ok) {
@@ -87,6 +87,25 @@ async function extractFromImage(base64DataURI, imageIndex, authToken) {
     }
 
     if (parsed.length === 0) throw new Error("Model returned an empty array");
+
+    if (ocrType === 'teams') {
+        return parsed.map(entry => {
+            const rank = parseInt(entry.rank || entry.placement || entry.position, 10);
+            const kills = parseInt(entry.kills ?? entry.teamKills ?? entry.totalKills, 10);
+            const teamValue = entry.team ?? entry.teamSlot ?? entry.team_slot ?? entry.team_name ?? entry.teamName;
+            const teamLabel = typeof teamValue === 'number' || /^\d+$/.test(String(teamValue || '').trim())
+                ? `Team ${teamValue}`
+                : String(teamValue || 'Unknown').trim();
+            
+            return {
+                sourceImage: `Image_${imageIndex + 1}`,
+                rank: isNaN(rank) ? null : rank,
+                teamSlot: teamLabel,
+                kills: isNaN(kills) ? 0 : kills,
+                confidence: isNaN(kills) ? 0.5 : 0.95
+            };
+        }).filter(r => r.teamSlot !== 'Unknown');
+    }
 
     return parsed.map(entry => {
         const kills = parseInt(entry.kills, 10);
@@ -132,7 +151,7 @@ function calculateSimilarity(s1, s2) {
     return (longerLength - costs[shorter.length]) / longerLength;
 }
 
-function resolveDuplicates(records) {
+function resolveDuplicates(records, ocrType = 'players') {
     const unique = [];
     const senseSetting = typeof window !== 'undefined' ? localStorage.getItem('nova_setting_ocr_sense') : null;
     const THRESHOLD = senseSetting ? parseFloat(senseSetting) : 0.75;
@@ -141,16 +160,28 @@ function resolveDuplicates(records) {
         let isMatch = false;
         for (let i = 0; i < unique.length; i++) {
             const existing = unique[i];
-            const dist = calculateSimilarity(
-                current.normalizedName.toLowerCase(),
-                existing.normalizedName.toLowerCase()
-            );
-            // If name is very similar, it is a duplicate!
+            
+            let dist;
+            if (ocrType === 'teams') {
+                dist = calculateSimilarity(
+                    current.teamSlot.toLowerCase(),
+                    existing.teamSlot.toLowerCase()
+                );
+            } else {
+                dist = calculateSimilarity(
+                    current.normalizedName.toLowerCase(),
+                    existing.normalizedName.toLowerCase()
+                );
+            }
+
+            // If key field is very similar, it is a duplicate!
             if (dist >= THRESHOLD) {
                 isMatch = true;
                 // Merge duplicate entries: keep the one with higher confidence, or more kills if confidence is equal
+                const currentVal = ocrType === 'teams' ? current.kills : current.normalizedKills;
+                const existingVal = ocrType === 'teams' ? existing.kills : existing.normalizedKills;
                 if (current.confidence > existing.confidence || 
-                    (current.confidence === existing.confidence && current.normalizedKills > existing.normalizedKills)) {
+                    (current.confidence === existing.confidence && currentVal > existingVal)) {
                     unique[i] = current;
                 }
                 break;

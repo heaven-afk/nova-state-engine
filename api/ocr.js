@@ -7,7 +7,7 @@ export const config = {
     maxDuration: 60, // Maximum execution time in seconds
 };
 
-const OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
+const PLAYER_OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim scoreboard screenshot.
 
 Extract every visible player entry. Each row shows a player IGN (In-Game Name), their kill count, and their team number or team name.
 
@@ -34,6 +34,25 @@ CRITICAL ACCURACY RULES:
    - Do NOT include headers, total team scores, or lobby rankings — only individual player rows.
 5. EMPTY STATE:
    - If no valid player rows are found, return: []`;
+
+const TEAM_OCR_PROMPT = `You are analyzing a Call of Duty Mobile Battle Royale scrim lobby results/scoreboard screenshot (specifically team placement and total team kills).
+
+Extract every visible team entry. Each row shows a team placement/rank, team number or team name (e.g. Slot/Team 23 or "Team 23"), and the team's total kill count in that particular lobby.
+
+Return ONLY a JSON array. No explanation, no markdown, no code fences. Example:
+[{"rank": 1, "teamSlot": "Team 23", "kills": 31}, {"rank": 2, "teamSlot": "Team 12", "kills": 10}]
+
+CRITICAL ACCURACY RULES:
+1. TEAM PLACEMENT RANK ACCURACY:
+   - Read the team's placement position (e.g. 1, 2, 3...). This shows how they finished the match.
+2. TEAM SLOT / NAME ACCURACY:
+   - Identify the team slot/number (e.g., "Team 23", "Team 12", "Slot 5") or team name.
+3. TEAM TOTAL KILLS:
+   - Read the total team kills in that particular lobby.
+4. NO DUPLICATE TEAMS:
+   - Ensure each team is listed at most once.
+5. EMPTY STATE:
+   - If no valid team rows are found, return: []`;
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -71,8 +90,10 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: `Forbidden: Your role is '${role || 'none'}'. Admin/Owner required.` });
         }
 
-        const { image, mimeType } = req.body;
+        const { image, mimeType, type = 'players' } = req.body;
         if (!image) return res.status(400).json({ error: 'No image provided' });
+
+        const prompt = type === 'teams' ? TEAM_OCR_PROMPT : PLAYER_OCR_PROMPT;
 
         const KEYS = [
             { name: 'Gemini Primary', key: process.env.GEMINI_API_KEY, type: 'gemini' },
@@ -103,7 +124,7 @@ export default async function handler(req, res) {
                         body: JSON.stringify({
                             contents: [{
                                 parts: [
-                                    { text: OCR_PROMPT },
+                                    { text: prompt },
                                     { inlineData: { mimeType: mimeType || 'image/png', data: image } }
                                 ]
                             }]
@@ -136,7 +157,7 @@ export default async function handler(req, res) {
                                 {
                                     role: "user",
                                     content: [
-                                        { type: "text", text: OCR_PROMPT },
+                                        { type: "text", text: prompt },
                                         { type: "image_url", image_url: { url: `data:${mimeType || 'image/png'};base64,${image}` } }
                                     ]
                                 }

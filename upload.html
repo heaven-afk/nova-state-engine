@@ -112,36 +112,88 @@
                         </select>
                     </div>
                 </div>
-            </div>
-
-            <!-- Upload Zone -->
-            <div class="card mb-md hidden" id="upload-card">
-                <div class="card-body">
-                    <div class="upload-zone" id="drop-zone">
-                        <iconify-icon icon="lucide:image-plus"></iconify-icon>
-                        <div class="upload-zone-text">Drop result screenshots here or click to browse</div>
-                        <div class="text-muted mt-sm" style="font-size:0.7rem;">Max 20 images. PNG, JPG, WEBP</div>
-                        <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-                    </div>
-                    <div id="preview-grid" class="thumb-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"></div>
-                    <button class="btn btn-primary btn-block mt-md hidden" id="btn-process">
-                        <iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS WITH OCR
+            </div>            <!-- OCR Workspace Container -->
+            <div id="ocr-workspace" class="hidden">
+                <!-- Tabs Navigation -->
+                <div class="tabs-nav" style="display:flex; border-bottom:0.5px solid var(--border-default); margin-bottom:20px; gap:8px;">
+                    <button class="tab-btn active" id="tab-btn-teams" style="flex:1; background:transparent; border:none; padding:12px 16px; color:var(--nova-green); font-family:var(--font-display); font-weight:700; border-bottom:2px solid var(--nova-green); text-transform:uppercase; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all var(--transition);">
+                        <iconify-icon icon="lucide:trophy"></iconify-icon> 1. Team Placements
+                    </button>
+                    <button class="tab-btn" id="tab-btn-players" style="flex:1; background:transparent; border:none; padding:12px 16px; color:var(--text-muted); font-family:var(--font-display); font-weight:700; border-bottom:2px solid transparent; text-transform:uppercase; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all var(--transition);">
+                        <iconify-icon icon="lucide:users"></iconify-icon> 2. Player Kills
                     </button>
                 </div>
-            </div>
 
-            <!-- OCR Results -->
-            <div id="ocr-container" class="hidden">
-                <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;">
-                    <span class="section-title">OCR RESULTS</span>
-                    <button class="btn btn-secondary btn-sm" id="btn-add-row"><iconify-icon icon="lucide:plus"></iconify-icon> Add Row</button>
+                <!-- Tab content for Team Stats -->
+                <div class="tab-content" id="tab-content-teams">
+                    <!-- Team Upload Zone -->
+                    <div class="card mb-md">
+                        <div class="card-header"><span class="card-title">UPLOAD TEAM PLACEMENTS SCREENSHOT</span></div>
+                        <div class="card-body">
+                            <div class="upload-zone" id="team-drop-zone">
+                                <iconify-icon icon="lucide:image-plus"></iconify-icon>
+                                <div class="upload-zone-text">Drop team placement screenshots here or click to browse</div>
+                                <div class="text-muted mt-sm" style="font-size:0.7rem;">PNG, JPG, WEBP</div>
+                                <input type="file" id="team-file-input" multiple accept="image/*" class="hidden">
+                            </div>
+                            <div id="team-preview-grid" class="thumb-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"></div>
+                            <button class="btn btn-primary btn-block mt-md hidden" id="btn-process-teams">
+                                <iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS TEAM PLACEMENTS
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Team OCR Results -->
+                    <div id="team-ocr-container" class="hidden">
+                        <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span class="section-title">TEAM PLACEMENTS REVIEW</span>
+                            <button class="btn btn-secondary btn-sm" id="btn-add-team-row"><iconify-icon icon="lucide:plus"></iconify-icon> Add Team Row</button>
+                        </div>
+                        <div class="progress-bar mb-md hidden" id="team-ocr-progress-container"><div class="progress-fill" id="team-ocr-progress" style="width:0%"></div></div>
+                        <div id="team-ocr-status" class="text-muted text-center mb-md" style="font-size:0.8rem;"></div>
+                        
+                        <div class="ocr-grid" id="team-ocr-results" style="margin-bottom:20px;"></div>
+                    </div>
                 </div>
-                <div class="progress-bar mb-md hidden" id="ocr-progress-container"><div class="progress-fill" id="ocr-progress" style="width:0%"></div></div>
-                <div id="ocr-status" class="text-muted text-center mb-md" style="font-size:0.8rem;"></div>
-                
-                <div class="ocr-grid" id="ocr-results"></div>
 
+                <!-- Tab content for Player Kills -->
+                <div class="tab-content hidden" id="tab-content-players">
+                    <!-- Player Upload Zone -->
+                    <div class="card mb-md">
+                        <div class="card-header"><span class="card-title">UPLOAD PLAYER KILLS SCREENSHOTS</span></div>
+                        <div class="card-body">
+                            <div class="upload-zone" id="player-drop-zone">
+                                <iconify-icon icon="lucide:image-plus"></iconify-icon>
+                                <div class="upload-zone-text">Drop player kills screenshots here or click to browse</div>
+                                <div class="text-muted mt-sm" style="font-size:0.7rem;">Max 20 images. PNG, JPG, WEBP</div>
+                                <input type="file" id="player-file-input" multiple accept="image/*" class="hidden">
+                            </div>
+                            <div id="player-preview-grid" class="thumb-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;"></div>
+                            <button class="btn btn-primary btn-block mt-md hidden" id="btn-process-players">
+                                <iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS PLAYER KILLS
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Player OCR Results -->
+                    <div id="player-ocr-container" class="hidden">
+                        <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span class="section-title">PLAYER KILLS REVIEW</span>
+                            <button class="btn btn-secondary btn-sm" id="btn-add-player-row"><iconify-icon icon="lucide:plus"></iconify-icon> Add Player Row</button>
+                        </div>
+                        <div class="progress-bar mb-md hidden" id="player-ocr-progress-container"><div class="progress-fill" id="player-ocr-progress" style="width:0%"></div></div>
+                        <div id="player-ocr-status" class="text-muted text-center mb-md" style="font-size:0.8rem;"></div>
+                        
+                        <div class="ocr-grid" id="player-ocr-results" style="margin-bottom:20px;"></div>
+                    </div>
+                </div>
+
+                <!-- Global Save Action -->
                 <div class="card mt-md card-body" style="background: rgba(108,182,4,0.05); border-color: var(--nova-green);">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <iconify-icon icon="lucide:info" style="color: var(--nova-green); font-size: 1.1rem; flex-shrink: 0;"></iconify-icon>
+                        <span>Confirming will save <strong>Team placements</strong> and <strong>Player kills</strong> for the current lobby. Be sure to review both tabs if needed.</span>
+                    </div>
                     <button class="btn btn-primary btn-block" id="btn-save">
                         <iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY
                     </button>
@@ -168,11 +220,50 @@
             let activeTeams = [];
             let pointSystemConfig = null;
 
-            let selectedFiles = [];
-            let base64Images = [];
-            let ocrData = [];
+            // State for Team OCR
+            let teamSelectedFiles = [];
+            let teamBase64Images = [];
+            let teamOcrData = [];
+
+            // State for Player OCR
+            let playerSelectedFiles = [];
+            let playerBase64Images = [];
+            let playerOcrData = [];
+
             let pendingParsedTeams = [];
             let teamSlotsConfirmed = false;
+
+            // Tab Toggling logic
+            const tabBtnTeams = document.getElementById('tab-btn-teams');
+            const tabBtnPlayers = document.getElementById('tab-btn-players');
+            const tabContentTeams = document.getElementById('tab-content-teams');
+            const tabContentPlayers = document.getElementById('tab-content-players');
+
+            tabBtnTeams.addEventListener('click', () => {
+                tabBtnTeams.classList.add('active');
+                tabBtnTeams.style.color = 'var(--nova-green)';
+                tabBtnTeams.style.borderBottomColor = 'var(--nova-green)';
+                
+                tabBtnPlayers.classList.remove('active');
+                tabBtnPlayers.style.color = 'var(--text-muted)';
+                tabBtnPlayers.style.borderBottomColor = 'transparent';
+
+                tabContentTeams.classList.remove('hidden');
+                tabContentPlayers.classList.add('hidden');
+            });
+
+            tabBtnPlayers.addEventListener('click', () => {
+                tabBtnPlayers.classList.add('active');
+                tabBtnPlayers.style.color = 'var(--nova-green)';
+                tabBtnPlayers.style.borderBottomColor = 'var(--nova-green)';
+                
+                tabBtnTeams.classList.remove('active');
+                tabBtnTeams.style.color = 'var(--text-muted)';
+                tabBtnTeams.style.borderBottomColor = 'transparent';
+
+                tabContentPlayers.classList.remove('hidden');
+                tabContentTeams.classList.add('hidden');
+            });
 
             // Check for pre-loaded session ID
             const urlParams = new URLSearchParams(window.location.search);
@@ -213,11 +304,6 @@
                     showToast('Failed to pre-load session: ' + err.message, 'error');
                 }
             }
-
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('file-input');
-            const previewGrid = document.getElementById('preview-grid');
-            const btnProcess = document.getElementById('btn-process');
 
             function escapeHTML(value) {
                 return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -325,7 +411,7 @@
                     // Update UI
                     document.getElementById('setup-form').parentElement.parentElement.classList.add('hidden'); // Hide setup card
                     document.getElementById('active-session-banner').classList.remove('hidden');
-                    document.getElementById('upload-card').classList.remove('hidden');
+                    document.getElementById('ocr-workspace').classList.remove('hidden');
                     document.getElementById('active-session-name').textContent = activeDbSession.session_name;
                     
                     const lobbySelect = document.getElementById('inp-target-lobby');
@@ -333,10 +419,6 @@
                     lobbySelect.innerHTML = Array.from({length: activeDbSession.lobby_count}, (_, i) => `<option value="${i+1}">Lobby ${i+1}</option>`).join('');
                     if (currentSelectedLobby && parseInt(currentSelectedLobby) <= activeDbSession.lobby_count) {
                         lobbySelect.value = currentSelectedLobby;
-                    }
-
-                    if (ocrData && ocrData.length > 0) {
-                        renderOCRResults();
                     }
 
                     showToast('Session Active! Ready for uploads.', 'success');
@@ -356,115 +438,218 @@
             });
 
             document.getElementById('inp-target-lobby').addEventListener('change', () => {
-                // Clear state for the newly selected lobby
-                fileInput.value = '';
-                selectedFiles = [];
-                base64Images = [];
-                previewGrid.innerHTML = '';
-                btnProcess.classList.add('hidden');
-                document.getElementById('ocr-container').classList.add('hidden');
-                ocrData = [];
-                document.getElementById('ocr-results').innerHTML = '';
-                btnProcess.disabled = false;
-                btnProcess.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS WITH OCR';
+                resetLobbyState();
+            });
+
+            function resetLobbyState() {
+                // Team state reset
+                document.getElementById('team-file-input').value = '';
+                teamSelectedFiles = [];
+                teamBase64Images = [];
+                document.getElementById('team-preview-grid').innerHTML = '';
+                document.getElementById('btn-process-teams').classList.add('hidden');
+                document.getElementById('team-ocr-container').classList.add('hidden');
+                teamOcrData = [];
+                document.getElementById('team-ocr-results').innerHTML = '';
+                document.getElementById('btn-process-teams').disabled = false;
+                document.getElementById('btn-process-teams').innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS TEAM PLACEMENTS';
+
+                // Player state reset
+                document.getElementById('player-file-input').value = '';
+                playerSelectedFiles = [];
+                playerBase64Images = [];
+                document.getElementById('player-preview-grid').innerHTML = '';
+                document.getElementById('btn-process-players').classList.add('hidden');
+                document.getElementById('player-ocr-container').classList.add('hidden');
+                playerOcrData = [];
+                document.getElementById('player-ocr-results').innerHTML = '';
+                document.getElementById('btn-process-players').disabled = false;
+                document.getElementById('btn-process-players').innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS PLAYER KILLS';
+
+                // Save button reset
                 const btnSave = document.getElementById('btn-save');
                 btnSave.disabled = false;
                 btnSave.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
-            });
+            }
 
             document.getElementById('btn-edit-session').addEventListener('click', () => {
                 document.getElementById('setup-form').parentElement.parentElement.classList.remove('hidden');
                 document.getElementById('setup-form').scrollIntoView({ behavior: 'smooth' });
             });
 
-            dropZone.addEventListener('click', () => fileInput.click());
+            // ── TEAM UPLOAD LOGIC ─────────────────────────
+            const teamDropZone = document.getElementById('team-drop-zone');
+            const teamFileInput = document.getElementById('team-file-input');
+            const teamPreviewGrid = document.getElementById('team-preview-grid');
+            const btnProcessTeams = document.getElementById('btn-process-teams');
 
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) handleFiles(e.target.files);
+            teamDropZone.addEventListener('click', () => teamFileInput.click());
+            teamFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleTeamFiles(e.target.files);
             });
 
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.style.borderColor = 'var(--nova-green)';
-                dropZone.style.background = 'rgba(108,182,4,0.08)';
-            });
+            setupDragAndDrop(teamDropZone, handleTeamFiles);
 
-            dropZone.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.style.borderColor = '';
-                dropZone.style.background = '';
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.style.borderColor = '';
-                dropZone.style.background = '';
-                if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
-            });
-
-            function handleFiles(files) {
-                const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 20);
-                selectedFiles = valid;
-                base64Images = [];
-                previewGrid.innerHTML = '';
+            function handleTeamFiles(files) {
+                const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 10);
+                teamSelectedFiles = valid;
+                teamBase64Images = [];
+                teamPreviewGrid.innerHTML = '';
                 
                 if (valid.length > 0) {
-                    btnProcess.classList.remove('hidden');
-                    document.getElementById('ocr-container').classList.add('hidden');
+                    btnProcessTeams.classList.remove('hidden');
+                    document.getElementById('team-ocr-container').classList.add('hidden');
                 } else {
-                    btnProcess.classList.add('hidden');
+                    btnProcessTeams.classList.add('hidden');
                 }
 
                 valid.forEach(file => {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        base64Images.push(e.target.result);
-                        previewGrid.innerHTML += `<div class="thumb" style="width:60px;height:60px;border-radius:4px;overflow:hidden;border:1px solid #333;"><img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" alt="Preview"></div>`;
+                        teamBase64Images.push(e.target.result);
+                        teamPreviewGrid.innerHTML += `<div class="thumb" style="width:60px;height:60px;border-radius:4px;overflow:hidden;border:1px solid #333;"><img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" alt="Preview"></div>`;
                     };
                     reader.readAsDataURL(file);
                 });
             }
 
-            btnProcess.addEventListener('click', async () => {
-                if (base64Images.length === 0) return;
+            // ── PLAYER UPLOAD LOGIC ───────────────────────
+            const playerDropZone = document.getElementById('player-drop-zone');
+            const playerFileInput = document.getElementById('player-file-input');
+            const playerPreviewGrid = document.getElementById('player-preview-grid');
+            const btnProcessPlayers = document.getElementById('btn-process-players');
+
+            playerDropZone.addEventListener('click', () => playerFileInput.click());
+            playerFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handlePlayerFiles(e.target.files);
+            });
+
+            setupDragAndDrop(playerDropZone, handlePlayerFiles);
+
+            function handlePlayerFiles(files) {
+                const valid = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 20);
+                playerSelectedFiles = valid;
+                playerBase64Images = [];
+                playerPreviewGrid.innerHTML = '';
+                
+                if (valid.length > 0) {
+                    btnProcessPlayers.classList.remove('hidden');
+                    document.getElementById('player-ocr-container').classList.add('hidden');
+                } else {
+                    btnProcessPlayers.classList.add('hidden');
+                }
+
+                valid.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        playerBase64Images.push(e.target.result);
+                        playerPreviewGrid.innerHTML += `<div class="thumb" style="width:60px;height:60px;border-radius:4px;overflow:hidden;border:1px solid #333;"><img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" alt="Preview"></div>`;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function setupDragAndDrop(zone, fileHandler) {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.style.borderColor = 'var(--nova-green)';
+                    zone.style.background = 'rgba(108,182,4,0.08)';
+                });
+
+                zone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.style.borderColor = '';
+                    zone.style.background = '';
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.style.borderColor = '';
+                    zone.style.background = '';
+                    if (e.dataTransfer.files.length > 0) fileHandler(e.dataTransfer.files);
+                });
+            }
+
+            // ── PROCESS TEAMS OCR ─────────────────────────
+            btnProcessTeams.addEventListener('click', async () => {
+                if (teamBase64Images.length === 0) return;
                 
                 const sessionName = document.getElementById('inp-session').value.trim();
                 if (!sessionName) { showToast('Please enter a Session Name first', 'error'); return; }
 
-                const btn = btnProcess;
+                const btn = btnProcessTeams;
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spin">⟳</span> PROCESSING...';
-                document.getElementById('ocr-container').classList.remove('hidden');
-                document.getElementById('ocr-progress-container').classList.remove('hidden');
-                document.getElementById('ocr-results').innerHTML = '';
+                document.getElementById('team-ocr-container').classList.remove('hidden');
+                document.getElementById('team-ocr-progress-container').classList.remove('hidden');
+                document.getElementById('team-ocr-results').innerHTML = '';
                 
-                const statusText = document.getElementById('ocr-status');
-                statusText.textContent = `Processing ${base64Images.length} images via AI Vision...`;
-                document.getElementById('ocr-progress').style.width = '30%';
+                const statusText = document.getElementById('team-ocr-status');
+                statusText.textContent = `Processing ${teamBase64Images.length} images via AI Vision...`;
+                document.getElementById('team-ocr-progress').style.width = '30%';
 
                 try {
-                    // Attach the JWT to auth the Vercel function
                     const { getSession } = await import('/src/auth.js');
                     const session = await getSession();
                     
-                    // OCR pipeline handles deduplication natively now
-                    const rawRecords = await runOCRExtraction(base64Images, session.access_token);
-                    document.getElementById('ocr-progress').style.width = '100%';
-                    statusText.textContent = `Found ${rawRecords.length} unique players across screenshots. Please review and verify.`;
+                    const rawRecords = await runOCRExtraction(teamBase64Images, session.access_token, 'teams');
+                    document.getElementById('team-ocr-progress').style.width = '100%';
+                    statusText.textContent = `Found ${rawRecords.length} unique team slots. Please review and verify.`;
                     
-                    ocrData = rawRecords;
-                    renderOCRResults();
+                    // Sort teams by rank placement
+                    rawRecords.sort((a, b) => (a.rank || 99) - (b.rank || 99));
+                    teamOcrData = rawRecords;
+                    renderTeamOCRResults();
                 } catch (err) {
                     showToast(err.message, 'error', 6000);
                     statusText.textContent = `Error: ${err.message}`;
-                    document.getElementById('ocr-progress').style.width = '0%';
+                    document.getElementById('team-ocr-progress').style.width = '0%';
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS AGAIN';
-                    setTimeout(() => document.getElementById('ocr-progress-container').classList.add('hidden'), 1000);
+                    setTimeout(() => document.getElementById('team-ocr-progress-container').classList.add('hidden'), 1000);
+                }
+            });
+
+            // ── PROCESS PLAYERS OCR ───────────────────────
+            btnProcessPlayers.addEventListener('click', async () => {
+                if (playerBase64Images.length === 0) return;
+                
+                const sessionName = document.getElementById('inp-session').value.trim();
+                if (!sessionName) { showToast('Please enter a Session Name first', 'error'); return; }
+
+                const btn = btnProcessPlayers;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spin">⟳</span> PROCESSING...';
+                document.getElementById('player-ocr-container').classList.remove('hidden');
+                document.getElementById('player-ocr-progress-container').classList.remove('hidden');
+                document.getElementById('player-ocr-results').innerHTML = '';
+                
+                const statusText = document.getElementById('player-ocr-status');
+                statusText.textContent = `Processing ${playerBase64Images.length} images via AI Vision...`;
+                document.getElementById('player-ocr-progress').style.width = '30%';
+
+                try {
+                    const { getSession } = await import('/src/auth.js');
+                    const session = await getSession();
+                    
+                    const rawRecords = await runOCRExtraction(playerBase64Images, session.access_token, 'players');
+                    document.getElementById('player-ocr-progress').style.width = '100%';
+                    statusText.textContent = `Found ${rawRecords.length} unique players. Please review and verify.`;
+                    
+                    playerOcrData = rawRecords;
+                    renderPlayerOCRResults();
+                } catch (err) {
+                    showToast(err.message, 'error', 6000);
+                    statusText.textContent = `Error: ${err.message}`;
+                    document.getElementById('player-ocr-progress').style.width = '0%';
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS AGAIN';
+                    setTimeout(() => document.getElementById('player-ocr-progress-container').classList.add('hidden'), 1000);
                 }
             });
 
@@ -516,16 +701,151 @@
                 return { match: null, conf: 0, status: 'red', label: 'No match' };
             }
 
-            function renderOCRResults() {
-                const container = document.getElementById('ocr-results');
-                if (ocrData.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No players found or all were duplicates.</div>';
+            function renderTeamOCRResults() {
+                const container = document.getElementById('team-ocr-results');
+                if (teamOcrData.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No team records.</div>';
+                    return;
+                }
+
+                let html = '';
+                const makeTeamOptions = selected => '<option value="">-- Select Team --</option>' + activeTeams.map(t => {
+                    const safeName = escapeHTML(t.team_name);
+                    const isSelected = t.team_name === selected ? ' selected' : '';
+                    return `<option value="${safeName}"${isSelected}>${safeName}</option>`;
+                }).join('');
+
+                teamOcrData.forEach((p, idx) => {
+                    const matchResult = fuzzyMatchTeam(p.teamSlot);
+                    const teamSelectVal = matchResult.match || "";
+                    let teamClass = "ocr-card auto-conf";
+                    let indicatorClass = "text-green";
+                    let indicatorIcon = "lucide:check-circle-2";
+                    let confirmation = "";
+                    
+                    if (matchResult.status === 'amber') {
+                        teamClass = "ocr-card low-conf";
+                        indicatorClass = "text-gold";
+                        indicatorIcon = "lucide:alert-circle";
+                        confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm suggested team mapping</label>';
+                    } else if (matchResult.status === 'red') {
+                        teamClass = "ocr-card no-conf";
+                        indicatorClass = "text-red";
+                        indicatorIcon = "lucide:alert-triangle";
+                        confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm selected team mapping</label>';
+                    }
+
+                    if (p.confidence < 0.8) {
+                        teamClass = "ocr-card low-conf";
+                    }
+
+                    html += `
+                    <div class="${teamClass}" data-match-status="${matchResult.status}">
+                        <div class="ocr-row">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Rank / Placement</label>
+                                <input type="number" class="form-input inp-rank" value="${p.rank || ''}" min="1" placeholder="e.g., 1">
+                            </div>
+                            <div style="display:flex;gap:12px;">
+                                <div class="form-group" style="margin:0;flex:1;">
+                                    <label class="form-label">Total Kills</label>
+                                    <input type="number" class="form-input inp-kills" value="${p.kills}" min="0">
+                                </div>
+                                <div class="form-group" style="margin:0;flex:2;">
+                                    <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span>Mapped Team (Read: ${escapeHTML(p.teamSlot)})</span>
+                                        <span class="match-indicator ${indicatorClass}">
+                                            <iconify-icon icon="${indicatorIcon}"></iconify-icon> ${escapeHTML(matchResult.label)}
+                                        </span>
+                                    </label>
+                                    <select class="form-select inp-team">
+                                        ${makeTeamOptions(teamSelectVal)}
+                                    </select>
+                                    ${confirmation}
+                                </div>
+                                <button class="btn-icon btn-del-team-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+                container.innerHTML = html;
+
+                // Delete handlers
+                container.querySelectorAll('.btn-del-team-row').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.target.closest('.ocr-card').remove();
+                    });
+                });
+
+                // Change handler for mapping drop-down
+                container.querySelectorAll('.inp-team').forEach(select => {
+                    select.addEventListener('change', (e) => {
+                        const card = e.target.closest('.ocr-card');
+                        const selectedVal = e.target.value;
+                        const confirmCheckbox = card.querySelector('.inp-confirm-match');
+                        const indicator = card.querySelector('.match-indicator');
+
+                        if (selectedVal) {
+                            if (confirmCheckbox) confirmCheckbox.checked = true;
+                            card.className = "ocr-card auto-conf";
+                            card.dataset.matchStatus = "green";
+                            if (indicator) {
+                                indicator.className = "match-indicator text-green";
+                                indicator.innerHTML = '<iconify-icon icon="lucide:check-circle-2"></iconify-icon> Selected manually';
+                            }
+                        } else {
+                            if (confirmCheckbox) confirmCheckbox.checked = false;
+                            card.className = "ocr-card no-conf";
+                            card.dataset.matchStatus = "red";
+                            if (indicator) {
+                                indicator.className = "match-indicator text-red";
+                                indicator.innerHTML = '<iconify-icon icon="lucide:alert-triangle"></iconify-icon> No match';
+                            }
+                        }
+                    });
+                });
+            }
+
+            document.getElementById('btn-add-team-row').addEventListener('click', () => {
+                const container = document.getElementById('team-ocr-results');
+                const newIdx = Date.now();
+                const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${escapeHTML(t.team_name)}">${escapeHTML(t.team_name)}</option>`).join('');
+                
+                const html = `
+                <div class="ocr-card" data-idx="${newIdx}">
+                    <div class="ocr-row">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Rank / Placement</label>
+                            <input type="number" class="form-input inp-rank" placeholder="e.g. 1" min="1">
+                        </div>
+                        <div style="display:flex;gap:12px;">
+                            <div class="form-group" style="margin:0;flex:1;">
+                                <label class="form-label">Total Kills</label>
+                                <input type="number" class="form-input inp-kills" value="0" min="0">
+                            </div>
+                            <div class="form-group" style="margin:0;flex:2;">
+                                <label class="form-label">Mapped Team</label>
+                                <select class="form-select inp-team">${teamOptions}</select>
+                            </div>
+                            <button class="btn-icon btn-del-team-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                        </div>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('afterbegin', html);
+                container.querySelector('.btn-del-team-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
+            });
+
+            function renderPlayerOCRResults() {
+                const container = document.getElementById('player-ocr-results');
+                if (playerOcrData.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No players found.</div>';
                     return;
                 }
 
                 // Group by team for better review
                 const teamMap = {};
-                ocrData.forEach((r, idx) => {
+                playerOcrData.forEach((r, idx) => {
                     const t = r.teamSlot || 'Unknown Team';
                     if (!teamMap[t]) teamMap[t] = [];
                     teamMap[t].push({ ...r, _idx: idx });
@@ -553,7 +873,7 @@
                             teamClass = "ocr-card low-conf";
                             indicatorClass = "text-gold";
                             indicatorIcon = "lucide:alert-circle";
-                            confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm this suggested/corrected team mapping</label>';
+                            confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm suggested team mapping</label>';
                         } else if (matchResult.status === 'red') {
                             teamClass = "ocr-card no-conf";
                             indicatorClass = "text-red";
@@ -561,7 +881,6 @@
                             confirmation = '<label class="confirm-match"><input type="checkbox" class="inp-confirm-match"> Confirm selected team mapping</label>';
                         }
 
-                        // Player name low conf
                         if (p.confidence < 0.8) {
                             teamClass = "ocr-card low-conf";
                         }
@@ -590,7 +909,7 @@
                                         </select>
                                         ${confirmation}
                                     </div>
-                                    <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                                    <button class="btn-icon btn-del-player-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
                                 </div>
                             </div>
                         </div>`;
@@ -599,15 +918,14 @@
                 container.innerHTML = html;
 
                 // Delete handlers
-                document.querySelectorAll('.btn-del-row').forEach(btn => {
+                container.querySelectorAll('.btn-del-player-row').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const card = e.target.closest('.ocr-card');
-                        card.remove();
+                        e.target.closest('.ocr-card').remove();
                     });
                 });
 
                 // Team dropdown change handlers to auto-confirm and styling updates
-                document.querySelectorAll('.inp-team').forEach(select => {
+                container.querySelectorAll('.inp-team').forEach(select => {
                     select.addEventListener('change', (e) => {
                         const card = e.target.closest('.ocr-card');
                         const selectedVal = e.target.value;
@@ -635,8 +953,8 @@
                 });
             }
 
-            document.getElementById('btn-add-row').addEventListener('click', () => {
-                const container = document.getElementById('ocr-results');
+            document.getElementById('btn-add-player-row').addEventListener('click', () => {
+                const container = document.getElementById('player-ocr-results');
                 const newIdx = Date.now();
                 const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${escapeHTML(t.team_name)}">${escapeHTML(t.team_name)}</option>`).join('');
                 
@@ -656,27 +974,26 @@
                                 <label class="form-label">Mapped Team</label>
                                 <select class="form-select inp-team">${teamOptions}</select>
                             </div>
-                            <button class="btn-icon btn-del-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
+                            <button class="btn-icon btn-del-player-row" style="margin-top:20px;color:var(--alert-red);"><iconify-icon icon="lucide:trash-2"></iconify-icon></button>
                         </div>
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('afterbegin', html);
-                container.querySelector('.btn-del-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
+                container.querySelector('.btn-del-player-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
             });
 
+            // ── SAVE ACTION LOGIC ─────────────────────────
             document.getElementById('btn-save').addEventListener('click', async () => {
                 if (!activeDbSession) { showToast('No active session!', 'error'); return; }
                 const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
 
-                const cards = document.querySelectorAll('.ocr-card');
-                if (cards.length === 0) { showToast('No players to save', 'warning'); return; }
+                // Collect Player Cards
+                const playerCards = document.querySelectorAll('#player-ocr-results .ocr-card');
+                const finalPlayerData = [];
+                let missingPlayerTeam = false;
+                let unconfirmedPlayerMatch = false;
 
-                const finalData = [];
-                const teamMap = {}; // Aggregate team kills for match_results table
-
-                let missingTeam = false;
-                let unconfirmedMatch = false;
-                cards.forEach(card => {
+                playerCards.forEach(card => {
                     const name = card.querySelector('.inp-ign').value.trim();
                     const kills = parseInt(card.querySelector('.inp-kills').value) || 0;
                     const team = card.querySelector('.inp-team').value;
@@ -684,21 +1001,50 @@
                     const confirmInput = card.querySelector('.inp-confirm-match');
                     
                     if (!name) return;
-                    if (!team) { missingTeam = true; return; }
+                    if (!team) { missingPlayerTeam = true; return; }
                     if ((status === 'amber' || status === 'red') && !confirmInput?.checked) {
-                        unconfirmedMatch = true;
+                        unconfirmedPlayerMatch = true;
                         return;
                     }
 
-                    finalData.push({ player_name: name, kills, team_name: team, lobby_number: targetLobby });
-
-                    if (!teamMap[team]) teamMap[team] = { team_name: team, kills: 0 };
-                    teamMap[team].kills += kills;
+                    finalPlayerData.push({ player_name: name, kills, team_name: team });
                 });
 
-                if (missingTeam) { return showToast('Please assign a team to all players', 'error'); }
-                if (unconfirmedMatch) { return showToast('Confirm every amber/red team mapping before saving', 'error'); }
-                if (finalData.length === 0) { showToast('All player rows are empty', 'error'); return; }
+                if (missingPlayerTeam) { return showToast('Please assign a team to all players in Player Kills review', 'error'); }
+                if (unconfirmedPlayerMatch) { return showToast('Confirm every suggested/corrected player team mapping before saving', 'error'); }
+
+                // Collect Team placement cards
+                const teamCards = document.querySelectorAll('#team-ocr-results .ocr-card');
+                const finalTeamData = [];
+                let missingTeamName = false;
+                let missingPlacement = false;
+                let unconfirmedTeamMatch = false;
+
+                teamCards.forEach(card => {
+                    const rankInput = card.querySelector('.inp-rank');
+                    const rank = rankInput ? parseInt(rankInput.value, 10) : null;
+                    const kills = parseInt(card.querySelector('.inp-kills').value) || 0;
+                    const team = card.querySelector('.inp-team').value;
+                    const status = card.dataset.matchStatus;
+                    const confirmInput = card.querySelector('.inp-confirm-match');
+
+                    if (!team) { missingTeamName = true; return; }
+                    if (!rank || isNaN(rank)) { missingPlacement = true; return; }
+                    if ((status === 'amber' || status === 'red') && !confirmInput?.checked) {
+                        unconfirmedTeamMatch = true;
+                        return;
+                    }
+
+                    finalTeamData.push({ team_name: team, placement: rank, kills });
+                });
+
+                if (missingTeamName) { return showToast('Please map a team name to all placements in Team Placements review', 'error'); }
+                if (missingPlacement) { return showToast('Please specify a Rank/Placement for all teams', 'error'); }
+                if (unconfirmedTeamMatch) { return showToast('Confirm every suggested/corrected team placement mapping before saving', 'error'); }
+
+                if (finalTeamData.length === 0 && finalPlayerData.length === 0) {
+                    return showToast('Please add or extract at least one team placement or player row', 'error');
+                }
 
                 const btn = document.getElementById('btn-save');
                 btn.disabled = true;
@@ -711,32 +1057,33 @@
                     await supabase.from('match_results')
                         .delete().eq('session_id', activeDbSession.id).eq('lobby_number', targetLobby);
 
-                    // 2. Save Players
-                    const playersToInsert = finalData.map(p => ({
-                        session_id: activeDbSession.id,
-                        lobby_number: targetLobby,
-                        player_name: p.player_name,
-                        team_name: p.team_name,
-                        kills: p.kills
-                    }));
-                    await insertPlayerStats(playersToInsert);
-
-                    // 3. Save Teams (Match Results)
-                    // Sort teams by kills to determine placement
-                    const sortedTeams = Object.values(teamMap).sort((a, b) => b.kills - a.kills);
-                    const teamsToInsert = sortedTeams.map((t, i) => {
-                        const placement = i + 1;
-                        const points = calculatePoints(placement, t.kills, pointSystemConfig);
-                        return {
+                    // 2. Save Players if any
+                    if (finalPlayerData.length > 0) {
+                        const playersToInsert = finalPlayerData.map(p => ({
                             session_id: activeDbSession.id,
                             lobby_number: targetLobby,
-                            team_name: t.team_name,
-                            kills: t.kills,
-                            placement: placement,
-                            points: points
-                        };
-                    });
-                    await insertMatchResults(teamsToInsert);
+                            player_name: p.player_name,
+                            team_name: p.team_name,
+                            kills: p.kills
+                        }));
+                        await insertPlayerStats(playersToInsert);
+                    }
+
+                    // 3. Save Teams (Match Results) if any
+                    if (finalTeamData.length > 0) {
+                        const teamsToInsert = finalTeamData.map(t => {
+                            const points = calculatePoints(t.placement, t.kills, pointSystemConfig);
+                            return {
+                                session_id: activeDbSession.id,
+                                lobby_number: targetLobby,
+                                team_name: t.team_name,
+                                kills: t.kills,
+                                placement: t.placement,
+                                points: points
+                            };
+                        });
+                        await insertMatchResults(teamsToInsert);
+                    }
 
                     showToast(`Lobby ${targetLobby} saved successfully!`, 'success');
                     const nextLobby = targetLobby + 1;
@@ -747,20 +1094,7 @@
                             lobbySelect.value = nextLobby;
                             
                             // Reset state for next lobby upload
-                            fileInput.value = '';
-                            selectedFiles = [];
-                            base64Images = [];
-                            previewGrid.innerHTML = '';
-                            btnProcess.classList.add('hidden');
-                            document.getElementById('ocr-container').classList.add('hidden');
-                            ocrData = [];
-                            document.getElementById('ocr-results').innerHTML = '';
-                            
-                            btnProcess.disabled = false;
-                            btnProcess.innerHTML = '<iconify-icon icon="lucide:scan-eye"></iconify-icon> PROCESS WITH OCR';
-                            
-                            btn.disabled = false;
-                            btn.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
+                            resetLobbyState();
                             
                             document.getElementById('active-session-banner').scrollIntoView({ behavior: 'smooth' });
                             showToast(`Ready to upload Lobby ${nextLobby}`, 'info');
@@ -771,7 +1105,7 @@
 
                 } catch (err) {
                     console.error('Save error:', err);
-                    showToast('Failed to save to database', 'error');
+                    showToast('Failed to save to database: ' + err.message, 'error');
                     btn.disabled = false;
                     btn.innerHTML = '<iconify-icon icon="lucide:save"></iconify-icon> CONFIRM & SAVE LOBBY';
                 }
