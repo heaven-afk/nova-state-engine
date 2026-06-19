@@ -107,9 +107,15 @@
                             </button>
                         </div>
                     </div>
-                    <div style="text-align:right;">
-                        <select class="form-select" id="inp-target-lobby" style="margin-bottom:0; width:150px;">
+                    <div style="text-align:right; display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                        <select class="form-select" id="inp-target-lobby" style="margin-bottom:0; width:120px;">
                             <!-- populated dynamically -->
+                        </select>
+                        <select class="form-select" id="inp-target-map" style="margin-bottom:0; width:160px;">
+                            <option value="">— Select Map —</option>
+                            <option value="ISOLATED">ISOLATED</option>
+                            <option value="BLACKOUT">BLACKOUT</option>
+                            <option value="REBIRTH ISLAND">REBIRTH ISLAND</option>
                         </select>
                     </div>
                 </div>
@@ -460,6 +466,9 @@
             });
 
             function resetLobbyState() {
+                // Map reset
+                document.getElementById('inp-target-map').value = '';
+
                 // Team state reset
                 document.getElementById('team-file-input').value = '';
                 teamSelectedFiles = [];
@@ -1053,6 +1062,12 @@
             document.getElementById('btn-save').addEventListener('click', async () => {
                 if (!activeDbSession) { showToast('No active session!', 'error'); return; }
                 const targetLobby = parseInt(document.getElementById('inp-target-lobby').value);
+                
+                const selectedMap = document.getElementById('inp-target-map').value;
+                if (!selectedMap) {
+                    showToast('Please select a map (ISOLATED, BLACKOUT, or REBIRTH ISLAND) before saving', 'error');
+                    return;
+                }
 
                 // Collect Player Cards
                 const playerCards = document.querySelectorAll('#player-ocr-results .ocr-card');
@@ -1220,7 +1235,8 @@
                             team_name: p.team_name,
                             team_id: dbTeamMap[p.team_name.toLowerCase()],
                             kills: p.kills,
-                            placement: placement
+                            placement: placement,
+                            map: selectedMap
                         });
                     }
 
@@ -1246,7 +1262,8 @@
                                 team_id: dbTeamMap[t.team_name.toLowerCase()],
                                 kills: t.kills,
                                 placement: t.placement,
-                                points: points
+                                points: points,
+                                map: selectedMap
                             };
                         });
                         await insertMatchResults(teamsToInsert);

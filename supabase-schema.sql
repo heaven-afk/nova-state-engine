@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS match_results (
   kills INT NOT NULL DEFAULT 0,
   damage INT DEFAULT 0,
   points INT NOT NULL DEFAULT 0,
+  map TEXT CHECK (map IN ('ISOLATED', 'BLACKOUT', 'REBIRTH ISLAND')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS player_stats (
   damage INT DEFAULT 0,
   placement INT,
   cpr_score NUMERIC(5,2),
+  map TEXT CHECK (map IN ('ISOLATED', 'BLACKOUT', 'REBIRTH ISLAND')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

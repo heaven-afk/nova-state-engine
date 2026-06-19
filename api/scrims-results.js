@@ -58,7 +58,16 @@ export default async function handler(req, res) {
         const placementPoints = scoringRule.placement_points || {};
         const killPointValue = Number(scoringRule.kill_point_value ?? 1);
 
-        const { team_results = [], player_results = [] } = req.body;
+        const { team_results = [], player_results = [], map } = req.body;
+
+        // Update scrims map if provided
+        if (map) {
+            const { error: mapUpdErr } = await supabase
+                .from('scrims')
+                .update({ map })
+                .eq('id', scrimId);
+            if (mapUpdErr) throw mapUpdErr;
+        }
 
         // 3. Clear existing results for this scrim to support idempotent uploads
         const { error: delTeamErr } = await supabase.from('team_results').delete().eq('scrim_id', scrimId);

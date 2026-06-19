@@ -93,3 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_player_aliases_ign ON player_aliases(alias_ign);
 CREATE INDEX IF NOT EXISTS idx_stats_player_id ON player_stats(player_id);
 CREATE INDEX IF NOT EXISTS idx_stats_team_id ON player_stats(team_id);
 CREATE INDEX IF NOT EXISTS idx_results_team_id ON match_results(team_id);
+
+-- 9. Add map column to match results and player statistics
+ALTER TABLE match_results ADD COLUMN IF NOT EXISTS map TEXT CHECK (map IN ('ISOLATED', 'BLACKOUT', 'REBIRTH ISLAND'));
+ALTER TABLE player_stats ADD COLUMN IF NOT EXISTS map TEXT CHECK (map IN ('ISOLATED', 'BLACKOUT', 'REBIRTH ISLAND'));
