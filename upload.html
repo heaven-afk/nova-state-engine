@@ -33,6 +33,7 @@
         }
         .inp-kills {
             -moz-appearance: textfield;
+            appearance: textfield;
         }
         .slot-preview { max-height: 260px; overflow: auto; margin: 12px 0 16px; border: 0.5px solid var(--border-default); border-radius: var(--radius); }
         .slot-preview-row { display: grid; grid-template-columns: 48px 1fr; gap: 10px; padding: 8px 12px; border-bottom: 0.5px solid var(--border-subtle); font-family: var(--font-data); font-weight: 700; }
@@ -209,12 +210,29 @@
         import { supabase } from '/src/supabase.js';
         import { runOCRExtraction } from '/src/ocr-engine.js';
 
+        // Registry caches for player matching
+        let registryPlayers = [];
+        let registryAliases = [];
+        let registryTeams = [];
+
+        async function loadRegistry() {
+            try {
+                const { getAllPlayers, getAllAliases, getAllTeams } = await import('/src/db.js');
+                registryPlayers = await getAllPlayers();
+                registryAliases = await getAllAliases();
+                registryTeams = await getAllTeams();
+            } catch (e) {
+                console.error('Failed to load registry:', e);
+            }
+        }
+
         (async () => {
             const profile = await requireRole('admin');
             if (!profile) return;
             injectLayout('upload', 'UPLOAD RESULTS', profile);
 
             document.getElementById('inp-date').valueAsDate = new Date();
+            await loadRegistry();
 
             let activeDbSession = null;
             let activeTeams = [];
@@ -836,6 +854,17 @@
                 container.querySelector('.btn-del-team-row').addEventListener('click', (e) => e.target.closest('.ocr-card').remove());
             });
 
+            function findRegistryPlayer(ign) {
+                const clean = ign.trim().toLowerCase();
+                const p = registryPlayers.find(pl => pl.professional_name.toLowerCase() === clean);
+                if (p) return p;
+                const a = registryAliases.find(al => al.alias_ign.toLowerCase() === clean);
+                if (a) {
+                    return registryPlayers.find(pl => pl.id === a.player_id);
+                }
+                return null;
+            }
+
             function renderPlayerOCRResults() {
                 const container = document.getElementById('player-ocr-results');
                 if (playerOcrData.length === 0) {
@@ -843,7 +872,7 @@
                     return;
                 }
 
-                // Group by team for better review
+                // Group by team for review
                 const teamMap = {};
                 playerOcrData.forEach((r, idx) => {
                     const t = r.teamSlot || 'Unknown Team';
@@ -858,12 +887,19 @@
                     return `<option value="${safeName}"${isSelected}>${safeName}</option>`;
                 }).join('');
 
+                const makePlayerOptions = selectedId => '<option value="">-- New Player (Create Roster Profile) --</option>' + registryPlayers.map(p => {
+                    const isSelected = p.id === selectedId ? ' selected' : '';
+                    return `<option value="${p.id}"${isSelected}>${escapeHTML(p.professional_name)} (IGN: ${escapeHTML(p.current_ign || p.professional_name)})</option>`;
+                }).join('');
+
                 for (const [teamName, players] of Object.entries(teamMap)) {
                     html += `<div style="font-family:var(--font-data); font-size:1rem; font-weight:700; color:var(--nova-green); margin-top:16px; border-bottom:1px solid var(--border-default); padding-bottom:4px;">Grouped: ${escapeHTML(teamName)}</div>`;
                     
                     players.forEach(p => {
                         const matchResult = fuzzyMatchTeam(p.teamSlot);
                         const teamSelectVal = matchResult.match || "";
+                        const regPlayer = findRegistryPlayer(p.normalizedName);
+                        
                         let teamClass = "ocr-card auto-conf";
                         let indicatorClass = "text-green";
                         let indicatorIcon = "lucide:check-circle-2";
@@ -885,17 +921,39 @@
                             teamClass = "ocr-card low-conf";
                         }
 
+                        let identityHTML = '';
+                        if (regPlayer) {
+                            identityHTML = `
+                            <div class="form-group" style="margin:0; flex:1; min-width:200px;">
+                                <label class="form-label" style="color:var(--nova-green);">Linked Roster Profile</label>
+                                <select class="form-select inp-player-id" style="border-color:var(--nova-green);">
+                                    ${makePlayerOptions(regPlayer.id)}
+                                </select>
+                            </div>`;
+                        } else {
+                            identityHTML = `
+                            <div class="form-group" style="margin:0; flex:1; min-width:200px;">
+                                <label class="form-label" style="color:var(--alert-red);">Unregistered (Creates Profile)</label>
+                                <select class="form-select inp-player-id" style="border-color:var(--alert-red);">
+                                    ${makePlayerOptions("")}
+                                </select>
+                            </div>`;
+                        }
+
                         html += `
                         <div class="${teamClass}" data-idx="${p._idx}" data-match-status="${matchResult.status}">
                             <div class="ocr-row">
-                                <div class="form-group" style="margin:0;">
-                                    <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-                                        <span>Player IGN</span>
-                                        <span class="match-indicator ${indicatorClass}">
-                                            <iconify-icon icon="${indicatorIcon}"></iconify-icon> ${escapeHTML(matchResult.label)}
-                                        </span>
-                                    </label>
-                                    <input type="text" class="form-input inp-ign" value="${escapeHTML(p.normalizedName)}">
+                                <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                                    <div class="form-group" style="margin:0; flex:1; min-width:200px;">
+                                        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                                            <span>Player IGN (OCR)</span>
+                                            <span class="match-indicator ${indicatorClass}">
+                                                <iconify-icon icon="${indicatorIcon}"></iconify-icon> ${escapeHTML(matchResult.label)}
+                                            </span>
+                                        </label>
+                                        <input type="text" class="form-input inp-ign" value="${escapeHTML(p.normalizedName)}">
+                                    </div>
+                                    ${identityHTML}
                                 </div>
                                 <div style="display:flex;gap:12px;">
                                     <div class="form-group" style="margin:0;flex:1;">
@@ -957,13 +1015,22 @@
                 const container = document.getElementById('player-ocr-results');
                 const newIdx = Date.now();
                 const teamOptions = '<option value="">-- Select Team --</option>' + activeTeams.map(t => `<option value="${escapeHTML(t.team_name)}">${escapeHTML(t.team_name)}</option>`).join('');
+                const playerOptions = '<option value="">-- New Player (Create Roster Profile) --</option>' + registryPlayers.map(p => `<option value="${p.id}">${escapeHTML(p.professional_name)} (IGN: ${escapeHTML(p.current_ign || p.professional_name)})</option>`).join('');
                 
                 const html = `
                 <div class="ocr-card" data-idx="${newIdx}">
                     <div class="ocr-row">
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label">Player IGN</label>
-                            <input type="text" class="form-input inp-ign" placeholder="Player Name">
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                            <div class="form-group" style="margin:0; flex:1; min-width:200px;">
+                                <label class="form-label">Player IGN</label>
+                                <input type="text" class="form-input inp-ign" placeholder="Player Name">
+                            </div>
+                            <div class="form-group" style="margin:0; flex:1; min-width:200px;">
+                                <label class="form-label">Link to Registered Player</label>
+                                <select class="form-select inp-player-id">
+                                    ${playerOptions}
+                                </select>
+                            </div>
                         </div>
                         <div style="display:flex;gap:12px;">
                             <div class="form-group" style="margin:0;flex:1;">
@@ -999,6 +1066,7 @@
                     const team = card.querySelector('.inp-team').value;
                     const status = card.dataset.matchStatus;
                     const confirmInput = card.querySelector('.inp-confirm-match');
+                    const playerId = card.querySelector('.inp-player-id').value;
                     
                     if (!name) return;
                     if (!team) { missingPlayerTeam = true; return; }
@@ -1007,7 +1075,7 @@
                         return;
                     }
 
-                    finalPlayerData.push({ player_name: name, kills, team_name: team });
+                    finalPlayerData.push({ player_name: name, kills, team_name: team, player_id: playerId });
                 });
 
                 if (missingPlayerTeam) { return showToast('Please assign a team to all players in Player Kills review', 'error'); }
@@ -1051,6 +1119,111 @@
                 btn.innerHTML = '<span class="spin">⟳</span> SAVING...';
 
                 try {
+                    // Resolve database Team IDs
+                    const { data: dbTeams, error: dbTeamsErr } = await supabase.from('teams').select('id, team_name');
+                    if (dbTeamsErr) throw dbTeamsErr;
+                    const dbTeamMap = {};
+                    dbTeams.forEach(t => { dbTeamMap[t.team_name.toLowerCase()] = t.id; });
+
+                    // Auto-register teams that aren't in the database registry yet
+                    const rawUniqueTeams = [...new Set(
+                        finalTeamData.map(t => t.team_name).concat(finalPlayerData.map(p => p.team_name))
+                    )];
+                    
+                    const uniqueTeamsToCreateMap = {};
+                    rawUniqueTeams.forEach(tName => {
+                        const lower = String(tName || '').trim().toLowerCase();
+                        if (lower && !dbTeamMap[lower] && !uniqueTeamsToCreateMap[lower]) {
+                            uniqueTeamsToCreateMap[lower] = String(tName || '').trim();
+                        }
+                    });
+                    const uniqueTeamsToCreate = Object.values(uniqueTeamsToCreateMap);
+
+                    for (const tName of uniqueTeamsToCreate) {
+                        // Check case-insensitively in db one last time to prevent race conditions or duplicates
+                        const { data: existingTeam, error: exTeamErr } = await supabase.from('teams')
+                            .select('id')
+                            .ilike('team_name', tName)
+                            .maybeSingle();
+                        if (exTeamErr) throw exTeamErr;
+
+                        if (existingTeam) {
+                            dbTeamMap[tName.toLowerCase()] = existingTeam.id;
+                        } else {
+                            const { data: newTeam, error: ntErr } = await supabase.from('teams').insert({
+                                team_name: tName,
+                                team_manager: 'Auto-Registered'
+                            }).select().single();
+                            if (ntErr) throw ntErr;
+                            dbTeamMap[tName.toLowerCase()] = newTeam.id;
+                        }
+                    }
+
+                    // Resolve Player IDs and Professional Names (auto-create if new)
+                    const playersToInsert = [];
+                    for (const p of finalPlayerData) {
+                        let resolvedId = null;
+                        let resolvedProfName = null;
+
+                        if (p.player_id) {
+                            // Link to existing registry profile
+                            const regPl = registryPlayers.find(pl => pl.id === p.player_id);
+                            if (regPl) {
+                                resolvedId = regPl.id;
+                                resolvedProfName = regPl.professional_name;
+                            } else {
+                                resolvedId = p.player_id;
+                            }
+                        } else {
+                            // Check if a player with this name already exists in database (case-insensitive)
+                            const { data: existingPl, error: exErr } = await supabase.from('players')
+                                .select('*')
+                                .ilike('professional_name', p.player_name)
+                                .maybeSingle();
+                            if (exErr) throw exErr;
+
+                            if (existingPl) {
+                                resolvedId = existingPl.id;
+                                resolvedProfName = existingPl.professional_name;
+                            } else {
+                                // Create new player registry entry
+                                const { data: newPlayer, error: npErr } = await supabase.from('players').insert({
+                                    professional_name: p.player_name,
+                                    current_ign: p.player_name,
+                                    team_id: dbTeamMap[p.team_name.toLowerCase()],
+                                    status: 'active'
+                                }).select().single();
+                                if (npErr) throw npErr;
+
+                                resolvedId = newPlayer.id;
+                                resolvedProfName = newPlayer.professional_name;
+
+                                // Insert default alias
+                                const { error: alErr } = await supabase.from('player_aliases').insert({
+                                    player_id: newPlayer.id,
+                                    alias_ign: p.player_name
+                                });
+                                if (alErr) throw alErr;
+                            }
+                        }
+
+                        // Determine placement from team placements if available
+                        const teamPlacementRow = finalTeamData.find(t => t.team_name.toLowerCase() === p.team_name.toLowerCase());
+                        const placement = teamPlacementRow ? teamPlacementRow.placement : null;
+
+                        playersToInsert.push({
+                            session_id: activeDbSession.id,
+                            lobby_number: targetLobby,
+                            player_name: p.player_name, // IGN
+                            professional_name: resolvedProfName,
+                            player_id: resolvedId,
+                            team_name: p.team_name,
+                            team_id: dbTeamMap[p.team_name.toLowerCase()],
+                            kills: p.kills,
+                            placement: placement
+                        });
+                    }
+
                     // 1. Clear old data for THIS lobby (allow re-uploads)
                     await supabase.from('player_stats')
                         .delete().eq('session_id', activeDbSession.id).eq('lobby_number', targetLobby);
@@ -1058,14 +1231,7 @@
                         .delete().eq('session_id', activeDbSession.id).eq('lobby_number', targetLobby);
 
                     // 2. Save Players if any
-                    if (finalPlayerData.length > 0) {
-                        const playersToInsert = finalPlayerData.map(p => ({
-                            session_id: activeDbSession.id,
-                            lobby_number: targetLobby,
-                            player_name: p.player_name,
-                            team_name: p.team_name,
-                            kills: p.kills
-                        }));
+                    if (playersToInsert.length > 0) {
                         await insertPlayerStats(playersToInsert);
                     }
 
@@ -1077,6 +1243,7 @@
                                 session_id: activeDbSession.id,
                                 lobby_number: targetLobby,
                                 team_name: t.team_name,
+                                team_id: dbTeamMap[t.team_name.toLowerCase()],
                                 kills: t.kills,
                                 placement: t.placement,
                                 points: points
@@ -1084,6 +1251,9 @@
                         });
                         await insertMatchResults(teamsToInsert);
                     }
+
+                    // Refresh cached registry
+                    await loadRegistry();
 
                     showToast(`Lobby ${targetLobby} saved successfully!`, 'success');
                     const nextLobby = targetLobby + 1;

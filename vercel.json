@@ -7,6 +7,18 @@
   },
   "rewrites": [
     {
+      "source": "/api/teams/:id/form",
+      "destination": "/api/teams-form.js?id=:id"
+    },
+    {
+      "source": "/api/players/:id/form",
+      "destination": "/api/players-form.js?id=:id"
+    },
+    {
+      "source": "/api/scrims/:id/results",
+      "destination": "/api/scrims-results.js?id=:id"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }

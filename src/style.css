@@ -8,14 +8,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap');
 
 :root {
-    --bg-base: #0A0A0A;
-    --bg-surface: #0F0F0F;
-    --bg-card: #141414;
-    --bg-elevated: #1A1A1A;
+    --bg-base: #050505;
+    --bg-surface: rgba(15, 15, 15, 0.7);
+    --bg-card: rgba(20, 20, 20, 0.55);
+    --bg-elevated: rgba(30, 30, 30, 0.6);
 
-    --border-subtle: rgba(108,182,4,0.08);
-    --border-default: rgba(108,182,4,0.20);
-    --border-emphasis: rgba(108,182,4,0.40);
+    --border-subtle: rgba(108,182,4,0.12);
+    --border-default: rgba(108,182,4,0.25);
+    --border-emphasis: rgba(108,182,4,0.50);
 
     --nova-green: #6CB604;
     --nova-glow: rgba(108,182,4,0.12);
@@ -25,16 +25,19 @@
     --alert-red: #FF4C00;
 
     --text-primary: #FFFFFF;
-    --text-secondary: rgba(255,255,255,0.80);
-    --text-muted: rgba(255,255,255,0.40);
-    --text-faint: rgba(255,255,255,0.20);
+    --text-secondary: rgba(255,255,255,0.85);
+    --text-muted: rgba(255,255,255,0.55);
+    --text-faint: rgba(255,255,255,0.25);
 
     --font-display: 'Orbitron', sans-serif;
     --font-data: 'Barlow Condensed', sans-serif;
     --font-body: 'Barlow', sans-serif;
 
-    --radius: 4px;
-    --transition: 0.2s ease;
+    --radius: 6px;
+    --transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    
+    --glass-blur: 16px;
+    --glass-saturate: 180%;
 }
 
 /* ── RESET ──────────────────────────────────────── */
@@ -54,10 +57,13 @@ body {
     overflow-x: hidden;
     min-height: 100vh;
     width: 100%;
-    /* Dot-grid background texture */
+    /* Dot-grid background texture with ambient glow points */
     background-image:
-        radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 24px 24px;
+        radial-gradient(circle at 10% 20%, rgba(108,182,4,0.06) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(108,182,4,0.05) 0%, transparent 40%),
+        radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 24px 24px;
+    background-attachment: fixed;
 }
 
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 900; letter-spacing: 0.02em; }
@@ -76,6 +82,8 @@ img, svg, canvas { max-width: 100%; }
 .sidebar {
     width: 220px;
     background: var(--bg-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     border-right: 0.5px solid var(--border-default);
     display: flex;
     flex-direction: column;
@@ -237,6 +245,8 @@ img, svg, canvas { max-width: 100%; }
 .topbar {
     height: 48px;
     background: var(--bg-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     border-bottom: 0.5px solid var(--border-subtle);
     display: flex;
     align-items: center;
@@ -330,10 +340,14 @@ img, svg, canvas { max-width: 100%; }
 /* ── CARDS ──────────────────────────────────────── */
 .card {
     background: var(--bg-card);
-    border: 0.5px solid var(--border-subtle);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid var(--border-subtle);
     border-top: 2px solid var(--nova-green);
     border-radius: var(--radius);
     overflow: hidden;
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 }
 
 .card-header {
@@ -364,13 +378,21 @@ img, svg, canvas { max-width: 100%; }
 
 .metric-card {
     background: var(--bg-card);
-    border: 0.5px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
     border-top: 2px solid var(--nova-green);
     border-radius: var(--radius);
     padding: 20px;
     transition: all var(--transition);
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
 }
-.metric-card:hover { border-color: var(--border-default); transform: translateY(-2px); }
+.metric-card:hover { 
+    border-color: var(--border-default); 
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(108,182,4,0.15);
+}
 
 .metric-label {
     font-family: var(--font-data);
@@ -562,7 +584,9 @@ img, svg, canvas { max-width: 100%; }
 .modal-overlay.show { display: flex; }
 
 .modal-box {
-    background: var(--bg-card);
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 0.5px solid var(--border-default);
     border-top: 2px solid var(--nova-green);
     border-radius: var(--radius);
@@ -571,6 +595,8 @@ img, svg, canvas { max-width: 100%; }
     width: 90%;
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 .modal-title {
@@ -635,11 +661,48 @@ img, svg, canvas { max-width: 100%; }
 .public-navbar {
     height: 56px;
     background: var(--bg-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     border-bottom: 0.5px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Public navbar navigation tabs */
+.public-nav-links {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.pub-nav-tab {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    transition: all var(--transition);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1.5px solid transparent;
+}
+
+.pub-nav-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.pub-nav-tab.active {
+    color: var(--nova-green);
+    background: rgba(108,182,4,0.08);
+    border-color: var(--border-default);
+    box-shadow: 0 0 10px rgba(108,182,4,0.1);
 }
 
 .public-navbar .brand-wordmark {

@@ -18,6 +18,9 @@ export default defineConfig({
         users:        resolve(__dirname, 'users.html'),
         settings:     resolve(__dirname, 'settings.html'),
         profile:      resolve(__dirname, 'profile.html'),
+        teams:        resolve(__dirname, 'teams.html'),
+        'team-profile': resolve(__dirname, 'team-profile.html'),
+        'player-profile': resolve(__dirname, 'player-profile.html'),
         'reset-password': resolve(__dirname, 'reset-password.html')
       }
     }

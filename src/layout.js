@@ -11,6 +11,7 @@ const NAV_ITEMS = [
     { id: 'dashboard', href: '/dashboard.html', icon: 'lucide:layout-dashboard', label: 'Dashboard', minRole: 'mod' },
     { id: 'weekly', href: '/weekly.html', icon: 'lucide:calendar-days', label: 'Weekly Stats', minRole: 'mod' },
     { id: 'matches', href: '/matches.html', icon: 'lucide:trophy', label: 'Leaderboard', minRole: 'mod' },
+    { id: 'teams', href: '/teams.html', icon: 'lucide:shield', label: 'Team Registry', minRole: 'mod' },
     { id: 'profile', href: '/profile.html', icon: 'lucide:user', label: 'My Profile', minRole: 'mod' },
     { section: 'ADMIN' },
     { id: 'upload', href: '/upload.html', icon: 'lucide:upload', label: 'Upload Results', minRole: 'admin' },
@@ -76,13 +77,19 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     const topbarHTML = `
     <div class="topbar">
-        <div style="display:flex;align-items:center;gap:10px;">
-            <button class="mobile-menu-btn" id="mobile-menu-toggle">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+            <button class="mobile-menu-btn" id="mobile-menu-toggle" style="flex-shrink:0;">
                 <iconify-icon icon="lucide:menu"></iconify-icon>
             </button>
-            <span class="topbar-title">${pageTitle}</span>
+            <span class="topbar-title hide-mobile" style="margin-right:20px;flex-shrink:0;">${pageTitle}</span>
+            <!-- Global Search Bar -->
+            <div class="global-search-wrap" style="position:relative; max-width:280px; width:100%; margin-left:10px;">
+                <iconify-icon icon="lucide:search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; pointer-events:none; z-index:2;"></iconify-icon>
+                <input type="text" id="global-search-input" placeholder="Search players, teams..." class="form-input" style="padding-left:36px; padding-right:12px; height:32px; font-size:0.8rem; min-height:32px; border-radius:4px; width:100%; border: 0.5px solid var(--border-default); background:var(--bg-base);">
+                <div id="global-search-results" class="hidden" style="position:absolute; top:36px; left:0; right:0; background:var(--bg-card); border:0.5px solid var(--border-emphasis); border-radius:4px; box-shadow:0 10px 30px rgba(0,0,0,0.6); z-index:999; max-height:300px; overflow-y:auto; padding:8px 0;"></div>
+            </div>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right" style="flex-shrink:0;">
             <div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">${avatarHTML}</div>
         </div>
     </div>`;
@@ -101,6 +108,72 @@ export function injectLayout(activePageId, pageTitle, profile) {
         </div>
     </div>
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>`;
+
+    // Wire up global search interactions
+    const searchInput = document.getElementById('global-search-input');
+    const searchResults = document.getElementById('global-search-results');
+    let searchDebounce;
+
+    searchInput?.addEventListener('input', (e) => {
+        clearTimeout(searchDebounce);
+        const query = e.target.value.trim();
+        if (!query) {
+            searchResults.classList.add('hidden');
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        searchDebounce = setTimeout(async () => {
+            try {
+                const { searchRegistry } = await import('./db.js');
+                const results = await searchRegistry(query);
+                
+                let html = '';
+                
+                // Teams matches
+                if (results.teams.length > 0) {
+                    html += `<div style="font-family:var(--font-data); font-size:0.7rem; font-weight:700; color:var(--nova-green); padding:4px 12px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:0.5px solid var(--border-subtle); margin-bottom:4px;">Teams</div>`;
+                    results.teams.forEach(t => {
+                        html += `<a href="/team-profile.html?id=${t.id}" style="display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:0.85rem; transition:background 0.2s;" onmouseover="this.style.background='rgba(108,182,4,0.06)'" onmouseout="this.style.background='none'">
+                            <span style="font-weight:700;">${t.team_name}</span>
+                            <span style="color:var(--text-muted); font-size:0.75rem;">Manager: ${t.team_manager || 'None'}</span>
+                        </a>`;
+                    });
+                }
+                
+                // Players matches
+                if (results.players.length > 0) {
+                    if (html) html += `<div style="height:8px; border-top:0.5px solid var(--border-subtle); margin-top:4px; padding-top:4px;"></div>`;
+                    html += `<div style="font-family:var(--font-data); font-size:0.7rem; font-weight:700; color:var(--nova-green); padding:4px 12px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:0.5px solid var(--border-subtle); margin-bottom:4px;">Players</div>`;
+                    results.players.forEach(p => {
+                        const teamName = p.teams?.team_name || 'Free Agent';
+                        html += `<a href="/player-profile.html?id=${p.id}" style="display:flex; align-items:center; justify-content:space-between; padding:6px 12px; font-size:0.85rem; transition:background 0.2s;" onmouseover="this.style.background='rgba(108,182,4,0.06)'" onmouseout="this.style.background='none'">
+                            <div>
+                                <span style="font-weight:700; color:var(--nova-green);">${p.professional_name}</span>
+                                <span style="color:var(--text-muted); font-size:0.75rem; margin-left:6px;">IGN: ${p.current_ign || p.professional_name}</span>
+                            </div>
+                            <span class="badge badge-muted" style="font-size:0.6rem;">${teamName}</span>
+                        </a>`;
+                    });
+                }
+                
+                if (!html) {
+                    html = `<div style="padding:12px; text-align:center; font-size:0.8rem; color:var(--text-muted);">No matches found</div>`;
+                }
+                
+                searchResults.innerHTML = html;
+                searchResults.classList.remove('hidden');
+            } catch (err) {
+                console.error('[Search] Error:', err);
+            }
+        }, 250);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput?.contains(e.target) && !searchResults?.contains(e.target)) {
+            searchResults?.classList.add('hidden');
+        }
+    });
 
     // Wire up sidebar toggle
     const sidebar = document.getElementById('sidebar');

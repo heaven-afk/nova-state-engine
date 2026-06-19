@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/assets/brand/nova_favicon_64.png">
+    <title>Player Identity Profile — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .player-identity-header {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-subtle);
+            border-top: 3px solid var(--nova-green);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .player-avatar-large {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--nova-green);
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .player-meta-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .player-detail-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .player-info-card {
+            padding: 16px;
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-subtle);
+            border-radius: var(--radius);
+        }
+
+        .alias-badge {
+            display: inline-flex;
+            background: var(--bg-elevated);
+            border: 0.5px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: var(--font-data);
+            font-size: 0.8rem;
+            font-weight: 600;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .alias-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .player-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-body">
+        <!-- Player Identity Header -->
+        <div class="player-identity-header">
+            <div class="player-avatar-large" id="p-avatar-box">U</div>
+            <div class="player-meta-info">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                    <h1 id="p-prof-name" style="font-size: 1.4rem; color: var(--text-primary);">LOADING PLAYER...</h1>
+                    <span class="badge badge-green" id="p-status-badge">ACTIVE</span>
+                </div>
+                <div class="text-muted" style="font-size: 0.85rem;" id="p-ign-text">Current IGN: --</div>
+                <div class="text-green" style="font-size: 0.85rem; font-weight:600; margin-top:4px;" id="p-team-text">
+                    Team: <span style="text-transform:uppercase;">--</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary btn-sm" id="btn-back-team" style="display:none;">
+                    <iconify-icon icon="lucide:shield"></iconify-icon> TEAM PROFILE
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="window.location.href='/teams.html'">
+                    <iconify-icon icon="lucide:users-round"></iconify-icon> REGISTRY LIST
+                </button>
+            </div>
+        </div>
+
+        <!-- Detail Grid -->
+        <div class="player-detail-grid">
+            <!-- Left Panel: Stats and Matches -->
+            <div style="display:flex; flex-direction:column; gap:24px;">
+                <!-- Career Metrics -->
+                <div>
+                    <h3 style="font-size: 0.85rem; color: var(--nova-green); font-family: var(--font-display); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; display:flex; align-items:center; gap:6px;">
+                        <iconify-icon icon="lucide:activity"></iconify-icon> Career Metrics
+                    </h3>
+                    <div class="metrics-grid">
+                        <div class="metric-card"><div class="metric-label">Matches</div><div class="metric-value" id="c-matches">0</div></div>
+                        <div class="metric-card"><div class="metric-label">Total Kills</div><div class="metric-value" id="c-kills">0</div></div>
+                        <div class="metric-card"><div class="metric-label">Avg Placement</div><div class="metric-value" id="c-placement">0.0</div></div>
+                        <div class="metric-card">
+                            <div class="metric-label">Win Rate</div>
+                            <div class="metric-value" id="c-winrate">0.0%</div>
+                            <div class="metric-sub" id="c-wins">0 Wins</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">K/D Ratio</div>
+                            <div class="metric-value" id="c-kd" style="color:var(--gold);">0.00</div>
+                            <div class="metric-sub">Kills per Battle-Life</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match History -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">RECENT MATCH HISTORY</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-wrap">
+                            <table class="data-table" id="p-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Session</th>
+                                        <th>Lobby</th>
+                                        <th>Team Represented</th>
+                                        <th>Placement</th>
+                                        <th>Kills</th>
+                                        <th>Dmg</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="p-history-tbody">
+                                    <tr><td colspan="7" class="text-muted text-center" style="padding:24px;">No match records logged.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Aliases & metadata -->
+            <div style="display:flex; flex-direction:column; gap:24px;">
+                <div class="player-info-card">
+                    <h4 style="font-size: 0.8rem; font-family: var(--font-display); letter-spacing: 0.05em; text-transform: uppercase; border-bottom:0.5px solid var(--border-subtle); padding-bottom:6px;">Historical Aliases</h4>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;">All prior in-game names recorded for this player identity by the OCR processor:</p>
+                    <div class="alias-list" id="p-aliases-box">
+                        <!-- Loaded -->
+                    </div>
+                </div>
+
+                <div class="player-info-card">
+                    <h4 style="font-size: 0.8rem; font-family: var(--font-display); letter-spacing: 0.05em; text-transform: uppercase; border-bottom:0.5px solid var(--border-subtle); padding-bottom:6px;">Identity Metadata</h4>
+                    <div style="font-size:0.8rem; line-height:2; margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span class="text-muted">Registered Date:</span>
+                            <span id="p-meta-reg-date">--</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span class="text-muted">Status:</span>
+                            <span id="p-meta-status" class="text-green">Active</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span class="text-muted">Total Damage:</span>
+                            <span id="p-meta-total-dmg" class="font-data" style="font-weight:700;">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireRole } from '/src/auth.js';
+        import { injectLayout, showToast } from '/src/layout.js';
+        import { getPlayer, getPlayerAliases, getPlayerCareerStats } from '/src/db.js';
+
+        let playerId = null;
+
+        (async () => {
+            const profile = await requireRole('mod');
+            if (!profile) return;
+            injectLayout('teams', 'PLAYER IDENTITY PROFILE', profile);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            playerId = urlParams.get('id');
+            if (!playerId) {
+                window.location.replace('/teams.html');
+                return;
+            }
+
+            await loadPlayerProfile();
+        })();
+
+        async function loadPlayerProfile() {
+            try {
+                // 1. Fetch player metadata
+                const player = await getPlayer(playerId);
+                
+                document.getElementById('p-prof-name').textContent = player.professional_name;
+                document.getElementById('p-ign-text').textContent = `Current IGN: ${player.current_ign || player.professional_name}`;
+                document.getElementById('p-avatar-box').textContent = player.professional_name[0].toUpperCase();
+                
+                const statusBadge = document.getElementById('p-status-badge');
+                statusBadge.textContent = player.status.toUpperCase();
+                if (player.status === 'active') {
+                    statusBadge.className = 'badge badge-green';
+                } else {
+                    statusBadge.className = 'badge badge-muted';
+                }
+
+                // Team Link
+                const teamSpan = document.getElementById('p-team-text');
+                if (player.teams) {
+                    teamSpan.innerHTML = `Team: <a href="/team-profile.html?id=${player.team_id}" class="text-green" style="font-weight:700; text-decoration:underline;">${escapeHTML(player.teams.team_name)}</a>`;
+                    
+                    const btnBackTeam = document.getElementById('btn-back-team');
+                    btnBackTeam.style.display = 'inline-flex';
+                    btnBackTeam.onclick = () => window.location.href = `/team-profile.html?id=${player.team_id}`;
+                } else {
+                    teamSpan.innerHTML = `Team: <span class="text-muted">FREE AGENT</span>`;
+                }
+
+                // Metadata cards
+                document.getElementById('p-meta-reg-date').textContent = new Date(player.created_at).toLocaleDateString();
+                document.getElementById('p-meta-status').textContent = player.status.toUpperCase();
+                document.getElementById('p-meta-status').className = player.status === 'active' ? 'text-green' : 'text-muted';
+
+                // 2. Fetch career stats
+                const stats = await getPlayerCareerStats(playerId);
+                
+                document.getElementById('c-matches').textContent = stats.matches;
+                document.getElementById('c-kills').textContent = stats.kills;
+                document.getElementById('c-placement').textContent = stats.averagePlacement;
+                document.getElementById('c-winrate').textContent = `${stats.winRate}%`;
+                document.getElementById('c-wins').textContent = `${stats.wins} Wins`;
+                document.getElementById('c-kd').textContent = stats.kdRatio;
+                document.getElementById('p-meta-total-dmg').textContent = stats.damage.toLocaleString();
+
+                // 3. Fetch Aliases
+                const aliases = await getPlayerAliases(playerId);
+                const aliasesBox = document.getElementById('p-aliases-box');
+                if (aliases.length === 0) {
+                    aliasesBox.innerHTML = '<span class="text-muted" style="font-size:0.75rem;">None recorded</span>';
+                } else {
+                    aliasesBox.innerHTML = aliases.map(a => `
+                        <span class="alias-badge">
+                            <iconify-icon icon="lucide:tag" style="color:var(--nova-green); font-size:0.75rem;"></iconify-icon>
+                            <span>${escapeHTML(a.alias_ign)}</span>
+                        </span>
+                    `).join('');
+                }
+
+                // 4. Render match history
+                const tbody = document.getElementById('p-history-tbody');
+                if (stats.history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center" style="padding:24px;">No match records logged.</td></tr>';
+                } else {
+                    // Sort match history: newest first
+                    const sortedHistory = [...stats.history].sort((a,b) => {
+                        const dateA = a.scrims_sessions?.date ? new Date(a.scrims_sessions.date) : new Date(0);
+                        const dateB = b.scrims_sessions?.date ? new Date(b.scrims_sessions.date) : new Date(0);
+                        return dateB - dateA || b.lobby_number - a.lobby_number;
+                    });
+
+                    tbody.innerHTML = sortedHistory.map(h => {
+                        const dateStr = h.scrims_sessions?.date 
+                            ? new Date(h.scrims_sessions.date).toLocaleDateString()
+                            : '--';
+                        const sessionName = h.scrims_sessions?.session_name || 'Legacy Session';
+                        const placement = h.placement !== null ? `#${h.placement}` : '--';
+                        const placementClass = h.placement === 1 ? 'text-green font-data' : 'font-data';
+
+                        return `
+                        <tr>
+                            <td class="font-data">${dateStr}</td>
+                            <td style="font-weight:700;">${escapeHTML(sessionName)}</td>
+                            <td class="font-data">Lobby ${h.lobby_number}</td>
+                            <td class="text-muted">${escapeHTML(h.team_name)}</td>
+                            <td class="${placementClass}" style="font-weight:700;">${placement}</td>
+                            <td class="font-data" style="font-weight:700; color:var(--nova-green);">${h.kills}</td>
+                            <td class="font-data text-muted">${h.damage !== null ? h.damage : 0}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+            } catch (err) {
+                console.error('[Player Profile] Error:', err);
+                showToast('Failed to load player career profile: ' + err.message, 'error');
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>

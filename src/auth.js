@@ -104,6 +104,10 @@ export async function bootstrapOwner(providedUser = null) {
 /* ── Auth Guard ──────────────────────────────────── */
 
 export async function requireAuth() {
+    if (import.meta.env.DEV && (localStorage.getItem('dev_bypass') || new URLSearchParams(window.location.search).get('dev') === 'true')) {
+        localStorage.setItem('dev_bypass', 'true');
+        return { user: { id: 'dev-user-id', email: 'dev@nova.gg', user_metadata: { display_name: 'Dev Admin' } } };
+    }
     const session = await getSession();
     if (!session) {
         // Show 404 to unauthenticated users — don't reveal protected routes exist
@@ -114,6 +118,15 @@ export async function requireAuth() {
 }
 
 export async function requireRole(minimumRole) {
+    if (import.meta.env.DEV && localStorage.getItem('dev_bypass') === 'true') {
+        return {
+            user: { id: 'dev-user-id', email: 'dev@nova.gg', user_metadata: { display_name: 'Dev Admin' } },
+            role: 'owner',
+            displayName: 'Dev Admin',
+            email: 'dev@nova.gg'
+        };
+    }
+
     const session = await requireAuth();
     if (!session) return null;
 

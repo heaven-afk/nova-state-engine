@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/assets/brand/nova_favicon_64.png">
+    <title>Team Registry — Nova Gaming Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .registry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .team-card {
+            background: var(--bg-card);
+            border: 0.5px solid var(--border-subtle);
+            border-top: 3px solid var(--nova-green);
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-card:hover {
+            border-color: var(--border-default);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 12px var(--nova-glow);
+        }
+
+        .team-card-header {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .team-card-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .team-card-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .team-card-name {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .team-card-manager {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .team-card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: var(--bg-base);
+            padding: 10px;
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border-subtle);
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .team-card-stat-val {
+            font-family: var(--font-data);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--nova-green);
+        }
+
+        .team-card-stat-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .player-badge-count {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(108,182,4,0.1);
+            color: var(--nova-green);
+            border: 0.5px solid var(--border-default);
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-family: var(--font-data);
+            font-weight: 700;
+            font-size: 0.65rem;
+        }
+
+        /* Validation UI */
+        .validation-card {
+            background: #141010;
+            border: 0.5px solid rgba(255, 76, 0, 0.2);
+            border-left: 4px solid var(--alert-red);
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: var(--radius);
+        }
+
+        .validation-card h4 {
+            color: var(--alert-red);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .validation-list {
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .validation-list li {
+            padding: 4px 0;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Logo source tabs style */
+        .logo-source-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: var(--bg-elevated);
+            padding: 3px;
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border-subtle);
+        }
+
+        .logo-tab {
+            flex: 1;
+            padding: 6px;
+            font-size: 0.72rem;
+            border-radius: 2px;
+            border: none;
+            font-family: var(--font-data);
+            font-weight: 700;
+            text-transform: uppercase;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .logo-tab.active {
+            background: var(--nova-green);
+            color: var(--bg-base);
+        }
+
+        .logo-tab:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-body">
+        <div class="registry-header">
+            <div>
+                <h2 style="font-size: 1.2rem; color: var(--nova-green); font-family: var(--font-display); letter-spacing: 0.04em;">ROSTER REGISTRY</h2>
+                <p class="text-muted" style="font-size: 0.8rem; margin-top: 4px;">Manage organizations, official team rosters, and verify professional identifiers.</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm hidden" id="btn-open-add-team">
+                    <iconify-icon icon="lucide:plus-circle"></iconify-icon> ADD TEAM
+                </button>
+                <button class="btn btn-primary btn-sm hidden" id="btn-open-import">
+                    <iconify-icon icon="lucide:upload-cloud"></iconify-icon> IMPORT ROSTERS
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="registry-empty">
+            <iconify-icon icon="lucide:shield-alert" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></iconify-icon>
+            <h3>No Teams Registered Yet</h3>
+            <p>Upload your roster sheet to initialize the team database registry.</p>
+            <button class="btn btn-secondary mt-md" id="btn-empty-import">IMPORT SPREADSHEET</button>
+        </div>
+
+        <!-- Grid of Teams -->
+        <div class="team-grid" id="team-grid-container">
+            <!-- Dynamically Rendered -->
+        </div>
+
+        <!-- Import Modal -->
+        <div class="modal-overlay" id="import-modal">
+            <div class="modal-box" style="max-width: 600px;">
+                <div class="modal-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>IMPORT ROSTER SPREADSHEET</span>
+                    <button class="btn-icon" id="btn-close-import" style="color:var(--text-muted);"><iconify-icon icon="lucide:x" style="font-size:1.2rem;"></iconify-icon></button>
+                </div>
+                
+                <div class="form-group">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; line-height:1.4;">
+                        Select a CSV or Excel (.xlsx, .xls) file. Row-by-player layouts should contain: <code style="color:var(--nova-green)">Team Name</code>, <code style="color:var(--nova-green)">Team Manager</code>, <code style="color:var(--nova-green)">Team Logo</code>, <code style="color:var(--nova-green)">Professional Name</code>, and <code style="color:var(--nova-green)">Current IGN</code>.
+                    </p>
+                    
+                    <div class="upload-zone" id="import-drop-zone">
+                        <iconify-icon icon="lucide:file-spreadsheet" style="font-size:2.5rem; color:var(--nova-green); margin-bottom:12px;"></iconify-icon>
+                        <p style="font-size:0.85rem; font-weight:600;">Drag & Drop spreadsheet here or <span class="text-green">browse files</span></p>
+                        <p style="font-size:0.68rem; color:var(--text-muted); margin-top:6px;">CSV, XLSX, XLS up to 5MB</p>
+                        <input type="file" id="import-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Validation Alerts -->
+                <div class="validation-card hidden" id="validation-panel">
+                    <h4><iconify-icon icon="lucide:alert-triangle"></iconify-icon> VALIDATION ERRORS DETECTED</h4>
+                    <ul class="validation-list" id="validation-errors-list"></ul>
+                    <p style="font-size:0.7rem; color:var(--text-muted); margin-top:8px;">Roster imports are blocked until all formatting errors are resolved.</p>
+                </div>
+
+                <!-- Preview Panel -->
+                <div id="import-preview-panel" class="hidden" style="margin-top: 16px;">
+                    <div style="font-family:var(--font-data); font-size:0.75rem; color:var(--nova-green); text-transform:uppercase; margin-bottom:8px;"> Roster Import Preview</div>
+                    <div class="table-wrap" style="max-height: 200px; border:0.5px solid var(--border-subtle); border-radius:4px;">
+                        <table class="data-table" style="font-size:0.8rem;">
+                            <thead>
+                                <tr><th>Team</th><th>Manager</th><th>Professional Name</th><th>Current IGN</th></tr>
+                            </thead>
+                            <tbody id="import-preview-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                    <button class="btn btn-secondary" id="btn-cancel-import">Cancel</button>
+                    <button class="btn btn-primary" id="btn-submit-import" disabled>COMMIT REGISTRY</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Team Manually Modal -->
+        <div class="modal-overlay" id="add-team-modal">
+            <div class="modal-box" style="max-width: 500px;">
+                <div class="modal-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>ADD TEAM MANUALLY</span>
+                    <button class="btn-icon" id="btn-close-add-team" style="color:var(--text-muted);"><iconify-icon icon="lucide:x" style="font-size:1.2rem;"></iconify-icon></button>
+                </div>
+                <form id="add-team-form">
+                    <div class="form-group">
+                        <label class="form-label">Team Name *</label>
+                        <input type="text" class="form-input" id="inp-manual-team-name" placeholder="e.g. Horizon Sierra" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Manager</label>
+                        <input type="text" class="form-input" id="inp-manual-team-manager" placeholder="e.g. Heaven">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Logo</label>
+                        
+                        <!-- Toggle options for upload vs URL -->
+                        <div class="logo-source-tabs">
+                            <button type="button" class="logo-tab active" id="tab-logo-upload">
+                                <iconify-icon icon="lucide:upload" style="font-size:1rem;"></iconify-icon>
+                                Upload File
+                            </button>
+                            <button type="button" class="logo-tab" id="tab-logo-url">
+                                <iconify-icon icon="lucide:link" style="font-size:1rem;"></iconify-icon>
+                                Image URL
+                            </button>
+                        </div>
+
+                        <div style="display:flex; gap:16px; align-items:center;">
+                            <div id="manual-logo-preview" style="width:60px; height:60px; border-radius:var(--radius); border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--bg-elevated); flex-shrink:0;">
+                                <iconify-icon icon="lucide:shield" style="font-size:1.5rem; color:var(--text-muted);"></iconify-icon>
+                            </div>
+                            
+                            <!-- Option 1: File Upload -->
+                            <div id="logo-upload-container" style="flex:1;">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-trigger-logo-upload" style="min-height:36px; text-transform:none; font-family:var(--font-body); font-size:0.8rem;">Select Image</button>
+                                <input type="file" id="inp-manual-team-logo" accept="image/*" style="display:none;">
+                                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">Supports JPG, PNG (Max 2MB)</div>
+                            </div>
+
+                            <!-- Option 2: Image URL -->
+                            <div id="logo-url-container" class="hidden" style="flex:1;">
+                                <input type="url" class="form-input" id="inp-manual-team-logo-url" placeholder="e.g. https://example.com/logo.png" style="min-height:36px; padding:6px 12px; font-size:0.85rem;">
+                                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">Direct image path link</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-add-team">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-add-team">Save Team</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireRole } from '/src/auth.js';
+        import { injectLayout, showToast } from '/src/layout.js';
+        import { getAllTeams, getAllPlayers, getTeamStats, saveRegistryData, createTeam } from '/src/db.js';
+        import * as XLSX from 'xlsx';
+
+        let teams = [];
+        let players = [];
+        let statsCache = {};
+
+        // Import cache data
+        let pendingTeams = [];
+        let pendingPlayers = [];
+        let pendingAliases = [];
+
+        (async () => {
+            const profile = await requireRole('mod');
+            if (!profile) return;
+            injectLayout('teams', 'TEAM REGISTRY', profile);
+
+            // Authorized elements
+            if (profile.role === 'admin' || profile.role === 'owner') {
+                document.getElementById('btn-open-import').classList.remove('hidden');
+                document.getElementById('btn-open-add-team').classList.remove('hidden');
+            }
+
+            await loadRegistryData();
+            setupImportHandlers();
+            setupManualEntryHandlers();
+        })();
+
+        function setupManualEntryHandlers() {
+            const btnOpenTeam = document.getElementById('btn-open-add-team');
+            
+            const btnCloseTeam = document.getElementById('btn-close-add-team');
+            const btnCancelTeam = document.getElementById('btn-cancel-add-team');
+            const modalTeam = document.getElementById('add-team-modal');
+            const formTeam = document.getElementById('add-team-form');
+
+            const logoInput = document.getElementById('inp-manual-team-logo');
+            const logoTrigger = document.getElementById('btn-trigger-logo-upload');
+            const logoPreview = document.getElementById('manual-logo-preview');
+            
+            const tabUpload = document.getElementById('tab-logo-upload');
+            const tabUrl = document.getElementById('tab-logo-url');
+            const uploadContainer = document.getElementById('logo-upload-container');
+            const urlContainer = document.getElementById('logo-url-container');
+            const logoUrlInput = document.getElementById('inp-manual-team-logo-url');
+            
+            let teamLogoBase64 = null;
+            let currentLogoSource = 'upload'; // 'upload' | 'url'
+
+            // Safe DOM-based preview update helper to avoid quote escaping issues in onerror attributes
+            function updateLogoPreview(src) {
+                if (!src) {
+                    logoPreview.innerHTML = `<iconify-icon icon="lucide:shield" style="font-size:1.5rem; color:var(--text-muted);"></iconify-icon>`;
+                    return;
+                }
+                logoPreview.innerHTML = '';
+                const img = document.createElement('img');
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.onerror = () => {
+                    img.onerror = null;
+                    logoPreview.innerHTML = `<iconify-icon icon="lucide:alert-circle" style="font-size:1.5rem; color:var(--alert-red);"></iconify-icon>`;
+                };
+                img.src = src;
+                logoPreview.appendChild(img);
+            }
+
+            // Tab toggling
+            tabUpload.addEventListener('click', () => {
+                currentLogoSource = 'upload';
+                tabUpload.classList.add('active');
+                tabUrl.classList.remove('active');
+                uploadContainer.classList.remove('hidden');
+                urlContainer.classList.add('hidden');
+                updateLogoPreview(teamLogoBase64);
+            });
+
+            tabUrl.addEventListener('click', () => {
+                currentLogoSource = 'url';
+                tabUrl.classList.add('active');
+                tabUpload.classList.remove('active');
+                urlContainer.classList.remove('hidden');
+                uploadContainer.classList.add('hidden');
+                updateLogoPreview(logoUrlInput.value.trim());
+            });
+
+            // Input listener for Image URL preview
+            logoUrlInput.addEventListener('input', (e) => {
+                if (currentLogoSource !== 'url') return;
+                updateLogoPreview(e.target.value.trim());
+            });
+
+            logoTrigger.addEventListener('click', () => logoInput.click());
+            logoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast('Logo image must be under 2MB', 'error');
+                    logoInput.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const size = 120;
+                        canvas.width = size;
+                        canvas.height = size;
+                        const ctx = canvas.getContext('2d');
+                        const scale = Math.max(size / img.width, size / img.height);
+                        const x = (size - img.width * scale) / 2;
+                        const y = (size - img.height * scale) / 2;
+                        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                        teamLogoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                        if (currentLogoSource === 'upload') {
+                            updateLogoPreview(teamLogoBase64);
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            btnOpenTeam.addEventListener('click', () => {
+                formTeam.reset();
+                teamLogoBase64 = null;
+                currentLogoSource = 'upload';
+                tabUpload.classList.add('active');
+                tabUrl.classList.remove('active');
+                uploadContainer.classList.remove('hidden');
+                urlContainer.classList.add('hidden');
+                updateLogoPreview(null);
+                modalTeam.classList.add('show');
+            });
+
+            const closeTeamModal = () => modalTeam.classList.remove('show');
+            btnCloseTeam.addEventListener('click', closeTeamModal);
+            btnCancelTeam.addEventListener('click', closeTeamModal);
+
+            formTeam.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('btn-submit-add-team');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spin">⟳</span> SAVING...';
+
+                const teamName = document.getElementById('inp-manual-team-name').value.trim();
+                const teamManager = document.getElementById('inp-manual-team-manager').value.trim();
+                
+                let teamLogo = null;
+                if (currentLogoSource === 'upload') {
+                    teamLogo = teamLogoBase64;
+                } else {
+                    teamLogo = logoUrlInput.value.trim() || null;
+                }
+
+                try {
+                    await createTeam({
+                        team_name: teamName,
+                        team_manager: teamManager || null,
+                        team_logo: teamLogo
+                    });
+                    showToast(`Team "${teamName}" created successfully!`, 'success');
+                    closeTeamModal();
+                    await loadRegistryData();
+                } catch (err) {
+                    console.error('[Add Team Manual] Error:', err);
+                    showToast('Failed to create team: ' + err.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Save Team';
+                }
+            });
+        }
+
+        async function loadRegistryData() {
+            try {
+                teams = await getAllTeams();
+                players = await getAllPlayers();
+
+                if (teams.length === 0) {
+                    document.getElementById('registry-empty').classList.remove('hidden');
+                    document.getElementById('team-grid-container').innerHTML = '';
+                    return;
+                }
+
+                document.getElementById('registry-empty').classList.add('hidden');
+                
+                // Fetch career aggregates in parallel for each team card
+                const statsPromises = teams.map(t => getTeamStats(t.id, t.team_name));
+                const results = await Promise.all(statsPromises);
+                
+                teams.forEach((t, i) => {
+                    statsCache[t.id] = results[i];
+                });
+
+                renderTeamsGrid();
+            } catch (err) {
+                console.error('[Registry] Error:', err);
+                showToast('Failed to load roster registry: ' + err.message, 'error');
+            }
+        }
+
+        function renderTeamsGrid() {
+            const grid = document.getElementById('team-grid-container');
+            
+            grid.innerHTML = teams.map(t => {
+                const teamPlayers = players.filter(p => p.team_id === t.id);
+                const stats = statsCache[t.id] || { matches: 0, kills: 0, damage: 0 };
+                const logoHTML = t.team_logo 
+                    ? `<img src="${t.team_logo}" alt="${escapeHTML(t.team_name)} Logo">`
+                    : `<iconify-icon icon="lucide:shield" style="font-size: 1.8rem; color: var(--text-muted);"></iconify-icon>`;
+
+                return `
+                <div class="team-card" onclick="window.location.href='/team-profile.html?id=${t.id}'">
+                    <span class="player-badge-count">${teamPlayers.length} PLYRS</span>
+                    <div>
+                        <div class="team-card-header">
+                            <div class="team-card-logo">${logoHTML}</div>
+                            <div>
+                                <h3 class="team-card-name">${escapeHTML(t.team_name)}</h3>
+                                <div class="team-card-manager">Mgr: ${escapeHTML(t.team_manager || 'None')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="team-card-stats">
+                            <div>
+                                <div class="team-card-stat-val">${stats.matches}</div>
+                                <div class="team-card-stat-label">Matches</div>
+                            </div>
+                            <div>
+                                <div class="team-card-stat-val">${stats.kills}</div>
+                                <div class="team-card-stat-label">Kills</div>
+                            </div>
+                            <div>
+                                <div class="team-card-stat-val">${stats.damage}</div>
+                                <div class="team-card-stat-label">Dmg</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // ── ROSTER IMPORT MANAGEMENT ─────────────────────
+        function setupImportHandlers() {
+            const btnOpen = document.getElementById('btn-open-import');
+            const btnEmptyOpen = document.getElementById('btn-empty-import');
+            const btnClose = document.getElementById('btn-close-import');
+            const btnCancel = document.getElementById('btn-cancel-import');
+            const btnSubmit = document.getElementById('btn-submit-import');
+            const modal = document.getElementById('import-modal');
+            const dropZone = document.getElementById('import-drop-zone');
+            const fileInput = document.getElementById('import-file-input');
+
+            const openModal = () => {
+                resetImportModal();
+                modal.classList.add('show');
+            };
+
+            const closeModal = () => modal.classList.remove('show');
+
+            btnOpen?.addEventListener('click', openModal);
+            btnEmptyOpen?.addEventListener('click', openModal);
+            btnClose?.addEventListener('click', closeModal);
+            btnCancel?.addEventListener('click', closeModal);
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleSpreadsheetFile(e.target.files[0]);
+            });
+
+            // Drag and drop handlers
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'var(--nova-green)';
+                dropZone.style.background = 'rgba(108,182,4,0.08)';
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = '';
+                dropZone.style.background = '';
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '';
+                dropZone.style.background = '';
+                if (e.dataTransfer.files.length > 0) handleSpreadsheetFile(e.dataTransfer.files[0]);
+            });
+
+            btnSubmit.addEventListener('click', async () => {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spin">⟳</span> COMMITING...';
+
+                try {
+                    await saveRegistryData(pendingTeams, pendingPlayers, pendingAliases);
+                    showToast('Roster Registry updated successfully!', 'success');
+                    closeModal();
+                    await loadRegistryData();
+                } catch (err) {
+                    console.error('[Import Save] Error:', err);
+                    showToast('Failed to save imported data: ' + err.message, 'error');
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = 'COMMIT REGISTRY';
+                }
+            });
+        }
+
+        function resetImportModal() {
+            document.getElementById('import-file-input').value = '';
+            document.getElementById('validation-panel').classList.add('hidden');
+            document.getElementById('import-preview-panel').classList.add('hidden');
+            document.getElementById('validation-errors-list').innerHTML = '';
+            document.getElementById('import-preview-tbody').innerHTML = '';
+            document.getElementById('btn-submit-import').disabled = true;
+            pendingTeams = [];
+            pendingPlayers = [];
+            pendingAliases = [];
+        }
+
+        function handleSpreadsheetFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[firstSheet];
+                    const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    
+                    processImportSheet(rawRows);
+                } catch (err) {
+                    console.error('[Sheet Reader] Error:', err);
+                    showToast('Failed to parse spreadsheet file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processImportSheet(rows) {
+            if (rows.length < 2) {
+                showToast('Sheet is empty or missing headers', 'error');
+                return;
+            }
+
+            const headerRow = rows[0].map(h => String(h || '').trim().toLowerCase());
+            
+            // Determine format: row-per-player or row-per-team
+            const isRowPerPlayer = headerRow.includes('professional name') || headerRow.includes('professionalname');
+            
+            const validationErrors = [];
+            const parsedTeamsMap = {};
+            const parsedPlayersList = [];
+            const parsedAliasesList = [];
+
+            if (isRowPerPlayer) {
+                // Tabular Roster layout
+                // Headers: team name, team manager, team logo, professional name, current ign
+                const idxTeam = headerRow.findIndex(h => h.includes('team name') || h === 'team');
+                const idxMgr = headerRow.findIndex(h => h.includes('manager') || h.includes('mgr'));
+                const idxLogo = headerRow.findIndex(h => h.includes('logo') || h.includes('pic'));
+                const idxProf = headerRow.findIndex(h => h.includes('professional') || h === 'pname');
+                const idxIgn = headerRow.findIndex(h => h.includes('ign') || h === 'name');
+
+                if (idxTeam === -1 || idxProf === -1) {
+                    showToast('Required headers "Team Name" and "Professional Name" are missing', 'error');
+                    return;
+                }
+
+                for (let r = 1; r < rows.length; r++) {
+                    const row = rows[r];
+                    if (!row || row.length === 0 || row.every(cell => cell === '')) continue;
+
+                    const teamName = String(row[idxTeam] || '').trim();
+                    const manager = idxMgr !== -1 ? String(row[idxMgr] || '').trim() : '';
+                    const logo = idxLogo !== -1 ? String(row[idxLogo] || '').trim() : '';
+                    const professionalName = String(row[idxProf] || '').trim();
+                    const ign = idxIgn !== -1 ? String(row[idxIgn] || '').trim() : professionalName;
+
+                    // Row Validations
+                    if (!teamName) {
+                        validationErrors.push(`Row ${r + 1}: Team Name is missing.`);
+                        continue;
+                    }
+                    if (!professionalName) {
+                        validationErrors.push(`Row ${r + 1}: Professional Name is missing for team "${teamName}".`);
+                        continue;
+                    }
+
+                    // Store unique teams
+                    const teamKey = teamName.toLowerCase();
+                    if (!parsedTeamsMap[teamKey]) {
+                        parsedTeamsMap[teamKey] = {
+                            team_name: teamName,
+                            team_manager: manager || null,
+                            team_logo: logo || null
+                        };
+                    }
+
+                    parsedPlayersList.push({
+                        professional_name: professionalName,
+                        current_ign: ign || professionalName,
+                        team_name: teamName
+                    });
+
+                    parsedAliasesList.push({
+                        professional_name: professionalName,
+                        alias_ign: professionalName
+                    });
+                    if (ign && ign.toLowerCase() !== professionalName.toLowerCase()) {
+                        parsedAliasesList.push({
+                            professional_name: professionalName,
+                            alias_ign: ign
+                        });
+                    }
+                }
+            } else {
+                // Row-per-team layout
+                // Headers: Team Name, Team Manager, Team Logo, Player 1 Professional Name, Player 1 IGN...
+                const idxTeam = headerRow.findIndex(h => h.includes('team name') || h === 'team');
+                const idxMgr = headerRow.findIndex(h => h.includes('manager') || h.includes('mgr'));
+                const idxLogo = headerRow.findIndex(h => h.includes('logo') || h.includes('pic'));
+
+                if (idxTeam === -1) {
+                    showToast('Required header "Team Name" is missing', 'error');
+                    return;
+                }
+
+                for (let r = 1; r < rows.length; r++) {
+                    const row = rows[r];
+                    if (!row || row.length === 0 || row.every(cell => cell === '')) continue;
+
+                    const teamName = String(row[idxTeam] || '').trim();
+                    const manager = idxMgr !== -1 ? String(row[idxMgr] || '').trim() : '';
+                    const logo = idxLogo !== -1 ? String(row[idxLogo] || '').trim() : '';
+
+                    if (!teamName) {
+                        validationErrors.push(`Row ${r + 1}: Team Name is missing.`);
+                        continue;
+                    }
+
+                    const teamKey = teamName.toLowerCase();
+                    parsedTeamsMap[teamKey] = {
+                        team_name: teamName,
+                        team_manager: manager || null,
+                        team_logo: logo || null
+                    };
+
+                    // Extract player pairs (Player X Professional Name, Player X IGN)
+                    // We iterate columns from 0 to row.length
+                    let playerIndex = 1;
+                    for (let c = 0; c < row.length; c++) {
+                        const cellHeader = headerRow[c] || '';
+                        if (cellHeader.includes('professional name') || cellHeader.includes('pname') || cellHeader.includes('prof')) {
+                            const professionalName = String(row[c] || '').trim();
+                            if (!professionalName) continue;
+
+                            // Find corresponding IGN in nearby column
+                            let ign = professionalName;
+                            // Search next 3 columns for "ign" or "name" matches matching the same player index
+                            const numStrMatch = cellHeader.match(/\d+/);
+                            const playerNum = numStrMatch ? numStrMatch[0] : '';
+                            
+                            for (let searchC = c + 1; searchC < Math.min(c + 4, row.length); searchC++) {
+                                const nextHeader = headerRow[searchC] || '';
+                                if ((nextHeader.includes('ign') || nextHeader.includes('name')) && (!playerNum || nextHeader.includes(playerNum))) {
+                                    ign = String(row[searchC] || '').trim() || professionalName;
+                                    break;
+                                }
+                            }
+
+                            parsedPlayersList.push({
+                                professional_name: professionalName,
+                                current_ign: ign,
+                                team_name: teamName
+                            });
+
+                            parsedAliasesList.push({
+                                professional_name: professionalName,
+                                alias_ign: professionalName
+                            });
+                            if (ign.toLowerCase() !== professionalName.toLowerCase()) {
+                                parsedAliasesList.push({
+                                    professional_name: professionalName,
+                                    alias_ign: ign
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Global Validations
+            // 1. Check duplicate professional names in the file
+            const profNamesSeen = new Set();
+            const duplicateProfNames = [];
+            parsedPlayersList.forEach(p => {
+                const key = p.professional_name.toLowerCase();
+                if (profNamesSeen.has(key)) {
+                    duplicateProfNames.push(p.professional_name);
+                }
+                profNamesSeen.add(key);
+            });
+            if (duplicateProfNames.length > 0) {
+                validationErrors.push(`Duplicate Professional Names in file: ${[...new Set(duplicateProfNames)].join(', ')}.`);
+            }
+
+            // 2. Check duplicate aliases / IGNs in the file
+            const aliasesSeen = new Set();
+            const duplicateAliases = [];
+            parsedAliasesList.forEach(a => {
+                const key = a.alias_ign.toLowerCase();
+                if (aliasesSeen.has(key)) {
+                    duplicateAliases.push(a.alias_ign);
+                }
+                aliasesSeen.add(key);
+            });
+            if (duplicateAliases.length > 0) {
+                validationErrors.push(`Duplicate In-Game Names / Aliases in file: ${[...new Set(duplicateAliases)].join(', ')}.`);
+            }
+
+            // Display validation errors if any
+            const errPanel = document.getElementById('validation-panel');
+            const errList = document.getElementById('validation-errors-list');
+            const previewPanel = document.getElementById('import-preview-panel');
+            const submitBtn = document.getElementById('btn-submit-import');
+
+            if (validationErrors.length > 0) {
+                errList.innerHTML = validationErrors.map(e => `<li>${escapeHTML(e)}</li>`).join('');
+                errPanel.classList.remove('hidden');
+                previewPanel.classList.add('hidden');
+                submitBtn.disabled = true;
+                return;
+            }
+
+            errPanel.classList.add('hidden');
+            
+            // Show preview
+            pendingTeams = Object.values(parsedTeamsMap);
+            pendingPlayers = parsedPlayersList;
+            pendingAliases = parsedAliasesList;
+
+            const previewTbody = document.getElementById('import-preview-tbody');
+            previewTbody.innerHTML = pendingPlayers.map(p => `
+                <tr>
+                    <td style="font-weight:700;">${escapeHTML(p.team_name)}</td>
+                    <td>${escapeHTML(parsedTeamsMap[p.team_name.toLowerCase()]?.team_manager || 'None')}</td>
+                    <td class="text-green" style="font-weight:700;">${escapeHTML(p.professional_name)}</td>
+                    <td class="text-muted font-data">${escapeHTML(p.current_ign)}</td>
+                </tr>
+            `).join('');
+
+            previewPanel.classList.remove('hidden');
+            submitBtn.disabled = false;
+            showToast(`Roster sheet validated: ${pendingTeams.length} teams and ${pendingPlayers.length} players parsed`, 'success');
+        }
+    </script>
+</body>
+</html>
