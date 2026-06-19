@@ -89,19 +89,19 @@ CREATE POLICY "owner_delete" ON user_roles FOR DELETE USING (EXISTS(SELECT 1 FRO
 CREATE POLICY "public_read_sessions" ON scrims_sessions FOR SELECT USING (true);
 CREATE POLICY "admin_insert_sessions" ON scrims_sessions FOR INSERT WITH CHECK (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 CREATE POLICY "admin_update_sessions" ON scrims_sessions FOR UPDATE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
-CREATE POLICY "owner_delete_sessions" ON scrims_sessions FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role='owner'));
+CREATE POLICY "owner_delete_sessions" ON scrims_sessions FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 
 -- match_results policies
 CREATE POLICY "public_read_results" ON match_results FOR SELECT USING (true);
 CREATE POLICY "admin_insert_results" ON match_results FOR INSERT WITH CHECK (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 CREATE POLICY "admin_update_results" ON match_results FOR UPDATE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
-CREATE POLICY "owner_delete_results" ON match_results FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role='owner'));
+CREATE POLICY "owner_delete_results" ON match_results FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 
 -- player_stats policies
 CREATE POLICY "public_read_stats" ON player_stats FOR SELECT USING (true);
 CREATE POLICY "admin_insert_stats" ON player_stats FOR INSERT WITH CHECK (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 CREATE POLICY "admin_update_stats" ON player_stats FOR UPDATE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
-CREATE POLICY "owner_delete_stats" ON player_stats FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role='owner'));
+CREATE POLICY "owner_delete_stats" ON player_stats FOR DELETE USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
 
 -- upload_sessions policies
 CREATE POLICY "admin_read_uploads" ON upload_sessions FOR SELECT USING (EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id=auth.uid() AND ur.role IN ('admin','owner')));
