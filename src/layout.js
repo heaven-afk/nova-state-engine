@@ -54,34 +54,10 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     const roleBadgeClass = `role-${profile.role}`;
 
-    const sidebarHTML = `
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-logo">${NOVA_LOGO_HTML}</div>
-            <div class="brand-wordmark">NOVA GAMING<br>NETWORK</div>
-        </div>
-        <nav class="sidebar-nav">${navHTML}</nav>
-        <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="user-avatar">${avatarHTML}</div>
-                <div class="user-meta">
-                    <div class="user-name">${profile.displayName}</div>
-                    <span class="role-badge ${roleBadgeClass}">${profile.role}</span>
-                </div>
-            </div>
-            <button class="btn-signout" id="btn-signout">
-                <iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out
-            </button>
-        </div>
-    </aside>`;
-
     const topbarHTML = `
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
-            <button class="mobile-menu-btn" id="mobile-menu-toggle" style="flex-shrink:0;">
-                <iconify-icon icon="lucide:menu"></iconify-icon>
-            </button>
-            <span class="topbar-title hide-mobile" style="margin-right:20px;flex-shrink:0;">${pageTitle}</span>
+            <span class="topbar-title" style="margin-right:20px;flex-shrink:0;">${pageTitle}</span>
             <!-- Global Search Bar -->
             <div class="global-search-wrap" style="position:relative; max-width:280px; width:100%; margin-left:10px;">
                 <iconify-icon icon="lucide:search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; pointer-events:none; z-index:2;"></iconify-icon>
@@ -94,37 +70,37 @@ export function injectLayout(activePageId, pageTitle, profile) {
         </div>
     </div>`;
 
-    // Generate Mobile Floating Glow Navbar
-    const mobilePrimaryItems = [
+    // Generate Floating Glow Navbar
+    const primaryNavItems = [
         { id: 'dashboard', href: '/dashboard.html', icon: 'lucide:layout-dashboard', label: 'Dashboard' },
         { id: 'weekly', href: '/weekly.html', icon: 'lucide:calendar-days', label: 'Weekly' },
         { id: 'matches', href: '/matches.html', icon: 'lucide:trophy', label: 'Leaderboard' },
         { id: 'teams', href: '/teams.html', icon: 'lucide:shield', label: 'Registry' }
     ];
 
-    let mobileNavItemsHTML = mobilePrimaryItems.map(item => {
+    let navItemsHTML = primaryNavItems.map(item => {
         const isActive = item.id === activePageId;
         const activeClass = isActive ? ' active' : '';
-        const glowHTML = isActive ? '<span class="mobile-nav-glow"></span>' : '';
+        const glowHTML = isActive ? '<span class="glow"></span>' : '';
         return `
-        <a href="${item.href}" class="mobile-nav-item${activeClass}" aria-label="${item.label}" ${isActive ? 'aria-current="page"' : ''}>
+        <a href="${item.href}" class="nav-item${activeClass}" aria-label="${item.label}" ${isActive ? 'aria-current="page"' : ''}>
             ${glowHTML}
             <iconify-icon icon="${item.icon}"></iconify-icon>
         </a>`;
     }).join('');
 
-    mobileNavItemsHTML += `
-    <button class="mobile-nav-item" id="mobile-more-btn" aria-label="More Menu">
+    navItemsHTML += `
+    <button class="nav-item" id="app-more-btn" aria-label="More Menu">
         <iconify-icon icon="lucide:more-horizontal"></iconify-icon>
     </button>`;
 
-    let mobileCtaHTML = '';
+    let ctaHTML = '';
     if (profile.role === 'admin' || profile.role === 'owner') {
         const isCtaActive = activePageId === 'upload';
         const ctaClass = isCtaActive ? ' active' : '';
-        const ctaGlow = isCtaActive ? '<span class="mobile-nav-glow"></span>' : '';
-        mobileCtaHTML = `
-        <a href="/upload.html" class="mobile-nav-cta${ctaClass}" aria-label="Upload Results" ${isCtaActive ? 'aria-current="page"' : ''}>
+        const ctaGlow = isCtaActive ? '<span class="glow"></span>' : '';
+        ctaHTML = `
+        <a href="/upload.html" class="nav-cta${ctaClass}" aria-label="Upload Results" ${isCtaActive ? 'aria-current="page"' : ''}>
             ${ctaGlow}
             <iconify-icon icon="lucide:upload"></iconify-icon>
         </a>`;
@@ -163,12 +139,12 @@ export function injectLayout(activePageId, pageTitle, profile) {
         </a>`;
     }
 
-    const mobileNavWrapperHTML = `
-    <div class="mobile-nav-wrapper">
-        <nav class="mobile-navbar">
-            ${mobileNavItemsHTML}
+    const appNavWrapperHTML = `
+    <div class="app-nav-wrapper">
+        <nav class="navbar">
+            ${navItemsHTML}
         </nav>
-        ${mobileCtaHTML}
+        ${ctaHTML}
     </div>`;
 
     const bottomSheetHTML = `
@@ -196,14 +172,12 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     body.innerHTML = `
     <div class="app-shell">
-        ${sidebarHTML}
         <div class="main-content">
             ${topbarHTML}
             <div class="page-body">${pageContent}</div>
         </div>
     </div>
-    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-    ${mobileNavWrapperHTML}
+    ${appNavWrapperHTML}
     ${bottomSheetHTML}`;
 
     // Wire up global search interactions
@@ -272,30 +246,10 @@ export function injectLayout(activePageId, pageTitle, profile) {
         }
     });
 
-    // Wire up sidebar toggle
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('sidebar-backdrop');
-    const menuBtn = document.getElementById('mobile-menu-toggle');
-
-    const closeSidebar = () => {
-        sidebar.classList.remove('open');
-        backdrop.classList.remove('active');
-        document.body.classList.remove('sidebar-open');
-    };
-
-    menuBtn?.addEventListener('click', () => {
-        const willOpen = !sidebar.classList.contains('open');
-        sidebar.classList.toggle('open', willOpen);
-        backdrop.classList.toggle('active', willOpen);
-        document.body.classList.toggle('sidebar-open', willOpen);
-    });
-    backdrop?.addEventListener('click', closeSidebar);
-    sidebar?.querySelectorAll('.nav-item').forEach(link => link.addEventListener('click', closeSidebar));
-
     // Bottom sheet interactions
     const sheet = document.getElementById('mob-bottom-sheet');
     const sheetBackdrop = document.getElementById('mob-sheet-backdrop');
-    const moreBtn = document.getElementById('mobile-more-btn');
+    const moreBtn = document.getElementById('app-more-btn');
     const sheetCloseBtn = document.getElementById('mob-sheet-close-btn');
     const sheetSignoutBtn = document.getElementById('mob-sheet-signout-btn');
 
@@ -319,13 +273,9 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     window.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
-            closeSidebar();
             closeBottomSheet();
         }
     });
-
-    // Wire up sign out
-    document.getElementById('btn-signout')?.addEventListener('click', () => signOut());
 
     // Watch for session expiry — shows modal instead of exposing login URL
     watchSessionExpiry();

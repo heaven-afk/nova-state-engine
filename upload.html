@@ -1118,7 +1118,14 @@
                         return;
                     }
 
-                    finalTeamData.push({ team_name: team, placement: rank, kills });
+                    // Dynamically calculate team kills from player kills if player stats are present for this team
+                    const matchingPlayers = finalPlayerData.filter(p => p.team_name.toLowerCase() === team.toLowerCase());
+                    let finalKills = kills;
+                    if (matchingPlayers.length > 0) {
+                        finalKills = matchingPlayers.reduce((sum, p) => sum + p.kills, 0);
+                    }
+
+                    finalTeamData.push({ team_name: team, placement: rank, kills: finalKills });
                 });
 
                 if (missingTeamName) { return showToast('Please map a team name to all placements in Team Placements review', 'error'); }

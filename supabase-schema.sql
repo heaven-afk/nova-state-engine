@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS gfx_exports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users,
   template_id TEXT NOT NULL,
-  session_id UUID REFERENCES scrims_sessions,
+  session_id UUID REFERENCES scrims_sessions ON DELETE CASCADE,
   config_json JSONB,
   exported_at TIMESTAMPTZ DEFAULT now()
 );

@@ -26,9 +26,6 @@
                     <button class="btn btn-secondary" id="btn-edit-session" title="Edit Session">
                         <iconify-icon icon="lucide:edit-3"></iconify-icon> Edit Session
                     </button>
-                    <button class="btn btn-danger" id="btn-delete-session" title="Delete Session">
-                        <iconify-icon icon="lucide:trash-2"></iconify-icon> Delete
-                    </button>
                 </div>
             </div>
         </div>
@@ -185,8 +182,6 @@
             const actionsDiv = document.getElementById('session-actions');
             if (hasSelection && isAuthorized) {
                 actionsDiv.classList.remove('hidden');
-                const btnDelete = document.getElementById('btn-delete-session');
-                btnDelete.style.display = 'inline-flex';
             } else {
                 actionsDiv.classList.add('hidden');
             }
@@ -196,49 +191,6 @@
             const sessionId = select.value;
             if (sessionId) {
                 window.location.href = `/upload.html?session_id=${sessionId}`;
-            }
-        });
-
-        document.getElementById('btn-delete-session').addEventListener('click', async () => {
-            const sessionId = select.value;
-            if (!sessionId) return;
-            
-            const session = sessions.find(s => s.id === sessionId);
-            const sessionName = session ? session.session_name : 'this session';
-            
-            if (confirm(`Are you absolutely sure you want to delete "${sessionName}"?\nThis will permanently delete all associated match results and player statistics.`)) {
-                const btn = document.getElementById('btn-delete-session');
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spin">⟳</span> Deleting...';
-                
-                try {
-                    const { deleteSession } = await import('/src/db.js');
-                    await deleteSession(sessionId);
-                    
-                    // Reload sessions list
-                    sessions = await getAllSessions();
-                    select.innerHTML = '<option value="">— Select a Session —</option>' + 
-                        sessions.map(s => `<option value="${s.id}">${s.session_name} (${new Date(s.date).toLocaleDateString()})</option>`).join('');
-                    
-                    if (sessions.length > 0) {
-                        select.value = sessions[0].id;
-                        await loadSessionData(sessions[0].id);
-                    } else {
-                        select.value = '';
-                        document.getElementById('data-container').style.display = 'none';
-                        document.getElementById('empty-state').style.display = 'block';
-                    }
-                    
-                    showToast('Session deleted successfully', 'success');
-                } catch (err) {
-                    console.error('Delete error:', err);
-                    showToast('Failed to delete session: ' + err.message, 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    updateSessionActionsVisibility();
-                }
             }
         });
     </script>

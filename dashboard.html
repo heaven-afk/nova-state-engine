@@ -48,10 +48,11 @@
                                 <th>Date</th>
                                 <th>Lobbies</th>
                                 <th class="hide-mobile">Status</th>
+                                <th id="th-actions" class="hidden">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="recent-tbody">
-                            <tr><td colspan="4" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
+                            <tr><td colspan="5" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -81,7 +82,7 @@
 
     <script type="module">
         import { requireRole } from '/src/auth.js';
-        import { injectLayout } from '/src/layout.js';
+        import { injectLayout, showToast } from '/src/layout.js';
         import { getDashboardStats, getTopFraggers } from '/src/db.js';
 
         (async () => {
@@ -89,47 +90,100 @@
             if (!profile) return;
             injectLayout('dashboard', 'DASHBOARD', profile);
 
-            try {
-                const stats = await getDashboardStats();
-                setText('m-sessions', stats.totalSessions);
-                setText('m-kills', stats.totalKills.toLocaleString());
-                setText('m-players', stats.activePlayers);
-                setText('m-latest', stats.latestSession?.session_name || 'No sessions yet');
+            const isAdminOrOwner = profile.role === 'admin' || profile.role === 'owner';
 
-                // Recent sessions table
-                const tbody = document.getElementById('recent-tbody');
-                if (stats.recentSessions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No sessions yet</td></tr>';
-                } else {
-                    tbody.innerHTML = stats.recentSessions.map(s => `<tr>
-                        <td style="font-weight:600;">${s.session_name}</td>
-                        <td class="font-data">${new Date(s.date).toLocaleDateString()}</td>
-                        <td class="font-data">${s.lobby_count}</td>
-                        <td class="hide-mobile"><span class="badge badge-green">Active</span></td>
-                    </tr>`).join('');
-                }
+            async function loadDashboardData() {
+                try {
+                    const stats = await getDashboardStats();
+                    setText('m-sessions', stats.totalSessions);
+                    setText('m-kills', stats.totalKills.toLocaleString());
+                    setText('m-players', stats.activePlayers);
+                    setText('m-latest', stats.latestSession?.session_name || 'No sessions yet');
 
-                // Top fraggers for latest session
-                if (stats.latestSession) {
-                    const fraggers = await getTopFraggers(stats.latestSession.id, 5);
-                    const ktbody = document.getElementById('kills-tbody');
-                    if (fraggers.length === 0) {
-                        ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No player data yet</td></tr>';
+                    // Recent sessions table
+                    const tbody = document.getElementById('recent-tbody');
+                    const thActions = document.getElementById('th-actions');
+                    
+                    if (stats.recentSessions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center" style="padding:24px;">No sessions yet</td></tr>';
+                        if (thActions) thActions.classList.add('hidden');
                     } else {
-                        ktbody.innerHTML = fraggers.map((p, i) => {
-                            const rankClass = i < 3 ? ` rank-${i+1}` : '';
-                            return `<tr class="${rankClass}">
-                                <td>${i+1}</td>
-                                <td style="font-weight:600;">${p.player_name}</td>
-                                <td class="text-muted">${p.team_name}</td>
-                                <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
-                            </tr>`;
-                        }).join('');
+                        if (isAdminOrOwner && thActions) {
+                            thActions.classList.remove('hidden');
+                        }
+                        tbody.innerHTML = stats.recentSessions.map(s => `<tr>
+                            <td style="font-weight:600;">${s.session_name}</td>
+                            <td class="font-data">${new Date(s.date).toLocaleDateString()}</td>
+                            <td class="font-data">${s.lobby_count}</td>
+                            <td class="hide-mobile"><span class="badge badge-green">Active</span></td>
+                            ${isAdminOrOwner ? `
+                            <td>
+                                <div style="display:flex; gap:8px;">
+                                    <a href="/upload.html?session_id=${s.id}" class="btn btn-secondary btn-sm" style="padding:4px 8px; min-height:auto; display:inline-flex; align-items:center; gap:4px;" title="Edit Session">
+                                        <iconify-icon icon="lucide:edit-3"></iconify-icon> Edit
+                                    </a>
+                                    <button class="btn btn-danger btn-sm btn-delete-row" data-id="${s.id}" data-name="${s.session_name}" style="padding:4px 8px; min-height:auto; display:inline-flex; align-items:center; gap:4px;" title="Delete Session">
+                                        <iconify-icon icon="lucide:trash-2"></iconify-icon> Delete
+                                    </button>
+                                </div>
+                            </td>` : ''}
+                        </tr>`).join('');
+
+                        if (isAdminOrOwner) {
+                            tbody.querySelectorAll('.btn-delete-row').forEach(btn => {
+                                btn.addEventListener('click', async (e) => {
+                                    const btnTarget = e.currentTarget;
+                                    const sessionId = btnTarget.dataset.id;
+                                    const sessionName = btnTarget.dataset.name;
+                                    
+                                    if (confirm(`Are you absolutely sure you want to delete "${sessionName}"?\nThis will permanently delete all associated match results and player statistics.`)) {
+                                        btnTarget.disabled = true;
+                                        btnTarget.innerHTML = '<span class="spin">⟳</span>';
+                                        
+                                        try {
+                                            const { deleteSession } = await import('/src/db.js');
+                                            await deleteSession(sessionId);
+                                            showToast('Session deleted successfully', 'success');
+                                            await loadDashboardData();
+                                        } catch (err) {
+                                            console.error('Delete error:', err);
+                                            showToast('Failed to delete session: ' + err.message, 'error');
+                                            btnTarget.disabled = false;
+                                            btnTarget.innerHTML = '<iconify-icon icon="lucide:trash-2"></iconify-icon> Delete';
+                                        }
+                                    }
+                                });
+                            });
+                        }
                     }
+
+                    // Top fraggers for latest session
+                    const ktbody = document.getElementById('kills-tbody');
+                    if (stats.latestSession) {
+                        const fraggers = await getTopFraggers(stats.latestSession.id, 5);
+                        if (fraggers.length === 0) {
+                            ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No player data yet</td></tr>';
+                        } else {
+                            ktbody.innerHTML = fraggers.map((p, i) => {
+                                const rankClass = i < 3 ? ` rank-${i+1}` : '';
+                                return `<tr class="${rankClass}">
+                                    <td>${i+1}</td>
+                                    <td style="font-weight:600;">${p.player_name}</td>
+                                    <td class="text-muted">${p.team_name}</td>
+                                    <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
+                                </tr>`;
+                            }).join('');
+                        }
+                    } else {
+                        ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No session data yet</td></tr>';
+                    }
+                } catch (e) {
+                    console.error('Dashboard load error:', e);
                 }
-            } catch (e) {
-                console.error('Dashboard load error:', e);
             }
+
+            await loadDashboardData();
+
             // Stagger card entrance animations
             document.querySelectorAll('.stat-card').forEach((card, i) => {
                 setTimeout(() => card.classList.add('visible'), i * 60);
