@@ -686,3 +686,82 @@ export async function createPlayer(player) {
 
     return newPlayer;
 }
+
+/**
+ * Update team details with case-insensitive uniqueness check
+ */
+export async function updateTeam(teamId, updates) {
+    const preparedUpdates = {};
+    
+    if (updates.team_name !== undefined) {
+        const cleanName = String(updates.team_name || '').trim();
+        if (!cleanName) throw new Error("Team name cannot be empty");
+
+        // Check if team name is already taken case-insensitively by another team
+        const { data: existing, error: findErr } = await supabase.from('teams')
+            .select('id')
+            .ilike('team_name', cleanName)
+            .maybeSingle();
+        if (findErr) throw findErr;
+        
+        if (existing && existing.id !== teamId) {
+            throw new Error(`Team name "${cleanName}" is already taken by another team.`);
+        }
+        preparedUpdates.team_name = cleanName;
+    }
+
+    if (updates.team_manager !== undefined) preparedUpdates.team_manager = updates.team_manager || null;
+    if (updates.team_logo !== undefined) preparedUpdates.team_logo = updates.team_logo || null;
+
+    const { data, error } = await supabase.from('teams')
+        .update(preparedUpdates)
+        .eq('id', teamId)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Update player identity details, registering new aliases if the IGN changes
+ */
+export async function updatePlayer(playerId, updates) {
+    const { data: oldPlayer, error: fetchErr } = await supabase
+        .from('players')
+        .select('current_ign')
+        .eq('id', playerId)
+        .single();
+    if (fetchErr) throw fetchErr;
+
+    const preparedUpdates = {};
+    if (updates.current_ign !== undefined) preparedUpdates.current_ign = String(updates.current_ign || '').trim() || null;
+    if (updates.team_id !== undefined) preparedUpdates.team_id = updates.team_id || null;
+    if (updates.status !== undefined) preparedUpdates.status = updates.status;
+
+    const { data: newPlayer, error } = await supabase
+        .from('players')
+        .update(preparedUpdates)
+        .eq('id', playerId)
+        .select()
+        .single();
+    if (error) throw error;
+
+    // Add new alias if the IGN changed
+    if (preparedUpdates.current_ign && preparedUpdates.current_ign.toLowerCase() !== (oldPlayer.current_ign || '').toLowerCase()) {
+        const { data: existingAlias } = await supabase
+            .from('player_aliases')
+            .select('id')
+            .eq('player_id', playerId)
+            .ilike('alias_ign', preparedUpdates.current_ign)
+            .maybeSingle();
+
+        if (!existingAlias) {
+            await supabase.from('player_aliases').insert({
+                player_id: playerId,
+                alias_ign: preparedUpdates.current_ign
+            });
+        }
+    }
+
+    return newPlayer;
+}

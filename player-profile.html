@@ -103,6 +103,9 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
+                <button class="btn btn-primary btn-sm hidden" id="btn-open-edit-player">
+                    <iconify-icon icon="lucide:edit-3"></iconify-icon> EDIT PLAYER
+                </button>
                 <button class="btn btn-secondary btn-sm" id="btn-back-team" style="display:none;">
                     <iconify-icon icon="lucide:shield"></iconify-icon> TEAM PROFILE
                 </button>
@@ -195,14 +198,51 @@
                 </div>
             </div>
         </div>
+        <!-- Edit Player Modal -->
+        <div class="modal-overlay" id="edit-player-modal">
+            <div class="modal-box" style="max-width: 500px;">
+                <div class="modal-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>EDIT PLAYER PROFILE</span>
+                    <button class="btn-icon" id="btn-close-edit-player" style="color:var(--text-muted);"><iconify-icon icon="lucide:x" style="font-size:1.2rem;"></iconify-icon></button>
+                </div>
+                <form id="edit-player-form">
+                    <div class="form-group">
+                        <label class="form-label">Professional Name (Immutable)</label>
+                        <input type="text" class="form-input" id="inp-edit-player-prof" readonly style="opacity: 0.7; cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current IGN *</label>
+                        <input type="text" class="form-input" id="inp-edit-player-ign" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Roster Team</label>
+                        <select class="form-select" id="inp-edit-player-team">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="inp-edit-player-status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-edit-player">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-edit-player">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { requireRole } from '/src/auth.js';
         import { injectLayout, showToast } from '/src/layout.js';
-        import { getPlayer, getPlayerAliases, getPlayerCareerStats } from '/src/db.js';
+        import { getPlayer, getPlayerAliases, getPlayerCareerStats, getAllTeams, updatePlayer } from '/src/db.js';
 
         let playerId = null;
+        let playerData = null;
 
         (async () => {
             const profile = await requireRole('mod');
@@ -216,13 +256,19 @@
                 return;
             }
 
+            if (profile.role === 'admin' || profile.role === 'owner') {
+                document.getElementById('btn-open-edit-player').classList.remove('hidden');
+            }
+
             await loadPlayerProfile();
+            setupEditPlayerHandler();
         })();
 
         async function loadPlayerProfile() {
             try {
                 // 1. Fetch player metadata
                 const player = await getPlayer(playerId);
+                playerData = player;
                 
                 document.getElementById('p-prof-name').textContent = player.professional_name;
                 document.getElementById('p-ign-text').textContent = `Current IGN: ${player.current_ign || player.professional_name}`;
@@ -325,6 +371,79 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        function setupEditPlayerHandler() {
+            const btnOpen = document.getElementById('btn-open-edit-player');
+            const btnClose = document.getElementById('btn-close-edit-player');
+            const btnCancel = document.getElementById('btn-cancel-edit-player');
+            const modal = document.getElementById('edit-player-modal');
+            const form = document.getElementById('edit-player-form');
+
+            if (!btnOpen) return;
+
+            btnOpen.addEventListener('click', async () => {
+                form.reset();
+                if (!playerData) return;
+
+                // Pre-populate fields
+                document.getElementById('inp-edit-player-prof').value = playerData.professional_name;
+                document.getElementById('inp-edit-player-ign').value = playerData.current_ign || playerData.professional_name;
+                document.getElementById('inp-edit-player-status').value = playerData.status || 'active';
+
+                try {
+                    // Fetch all teams to populate team dropdown
+                    const teams = await getAllTeams();
+                    const teamSelect = document.getElementById('inp-edit-player-team');
+                    
+                    // Sort teams alphabetically
+                    teams.sort((a, b) => a.team_name.localeCompare(b.team_name));
+
+                    let html = '<option value="">-- Free Agent / No Team --</option>';
+                    html += teams.map(t => `<option value="${t.id}">${escapeHTML(t.team_name)}</option>`).join('');
+                    teamSelect.innerHTML = html;
+
+                    // Set select value
+                    teamSelect.value = playerData.team_id || '';
+                } catch (err) {
+                    console.error('[Edit Player Handler] Failed to load teams:', err);
+                    showToast('Failed to load teams list', 'error');
+                }
+
+                modal.classList.add('show');
+            });
+
+            const closeModal = () => modal.classList.remove('show');
+            btnClose.addEventListener('click', closeModal);
+            btnCancel.addEventListener('click', closeModal);
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('btn-submit-edit-player');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spin">⟳</span> SAVING...';
+
+                const ign = document.getElementById('inp-edit-player-ign').value.trim();
+                const teamIdVal = document.getElementById('inp-edit-player-team').value || null;
+                const status = document.getElementById('inp-edit-player-status').value;
+
+                try {
+                    await updatePlayer(playerId, {
+                        current_ign: ign,
+                        team_id: teamIdVal,
+                        status: status
+                    });
+                    showToast('Player details updated successfully!', 'success');
+                    closeModal();
+                    await loadPlayerProfile();
+                } catch (err) {
+                    console.error('[Edit Player] Error:', err);
+                    showToast('Failed to update player details: ' + err.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Save Changes';
+                }
+            });
         }
     </script>
 </body>

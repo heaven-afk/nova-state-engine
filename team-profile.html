@@ -120,6 +120,46 @@
             text-transform: uppercase;
             color: var(--text-muted);
         }
+
+        /* Logo source tabs style */
+        .logo-source-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: var(--bg-elevated);
+            padding: 3px;
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border-subtle);
+        }
+
+        .logo-tab {
+            flex: 1;
+            padding: 6px;
+            font-size: 0.72rem;
+            border-radius: 2px;
+            border: none;
+            font-family: var(--font-data);
+            font-weight: 700;
+            text-transform: uppercase;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .logo-tab.active {
+            background: var(--nova-green);
+            color: var(--bg-base);
+        }
+
+        .logo-tab:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
     </style>
 </head>
 <body>
@@ -135,6 +175,9 @@
                 <div class="text-muted" style="font-size: 0.85rem; margin-top:4px;" id="team-manager-text">Manager: --</div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm hidden" id="btn-open-edit-team">
+                    <iconify-icon icon="lucide:edit-3"></iconify-icon> EDIT TEAM
+                </button>
                 <button class="btn btn-primary btn-sm hidden" id="btn-open-add-player">
                     <iconify-icon icon="lucide:user-plus"></iconify-icon> ADD PLAYER
                 </button>
@@ -198,12 +241,68 @@
                 </form>
             </div>
         </div>
+        <!-- Edit Team Modal -->
+        <div class="modal-overlay" id="edit-team-modal">
+            <div class="modal-box" style="max-width: 500px;">
+                <div class="modal-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>EDIT TEAM DETAILS</span>
+                    <button class="btn-icon" id="btn-close-edit-team" style="color:var(--text-muted);"><iconify-icon icon="lucide:x" style="font-size:1.2rem;"></iconify-icon></button>
+                </div>
+                <form id="edit-team-form">
+                    <div class="form-group">
+                        <label class="form-label">Team Name *</label>
+                        <input type="text" class="form-input" id="inp-edit-team-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Manager</label>
+                        <input type="text" class="form-input" id="inp-edit-team-manager">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Logo</label>
+                        
+                        <div class="logo-source-tabs">
+                            <button type="button" class="logo-tab active" id="tab-edit-logo-upload">
+                                <iconify-icon icon="lucide:upload" style="font-size:1rem;"></iconify-icon>
+                                Upload File
+                            </button>
+                            <button type="button" class="logo-tab" id="tab-edit-logo-url">
+                                <iconify-icon icon="lucide:link" style="font-size:1rem;"></iconify-icon>
+                                Image URL
+                            </button>
+                        </div>
+
+                        <div style="display:flex; gap:16px; align-items:center;">
+                            <div id="edit-logo-preview" style="width:60px; height:60px; border-radius:var(--radius); border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--bg-elevated); flex-shrink:0;">
+                                <iconify-icon icon="lucide:shield" style="font-size:1.5rem; color:var(--text-muted);"></iconify-icon>
+                            </div>
+                            
+                            <!-- Option 1: File Upload -->
+                            <div id="edit-logo-upload-container" style="flex:1;">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-trigger-edit-logo-upload" style="min-height:36px; text-transform:none; font-family:var(--font-body); font-size:0.8rem;">Select Image</button>
+                                <input type="file" id="inp-edit-team-logo" accept="image/*" style="display:none;">
+                                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">Supports JPG, PNG (Max 2MB)</div>
+                            </div>
+
+                            <!-- Option 2: Image URL -->
+                            <div id="edit-logo-url-container" class="hidden" style="flex:1;">
+                                <input type="url" class="form-input" id="inp-edit-team-logo-url" placeholder="e.g. https://example.com/logo.png" style="min-height:36px; padding:6px 12px; font-size:0.85rem;">
+                                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;">Direct image path link</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-edit-team">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-edit-team">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { requireRole } from '/src/auth.js';
         import { injectLayout, showToast } from '/src/layout.js';
-        import { getTeam, getAllPlayers, getTeamStats, getPlayerCareerStats, createPlayer } from '/src/db.js';
+        import { getTeam, getAllPlayers, getTeamStats, getPlayerCareerStats, createPlayer, updateTeam } from '/src/db.js';
 
         let teamId = null;
         let teamData = null;
@@ -223,10 +322,12 @@
             // Authorized elements
             if (profile.role === 'admin' || profile.role === 'owner') {
                 document.getElementById('btn-open-add-player').classList.remove('hidden');
+                document.getElementById('btn-open-edit-team').classList.remove('hidden');
             }
 
             await loadTeamProfile();
             setupAddPlayerHandler();
+            setupEditTeamHandler();
         })();
 
         async function loadTeamProfile() {
@@ -365,6 +466,168 @@
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Save Player';
+                }
+            });
+        }
+
+        function setupEditTeamHandler() {
+            const btnOpen = document.getElementById('btn-open-edit-team');
+            const btnClose = document.getElementById('btn-close-edit-team');
+            const btnCancel = document.getElementById('btn-cancel-edit-team');
+            const modal = document.getElementById('edit-team-modal');
+            const form = document.getElementById('edit-team-form');
+
+            const logoInput = document.getElementById('inp-edit-team-logo');
+            const logoTrigger = document.getElementById('btn-trigger-edit-logo-upload');
+            const logoPreview = document.getElementById('edit-logo-preview');
+            
+            const tabUpload = document.getElementById('tab-edit-logo-upload');
+            const tabUrl = document.getElementById('tab-edit-logo-url');
+            const uploadContainer = document.getElementById('edit-logo-upload-container');
+            const urlContainer = document.getElementById('edit-logo-url-container');
+            const logoUrlInput = document.getElementById('inp-edit-team-logo-url');
+            
+            let teamLogoBase64 = null;
+            let currentLogoSource = 'upload'; // 'upload' | 'url'
+
+            function updateLogoPreview(src) {
+                if (!src) {
+                    logoPreview.innerHTML = `<iconify-icon icon="lucide:shield" style="font-size:1.5rem; color:var(--text-muted);"></iconify-icon>`;
+                    return;
+                }
+                logoPreview.innerHTML = '';
+                const img = document.createElement('img');
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.onerror = () => {
+                    img.onerror = null;
+                    logoPreview.innerHTML = `<iconify-icon icon="lucide:alert-circle" style="font-size:1.5rem; color:var(--alert-red);"></iconify-icon>`;
+                };
+                img.src = src;
+                logoPreview.appendChild(img);
+            }
+
+            // Tab toggling
+            tabUpload.addEventListener('click', () => {
+                currentLogoSource = 'upload';
+                tabUpload.classList.add('active');
+                tabUrl.classList.remove('active');
+                uploadContainer.classList.remove('hidden');
+                urlContainer.classList.add('hidden');
+                updateLogoPreview(teamLogoBase64);
+            });
+
+            tabUrl.addEventListener('click', () => {
+                currentLogoSource = 'url';
+                tabUrl.classList.add('active');
+                tabUpload.classList.remove('active');
+                urlContainer.classList.remove('hidden');
+                uploadContainer.classList.add('hidden');
+                updateLogoPreview(logoUrlInput.value.trim());
+            });
+
+            logoUrlInput.addEventListener('input', (e) => {
+                if (currentLogoSource !== 'url') return;
+                updateLogoPreview(e.target.value.trim());
+            });
+
+            logoTrigger.addEventListener('click', () => logoInput.click());
+            logoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast('Logo image must be under 2MB', 'error');
+                    logoInput.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const size = 120;
+                        canvas.width = size;
+                        canvas.height = size;
+                        const ctx = canvas.getContext('2d');
+                        const scale = Math.max(size / img.width, size / img.height);
+                        const x = (size - img.width * scale) / 2;
+                        const y = (size - img.height * scale) / 2;
+                        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                        teamLogoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                        if (currentLogoSource === 'upload') {
+                            updateLogoPreview(teamLogoBase64);
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            if (!btnOpen) return;
+
+            btnOpen.addEventListener('click', () => {
+                form.reset();
+                if (teamData) {
+                    document.getElementById('inp-edit-team-name').value = teamData.team_name;
+                    document.getElementById('inp-edit-team-manager').value = teamData.team_manager || '';
+                    
+                    if (teamData.team_logo && teamData.team_logo.startsWith('data:image')) {
+                        teamLogoBase64 = teamData.team_logo;
+                        logoUrlInput.value = '';
+                        currentLogoSource = 'upload';
+                        tabUpload.click();
+                    } else if (teamData.team_logo) {
+                        teamLogoBase64 = null;
+                        logoUrlInput.value = teamData.team_logo;
+                        currentLogoSource = 'url';
+                        tabUrl.click();
+                    } else {
+                        teamLogoBase64 = null;
+                        logoUrlInput.value = '';
+                        currentLogoSource = 'upload';
+                        tabUpload.click();
+                        updateLogoPreview(null);
+                    }
+                }
+                modal.classList.add('show');
+            });
+
+            const closeModal = () => modal.classList.remove('show');
+            btnClose.addEventListener('click', closeModal);
+            btnCancel.addEventListener('click', closeModal);
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('btn-submit-edit-team');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spin">⟳</span> SAVING...';
+
+                const name = document.getElementById('inp-edit-team-name').value.trim();
+                const manager = document.getElementById('inp-edit-team-manager').value.trim();
+                
+                let logo = null;
+                if (currentLogoSource === 'upload') {
+                    logo = teamLogoBase64;
+                } else {
+                    logo = logoUrlInput.value.trim() || null;
+                }
+
+                try {
+                    await updateTeam(teamId, {
+                        team_name: name,
+                        team_manager: manager || null,
+                        team_logo: logo
+                    });
+                    showToast('Team details updated successfully!', 'success');
+                    closeModal();
+                    await loadTeamProfile();
+                } catch (err) {
+                    console.error('[Edit Team] Error:', err);
+                    showToast('Failed to update team details: ' + err.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Save Changes';
                 }
             });
         }

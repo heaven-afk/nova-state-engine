@@ -94,6 +94,101 @@ export function injectLayout(activePageId, pageTitle, profile) {
         </div>
     </div>`;
 
+    // Generate Mobile Floating Glow Navbar
+    const mobilePrimaryItems = [
+        { id: 'dashboard', href: '/dashboard.html', icon: 'lucide:layout-dashboard', label: 'Dashboard' },
+        { id: 'weekly', href: '/weekly.html', icon: 'lucide:calendar-days', label: 'Weekly' },
+        { id: 'matches', href: '/matches.html', icon: 'lucide:trophy', label: 'Leaderboard' },
+        { id: 'teams', href: '/teams.html', icon: 'lucide:shield', label: 'Registry' }
+    ];
+
+    let mobileNavItemsHTML = mobilePrimaryItems.map(item => {
+        const isActive = item.id === activePageId;
+        const activeClass = isActive ? ' active' : '';
+        const glowHTML = isActive ? '<span class="mobile-nav-glow"></span>' : '';
+        return `
+        <a href="${item.href}" class="mobile-nav-item${activeClass}" aria-label="${item.label}" ${isActive ? 'aria-current="page"' : ''}>
+            ${glowHTML}
+            <iconify-icon icon="${item.icon}"></iconify-icon>
+        </a>`;
+    }).join('');
+
+    mobileNavItemsHTML += `
+    <button class="mobile-nav-item" id="mobile-more-btn" aria-label="More Menu">
+        <iconify-icon icon="lucide:more-horizontal"></iconify-icon>
+    </button>`;
+
+    let mobileCtaHTML = '';
+    if (profile.role === 'admin' || profile.role === 'owner') {
+        const isCtaActive = activePageId === 'upload';
+        const ctaClass = isCtaActive ? ' active' : '';
+        const ctaGlow = isCtaActive ? '<span class="mobile-nav-glow"></span>' : '';
+        mobileCtaHTML = `
+        <a href="/upload.html" class="mobile-nav-cta${ctaClass}" aria-label="Upload Results" ${isCtaActive ? 'aria-current="page"' : ''}>
+            ${ctaGlow}
+            <iconify-icon icon="lucide:upload"></iconify-icon>
+        </a>`;
+    }
+
+    let bottomSheetItemsHTML = '';
+    const isProfileActive = activePageId === 'profile';
+    bottomSheetItemsHTML += `
+    <a href="/profile.html" class="mob-sheet-item${isProfileActive ? ' active' : ''}">
+        <iconify-icon icon="lucide:user"></iconify-icon>
+        <span>My Profile</span>
+    </a>`;
+
+    if (userLevel >= ROLE_HIERARCHY['admin']) {
+        const isGfxActive = activePageId === 'gfx';
+        bottomSheetItemsHTML += `
+        <a href="/gfx.html" class="mob-sheet-item${isGfxActive ? ' active' : ''}">
+            <iconify-icon icon="lucide:palette"></iconify-icon>
+            <span>GFX Generator</span>
+        </a>`;
+    }
+
+    if (userLevel >= ROLE_HIERARCHY['owner']) {
+        const isUsersActive = activePageId === 'users';
+        bottomSheetItemsHTML += `
+        <a href="/users.html" class="mob-sheet-item${isUsersActive ? ' active' : ''}">
+            <iconify-icon icon="lucide:users"></iconify-icon>
+            <span>User Management</span>
+        </a>`;
+        
+        const isSettingsActive = activePageId === 'settings';
+        bottomSheetItemsHTML += `
+        <a href="/settings.html" class="mob-sheet-item${isSettingsActive ? ' active' : ''}">
+            <iconify-icon icon="lucide:settings"></iconify-icon>
+            <span>Settings</span>
+        </a>`;
+    }
+
+    const mobileNavWrapperHTML = `
+    <div class="mobile-nav-wrapper">
+        <nav class="mobile-navbar">
+            ${mobileNavItemsHTML}
+        </nav>
+        ${mobileCtaHTML}
+    </div>`;
+
+    const bottomSheetHTML = `
+    <div class="mob-bottom-sheet-backdrop" id="mob-sheet-backdrop"></div>
+    <div class="mob-bottom-sheet" id="mob-bottom-sheet">
+        <div class="mob-sheet-header">
+            <span class="mob-sheet-title">Nova Network Menu</span>
+            <button class="mob-sheet-close" id="mob-sheet-close-btn">
+                <iconify-icon icon="lucide:x"></iconify-icon>
+            </button>
+        </div>
+        <div class="mob-sheet-grid">
+            ${bottomSheetItemsHTML}
+            <button class="mob-sheet-item mob-sheet-signout" id="mob-sheet-signout-btn">
+                <iconify-icon icon="lucide:log-out"></iconify-icon>
+                <span>Sign Out</span>
+            </button>
+        </div>
+    </div>`;
+
     // Wrap existing page-body content
     const body = document.body;
     const pageBody = body.querySelector('.page-body');
@@ -107,7 +202,9 @@ export function injectLayout(activePageId, pageTitle, profile) {
             <div class="page-body">${pageContent}</div>
         </div>
     </div>
-    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>`;
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    ${mobileNavWrapperHTML}
+    ${bottomSheetHTML}`;
 
     // Wire up global search interactions
     const searchInput = document.getElementById('global-search-input');
@@ -194,8 +291,37 @@ export function injectLayout(activePageId, pageTitle, profile) {
     });
     backdrop?.addEventListener('click', closeSidebar);
     sidebar?.querySelectorAll('.nav-item').forEach(link => link.addEventListener('click', closeSidebar));
+
+    // Bottom sheet interactions
+    const sheet = document.getElementById('mob-bottom-sheet');
+    const sheetBackdrop = document.getElementById('mob-sheet-backdrop');
+    const moreBtn = document.getElementById('mobile-more-btn');
+    const sheetCloseBtn = document.getElementById('mob-sheet-close-btn');
+    const sheetSignoutBtn = document.getElementById('mob-sheet-signout-btn');
+
+    const openBottomSheet = () => {
+        sheet.classList.add('show');
+        sheetBackdrop.classList.add('show');
+    };
+
+    const closeBottomSheet = () => {
+        sheet.classList.remove('show');
+        sheetBackdrop.classList.remove('show');
+    };
+
+    moreBtn?.addEventListener('click', openBottomSheet);
+    sheetCloseBtn?.addEventListener('click', closeBottomSheet);
+    sheetBackdrop?.addEventListener('click', closeBottomSheet);
+    sheetSignoutBtn?.addEventListener('click', () => {
+        closeBottomSheet();
+        signOut();
+    });
+
     window.addEventListener('keydown', event => {
-        if (event.key === 'Escape') closeSidebar();
+        if (event.key === 'Escape') {
+            closeSidebar();
+            closeBottomSheet();
+        }
     });
 
     // Wire up sign out
