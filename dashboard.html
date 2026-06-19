@@ -166,10 +166,16 @@
                         } else {
                             ktbody.innerHTML = fraggers.map((p, i) => {
                                 const rankClass = i < 3 ? ` rank-${i+1}` : '';
+                                const logoHTML = p.team_logo 
+                                    ? `<img src="${p.team_logo}" alt="Logo" style="width:16px; height:16px; border-radius:2px; object-fit:cover; margin-right:6px; display:inline-block; vertical-align:middle;">`
+                                    : `<iconify-icon icon="lucide:shield" style="font-size:0.9rem; color:var(--text-muted); margin-right:6px; vertical-align:middle;"></iconify-icon>`;
                                 return `<tr class="${rankClass}">
                                     <td>${i+1}</td>
-                                    <td style="font-weight:600;">${p.player_name}</td>
-                                    <td class="text-muted">${p.team_name}</td>
+                                    <td style="font-weight:600;">${escapeHTML(p.player_name)}</td>
+                                    <td class="text-muted" style="white-space:nowrap;">
+                                        ${logoHTML}
+                                        <span style="vertical-align:middle;">${escapeHTML(p.team_name)}</span>
+                                    </td>
                                     <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
                                 </tr>`;
                             }).join('');
@@ -189,6 +195,16 @@
                 setTimeout(() => card.classList.add('visible'), i * 60);
             });
         })();
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
 
         function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
     </script>

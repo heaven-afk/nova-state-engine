@@ -306,9 +306,15 @@
                     document.getElementById('team-card').style.display = '';
                     document.getElementById('team-tbody').innerHTML = data.teams.map((t, i) => {
                         const rc = i < 3 ? ` rank-${i+1}` : '';
+                        const logoHTML = t.team_logo 
+                            ? `<img src="${t.team_logo}" alt="Logo" style="width:20px; height:20px; border-radius:3px; object-fit:cover; margin-right:8px; display:inline-block; vertical-align:middle;">`
+                            : `<iconify-icon icon="lucide:shield" style="font-size:1rem; color:var(--text-muted); margin-right:8px; vertical-align:middle;"></iconify-icon>`;
                         return `<tr class="${rc}">
                             <td>${i+1}</td>
-                            <td style="font-weight:700;">${escapeHTML(t.team_name)}</td>
+                            <td style="font-weight:700; white-space:nowrap;">
+                                ${logoHTML}
+                                <span style="vertical-align:middle;">${escapeHTML(t.team_name)}</span>
+                            </td>
                             <td class="font-data">${t.total_kills}</td>
                             <td class="text-green font-data" style="font-weight:700;">${t.total_points}</td>
                         </tr>`;
@@ -320,10 +326,16 @@
                     document.getElementById('player-card').style.display = '';
                     document.getElementById('player-tbody').innerHTML = data.topFraggers.map((p, i) => {
                         const rc = i < 3 ? ` rank-${i+1}` : '';
+                        const logoHTML = p.team_logo 
+                            ? `<img src="${p.team_logo}" alt="Logo" style="width:16px; height:16px; border-radius:2px; object-fit:cover; margin-right:6px; display:inline-block; vertical-align:middle;">`
+                            : `<iconify-icon icon="lucide:shield" style="font-size:0.9rem; color:var(--text-muted); margin-right:6px; vertical-align:middle;"></iconify-icon>`;
                         return `<tr class="${rc}">
                             <td>${i+1}</td>
                             <td style="font-weight:700;">${escapeHTML(p.player_name)}</td>
-                            <td class="text-muted">${escapeHTML(p.team_name)}</td>
+                            <td class="text-muted" style="white-space:nowrap;">
+                                ${logoHTML}
+                                <span style="vertical-align:middle;">${escapeHTML(p.team_name)}</span>
+                            </td>
                             <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
                         </tr>`;
                     }).join('');

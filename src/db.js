@@ -150,7 +150,7 @@ export async function insertMatchResults(results) {
 
 export async function getMatchResults(sessionId) {
     const { data, error } = await supabase.from('match_results')
-        .select('*').eq('session_id', sessionId).order('lobby_number').order('placement');
+        .select('*, teams(team_logo)').eq('session_id', sessionId).order('lobby_number').order('placement');
     if (error) throw error;
     return data || [];
 }
@@ -172,7 +172,7 @@ export async function insertPlayerStats(stats) {
 
 export async function getPlayerStats(sessionId) {
     const { data, error } = await supabase.from('player_stats')
-        .select('*').eq('session_id', sessionId);
+        .select('*, teams(team_logo)').eq('session_id', sessionId);
     if (error) throw error;
     if (!data) return [];
 
@@ -180,7 +180,12 @@ export async function getPlayerStats(sessionId) {
     data.forEach(p => {
         const name = p.professional_name || p.player_name;
         if (!playerMap[name]) {
-            playerMap[name] = { player_name: name, team_name: p.team_name, kills: 0 };
+            playerMap[name] = { 
+                player_name: name, 
+                team_name: p.team_name, 
+                kills: 0,
+                team_logo: p.teams?.team_logo || null
+            };
         }
         playerMap[name].kills += p.kills;
     });
@@ -190,7 +195,7 @@ export async function getPlayerStats(sessionId) {
 
 export async function getTopFraggers(sessionId, limit = 10) {
     const { data, error } = await supabase.from('player_stats')
-        .select('player_name, professional_name, team_name, kills').eq('session_id', sessionId);
+        .select('player_name, professional_name, team_name, kills, teams(team_logo)').eq('session_id', sessionId);
     if (error) throw error;
     if (!data) return [];
 
@@ -198,7 +203,12 @@ export async function getTopFraggers(sessionId, limit = 10) {
     data.forEach(p => {
         const name = p.professional_name || p.player_name;
         if (!playerMap[name]) {
-            playerMap[name] = { player_name: name, team_name: p.team_name, kills: 0 };
+            playerMap[name] = { 
+                player_name: name, 
+                team_name: p.team_name, 
+                kills: 0,
+                team_logo: p.teams?.team_logo || null
+            };
         }
         playerMap[name].kills += p.kills;
     });
@@ -272,14 +282,21 @@ export async function getLatestSessionStats() {
     const session = sessions[0];
 
     const [resultsRes, playersRes] = await Promise.all([
-        supabase.from('match_results').select('*').eq('session_id', session.id).order('points', { ascending: false }),
-        supabase.from('player_stats').select('*').eq('session_id', session.id)
+        supabase.from('match_results').select('*, teams(team_logo)').eq('session_id', session.id).order('points', { ascending: false }),
+        supabase.from('player_stats').select('*, teams(team_logo)').eq('session_id', session.id)
     ]);
 
     // Aggregate team standings
     const teamMap = {};
     (resultsRes.data || []).forEach(r => {
-        if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, total_kills: 0, total_points: 0 };
+        if (!teamMap[r.team_name]) {
+            teamMap[r.team_name] = { 
+                team_name: r.team_name, 
+                total_kills: 0, 
+                total_points: 0,
+                team_logo: r.teams?.team_logo || null
+            };
+        }
         teamMap[r.team_name].total_kills += r.kills;
         teamMap[r.team_name].total_points += r.points;
     });
@@ -290,7 +307,12 @@ export async function getLatestSessionStats() {
     (playersRes.data || []).forEach(p => {
         const name = p.professional_name || p.player_name;
         if (!playerMap[name]) {
-            playerMap[name] = { player_name: name, team_name: p.team_name, kills: 0 };
+            playerMap[name] = { 
+                player_name: name, 
+                team_name: p.team_name, 
+                kills: 0,
+                team_logo: p.teams?.team_logo || null
+            };
         }
         playerMap[name].kills += p.kills;
     });
@@ -520,12 +542,6 @@ export async function getTeamStats(teamId, teamName) {
         .eq('team_id', teamId);
     if (rErr) throw rErr;
 
-    // 2. Fetch all individual player stats linked to this team
-    const { data: playerStats, error: pErr } = await supabase.from('player_stats')
-        .select('*')
-        .eq('team_id', teamId);
-    if (pErr) throw pErr;
-
     const matches = results ? results.length : 0;
     let kills = 0;
     let damage = 0;
@@ -534,15 +550,10 @@ export async function getTeamStats(teamId, teamName) {
     let top10 = 0;
     let placementSum = 0;
 
-    if (playerStats && playerStats.length > 0) {
-        playerStats.forEach(ps => {
-            kills += ps.kills || 0;
-            damage += ps.damage || 0;
-        });
-    }
-
     if (results && results.length > 0) {
         results.forEach(r => {
+            kills += r.kills || 0;
+            damage += r.damage || 0;
             placementSum += r.placement || 0;
             if (r.placement === 1) wins++;
             if (r.placement <= 5) top5++;

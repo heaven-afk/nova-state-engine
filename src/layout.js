@@ -54,6 +54,27 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     const roleBadgeClass = `role-${profile.role}`;
 
+    const sidebarHTML = `
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">${NOVA_LOGO_HTML}</div>
+            <div class="brand-wordmark">NOVA GAMING<br>NETWORK</div>
+        </div>
+        <nav class="sidebar-nav">${navHTML}</nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="user-avatar">${avatarHTML}</div>
+                <div class="user-meta">
+                    <div class="user-name">${profile.displayName}</div>
+                    <span class="role-badge ${roleBadgeClass}">${profile.role}</span>
+                </div>
+            </div>
+            <button class="btn-signout" id="btn-signout">
+                <iconify-icon icon="lucide:log-out"></iconify-icon> Sign Out
+            </button>
+        </div>
+    </aside>`;
+
     const topbarHTML = `
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
@@ -172,6 +193,7 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     body.innerHTML = `
     <div class="app-shell">
+        ${sidebarHTML}
         <div class="main-content">
             ${topbarHTML}
             <div class="page-body">${pageContent}</div>
@@ -270,6 +292,8 @@ export function injectLayout(activePageId, pageTitle, profile) {
         closeBottomSheet();
         signOut();
     });
+
+    document.getElementById('btn-signout')?.addEventListener('click', () => signOut());
 
     window.addEventListener('keydown', event => {
         if (event.key === 'Escape') {

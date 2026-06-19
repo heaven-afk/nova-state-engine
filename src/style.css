@@ -80,7 +80,26 @@ img, svg, canvas { max-width: 100%; }
 
 /* ── SIDEBAR ───────────────────────────────────── */
 .sidebar {
-    display: none !important;
+    width: 220px;
+    background: var(--bg-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-right: 0.5px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 200;
+    transition: transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none !important;
+    }
 }
 
 .sidebar-brand {
@@ -222,10 +241,17 @@ img, svg, canvas { max-width: 100%; }
 /* ── MAIN CONTENT ──────────────────────────────── */
 .main-content {
     flex: 1;
-    margin-left: 0;
+    margin-left: 220px;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding-bottom: 80px;
+    }
 }
 
 /* ── TOPBAR ────────────────────────────────────── */
@@ -1002,6 +1028,12 @@ img, svg, canvas { max-width: 100%; }
   gap: 12px;
   z-index: 999;
   pointer-events: none; /* Let clicks pass through empty spaces */
+}
+
+@media (min-width: 769px) {
+  .app-nav-wrapper {
+    display: none !important;
+  }
 }
 
 .navbar {
