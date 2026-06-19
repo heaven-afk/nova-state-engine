@@ -48,7 +48,7 @@ export async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: window.location.origin + '/ngn-access.html'
+            redirectTo: window.location.origin + '/login.html'
         }
     });
     if (error) throw error;
@@ -57,7 +57,7 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
     await supabase.auth.signOut();
-    window.location.href = '/ngn-access.html';
+    window.location.href = '/login.html';
 }
 
 export async function resetPassword(email) {
@@ -204,7 +204,7 @@ function showSessionExpiredModal() {
             <p style="font-size:0.85rem;color:rgba(255,255,255,0.45);margin-bottom:28px;">
                 Your session has expired. Please sign in again.
             </p>
-            <a href="/ngn-access.html" style="
+            <a href="/login.html" style="
                 display:inline-block;
                 padding:14px 32px;
                 background:#6CB604;

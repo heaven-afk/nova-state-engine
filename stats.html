@@ -24,6 +24,7 @@
                 <a href="#teams" class="pub-nav-tab" id="nav-teams">Teams</a>
                 <a href="#compare" class="pub-nav-tab" id="nav-compare">Compare</a>
             </div>
+            <a href="/login.html" class="btn btn-secondary btn-sm" id="nav-login">Staff Login →</a>
         </nav>
 
         <div class="public-body">
@@ -243,6 +244,24 @@
         </div>
     </div>
 
+    <!-- Mobile Floating Glow Navbar -->
+    <div class="mobile-nav-wrapper">
+        <nav class="mobile-navbar">
+            <a href="#scrims" class="mobile-nav-item pub-nav-tab active" aria-label="Scrims" aria-current="page">
+                <span class="mobile-nav-glow"></span>
+                <iconify-icon icon="lucide:trophy"></iconify-icon>
+            </a>
+            <a href="#teams" class="mobile-nav-item pub-nav-tab" aria-label="Teams">
+                <span class="mobile-nav-glow"></span>
+                <iconify-icon icon="lucide:shield"></iconify-icon>
+            </a>
+            <a href="#compare" class="mobile-nav-item pub-nav-tab" aria-label="Compare">
+                <span class="mobile-nav-glow"></span>
+                <iconify-icon icon="lucide:arrow-left-right"></iconify-icon>
+            </a>
+        </nav>
+    </div>
+
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 
     <!-- Secret access: type "nova" on this page to navigate to staff login -->
@@ -254,7 +273,7 @@
             document.addEventListener('keypress', function(e) {
                 buffer += e.key.toLowerCase();
                 if (buffer.includes(secret)) {
-                    window.location.href = '/ngn-access.html';
+                    window.location.href = '/login.html';
                     buffer = '';
                 }
                 clearTimeout(timer);
@@ -323,8 +342,10 @@
                 document.querySelectorAll('.pub-nav-tab').forEach(tab => {
                     if (tab.getAttribute('href') === hash) {
                         tab.classList.add('active');
+                        tab.setAttribute('aria-current', 'page');
                     } else {
                         tab.classList.remove('active');
+                        tab.removeAttribute('aria-current');
                     }
                 });
                 

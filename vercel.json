@@ -23,13 +23,7 @@
       "destination": "/api/$1"
     }
   ],
-  "routes": [
-    {
-      "src": "/login(\\.html)?$",
-      "status": 404,
-      "dest": "/404.html"
-    }
-  ],
+
   "headers": [
     {
       "source": "/(.*)",

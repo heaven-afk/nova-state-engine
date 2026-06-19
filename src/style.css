@@ -1261,7 +1261,8 @@ img, svg, canvas { max-width: 100%; }
 
 /* Hide Hamburger Menu & default mobile topbar triggers */
 @media (max-width: 768px) {
-  #mobile-menu-toggle {
+  #mobile-menu-toggle,
+  .public-navbar .public-nav-links {
     display: none !important;
   }
 }
