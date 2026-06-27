@@ -77,6 +77,16 @@
                         </div>
                         <button class="btn btn-danger" id="btn-reset">PURGE DATA</button>
                     </div>
+                    <!-- Inline delete confirmation panel -->
+                    <div id="purge-confirm-panel" style="display:none; margin-top:20px; padding:16px; background:rgba(255,59,59,0.08); border:1px solid rgba(255,59,59,0.35); border-radius:8px;">
+                        <div style="font-size:0.85rem; color:var(--alert-red); font-weight:600; margin-bottom:8px;">⚠ This action is irreversible. All data will be permanently deleted.</div>
+                        <div style="font-size:0.85rem; margin-bottom:10px;">Type <strong style="font-family:monospace; color:var(--alert-red);">&quot;PURGE&quot;</strong> to confirm:</div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="text" id="inp-purge-confirm" class="form-input" placeholder='Type PURGE here' autocomplete="off" style="max-width:200px; font-family:monospace; font-weight:700; letter-spacing:0.05em;">
+                            <button class="btn btn-danger" id="btn-purge-execute" disabled>CONFIRM PURGE</button>
+                            <button class="btn btn-secondary" id="btn-purge-cancel">CANCEL</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -313,16 +323,49 @@
                 }
             });
 
-            document.getElementById('btn-reset').addEventListener('click', async () => {
-                if (prompt('Type "PURGE" to confirm complete data deletion:') !== 'PURGE') return;
-                
+            // Purge confirmation flow
+            const btnReset = document.getElementById('btn-reset');
+            const purgePanel = document.getElementById('purge-confirm-panel');
+            const inpPurge = document.getElementById('inp-purge-confirm');
+            const btnExecute = document.getElementById('btn-purge-execute');
+            const btnCancel = document.getElementById('btn-purge-cancel');
+
+            btnReset.addEventListener('click', () => {
+                purgePanel.style.display = 'block';
+                inpPurge.value = '';
+                btnExecute.disabled = true;
+                inpPurge.focus();
+                btnReset.style.display = 'none';
+            });
+
+            inpPurge.addEventListener('input', () => {
+                btnExecute.disabled = inpPurge.value.trim() !== 'PURGE';
+            });
+
+            btnCancel.addEventListener('click', () => {
+                purgePanel.style.display = 'none';
+                inpPurge.value = '';
+                btnExecute.disabled = true;
+                btnReset.style.display = 'inline-block';
+            });
+
+            btnExecute.addEventListener('click', async () => {
+                if (inpPurge.value.trim() !== 'PURGE') return;
+                btnExecute.disabled = true;
+                btnExecute.textContent = 'PURGING...';
                 try {
                     // Delete all sessions (cascades to results and stats via foreign keys)
                     const { error } = await supabase.from('scrims_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                     if (error) throw error;
                     showToast('Database purged successfully', 'success');
+                    purgePanel.style.display = 'none';
+                    inpPurge.value = '';
+                    btnReset.style.display = 'inline-block';
                 } catch(e) {
                     showToast('Failed to purge: ' + e.message, 'error');
+                } finally {
+                    btnExecute.textContent = 'CONFIRM PURGE';
+                    btnExecute.disabled = false;
                 }
             });
         })();

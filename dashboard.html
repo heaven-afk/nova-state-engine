@@ -23,13 +23,14 @@
                 <div class="metric-label">Total Kills</div>
                 <div class="metric-value" id="m-kills">--</div>
             </div>
-            <div class="metric-card stat-card">
+            <div class="metric-card stat-card metric-hero">
                 <div class="metric-label">Active Players</div>
                 <div class="metric-value" id="m-players">--</div>
+                <div class="metric-sub">Registered across all teams</div>
             </div>
             <div class="metric-card stat-card">
                 <div class="metric-label">Latest Session</div>
-                <div class="metric-value" id="m-latest" style="font-size:1rem;">--</div>
+                <div class="metric-value" id="m-latest">--</div>
             </div>
         </div>
 
@@ -52,7 +53,9 @@
                             </tr>
                         </thead>
                         <tbody id="recent-tbody">
-                            <tr><td colspan="5" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
+                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
+                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-80"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
+                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -72,7 +75,9 @@
                             <tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr>
                         </thead>
                         <tbody id="kills-tbody">
-                            <tr><td colspan="4" class="text-muted text-center" style="padding:24px;">Loading...</td></tr>
+                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
+                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-80"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
+                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -105,24 +110,28 @@
                     const thActions = document.getElementById('th-actions');
                     
                     if (stats.recentSessions.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center" style="padding:24px;">No sessions yet</td></tr>';
+                        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state" style="padding:32px 20px;">
+                            <iconify-icon class="empty-state-icon" icon="lucide:calendar-x"></iconify-icon>
+                            <h3>NO SESSIONS YET</h3>
+                            <p>Upload your first scrim results to get started.</p>
+                        </div></td></tr>`;
                         if (thActions) thActions.classList.add('hidden');
                     } else {
                         if (isAdminOrOwner && thActions) {
                             thActions.classList.remove('hidden');
                         }
                         tbody.innerHTML = stats.recentSessions.map(s => `<tr>
-                            <td style="font-weight:600;">${s.session_name}</td>
+                            <td class="fw-600">${s.session_name}</td>
                             <td class="font-data">${new Date(s.date).toLocaleDateString()}</td>
                             <td class="font-data">${s.lobby_count}</td>
-                            <td class="hide-mobile"><span class="badge badge-green">Active</span></td>
+                            <td class="hide-mobile"><span class="badge badge-success">Active</span></td>
                             ${isAdminOrOwner ? `
                             <td>
-                                <div style="display:flex; gap:8px;">
-                                    <a href="/upload.html?session_id=${s.id}" class="btn btn-secondary btn-sm" style="padding:4px 8px; min-height:auto; display:inline-flex; align-items:center; gap:4px;" title="Edit Session">
+                                <div class="row-actions">
+                                    <a href="/upload.html?session_id=${s.id}" class="btn btn-secondary btn-sm btn-xs" title="Edit Session">
                                         <iconify-icon icon="lucide:edit-3"></iconify-icon> Edit
                                     </a>
-                                    <button class="btn btn-danger btn-sm btn-delete-row" data-id="${s.id}" data-name="${s.session_name}" style="padding:4px 8px; min-height:auto; display:inline-flex; align-items:center; gap:4px;" title="Delete Session">
+                                    <button class="btn btn-danger btn-sm btn-xs btn-delete-row" data-id="${s.id}" data-name="${s.session_name}" title="Delete Session">
                                         <iconify-icon icon="lucide:trash-2"></iconify-icon> Delete
                                     </button>
                                 </div>
@@ -162,26 +171,34 @@
                     if (stats.latestSession) {
                         const fraggers = await getTopFraggers(stats.latestSession.id, 5);
                         if (fraggers.length === 0) {
-                            ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No player data yet</td></tr>';
+                            ktbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:32px 20px;">
+                                <iconify-icon class="empty-state-icon" icon="lucide:sword"></iconify-icon>
+                                <h3>NO PLAYER DATA</h3>
+                                <p>Player kill stats will appear here after results are uploaded.</p>
+                            </div></td></tr>`;
                         } else {
                             ktbody.innerHTML = fraggers.map((p, i) => {
                                 const rankClass = i < 3 ? ` rank-${i+1}` : '';
                                 const logoHTML = p.team_logo 
-                                    ? `<img src="${p.team_logo}" alt="Logo" style="width:16px; height:16px; border-radius:2px; object-fit:cover; margin-right:6px; display:inline-block; vertical-align:middle;">`
-                                    : `<iconify-icon icon="lucide:shield" style="font-size:0.9rem; color:var(--text-muted); margin-right:6px; vertical-align:middle;"></iconify-icon>`;
+                                    ? `<img src="${p.team_logo}" alt="Logo" class="team-logo-sm">`
+                                    : `<iconify-icon icon="lucide:shield" class="td-team-icon"></iconify-icon>`;
                                 return `<tr class="${rankClass}">
                                     <td>${i+1}</td>
-                                    <td style="font-weight:600;">${escapeHTML(p.player_name)}</td>
-                                    <td class="text-muted" style="white-space:nowrap;">
+                                    <td class="fw-600">${escapeHTML(p.player_name)}</td>
+                                    <td class="td-team">
                                         ${logoHTML}
-                                        <span style="vertical-align:middle;">${escapeHTML(p.team_name)}</span>
+                                        <span>${escapeHTML(p.team_name)}</span>
                                     </td>
-                                    <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
+                                    <td class="kills-cell">${p.kills}</td>
                                 </tr>`;
                             }).join('');
                         }
                     } else {
-                        ktbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center" style="padding:24px;">No session data yet</td></tr>';
+                        ktbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:32px 20px;">
+                            <iconify-icon class="empty-state-icon" icon="lucide:database"></iconify-icon>
+                            <h3>NO SESSION DATA</h3>
+                            <p>Create a session and upload results to see the leaderboard.</p>
+                        </div></td></tr>`;
                     }
                 } catch (e) {
                     console.error('Dashboard load error:', e);

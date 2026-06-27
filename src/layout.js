@@ -46,7 +46,7 @@ export function injectLayout(activePageId, pageTitle, profile) {
         const requiredLevel = ROLE_HIERARCHY[item.minRole] || 0;
         if (userLevel < requiredLevel) continue;
         const active = item.id === activePageId ? ' active' : '';
-        navHTML += `<a href="${item.href}" class="nav-item${active}" data-page="${item.id}">
+        navHTML += `<a href="${item.href}" class="nav-item${active}" data-page="${item.id}" data-label="${item.label}">
             <iconify-icon icon="${item.icon}" class="nav-icon"></iconify-icon>
             <span>${item.label}</span>
         </a>`;
@@ -77,17 +77,17 @@ export function injectLayout(activePageId, pageTitle, profile) {
 
     const topbarHTML = `
     <div class="topbar">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
-            <span class="topbar-title" style="margin-right:20px;flex-shrink:0;">${pageTitle}</span>
+        <div class="topbar-left">
+            <span class="topbar-title">${pageTitle}</span>
             <!-- Global Search Bar -->
-            <div class="global-search-wrap" style="position:relative; max-width:280px; width:100%; margin-left:10px;">
-                <iconify-icon icon="lucide:search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; pointer-events:none; z-index:2;"></iconify-icon>
-                <input type="text" id="global-search-input" placeholder="Search players, teams..." class="form-input" style="padding-left:36px; padding-right:12px; height:32px; font-size:0.8rem; min-height:32px; border-radius:4px; width:100%; border: 0.5px solid var(--border-default); background:var(--bg-base);">
-                <div id="global-search-results" class="hidden" style="position:absolute; top:36px; left:0; right:0; background:var(--bg-card); border:0.5px solid var(--border-emphasis); border-radius:4px; box-shadow:0 10px 30px rgba(0,0,0,0.6); z-index:999; max-height:300px; overflow-y:auto; padding:8px 0;"></div>
+            <div class="topbar-search-wrap global-search-wrap">
+                <iconify-icon icon="lucide:search" class="topbar-search-icon"></iconify-icon>
+                <input type="text" id="global-search-input" placeholder="Search players, teams..." class="form-input topbar-search-input">
+                <div id="global-search-results" class="search-results-dropdown hidden"></div>
             </div>
         </div>
-        <div class="topbar-right" style="flex-shrink:0;">
-            <div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">${avatarHTML}</div>
+        <div class="topbar-right">
+            <div class="user-avatar topbar-avatar">${avatarHTML}</div>
         </div>
     </div>`;
 
@@ -225,33 +225,33 @@ export function injectLayout(activePageId, pageTitle, profile) {
                 
                 // Teams matches
                 if (results.teams.length > 0) {
-                    html += `<div style="font-family:var(--font-data); font-size:0.7rem; font-weight:700; color:var(--nova-green); padding:4px 12px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:0.5px solid var(--border-subtle); margin-bottom:4px;">Teams</div>`;
+                    html += `<span class="search-result-label">Teams</span>`;
                     results.teams.forEach(t => {
-                        html += `<a href="/team-profile.html?id=${t.id}" style="display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:0.85rem; transition:background 0.2s;" onmouseover="this.style.background='rgba(108,182,4,0.06)'" onmouseout="this.style.background='none'">
-                            <span style="font-weight:700;">${t.team_name}</span>
-                            <span style="color:var(--text-muted); font-size:0.75rem;">Manager: ${t.team_manager || 'None'}</span>
+                        html += `<a href="/team-profile.html?id=${t.id}" class="search-result-item">
+                            <span class="search-result-name">${t.team_name}</span>
+                            <span class="search-result-meta">Manager: ${t.team_manager || 'None'}</span>
                         </a>`;
                     });
                 }
                 
                 // Players matches
                 if (results.players.length > 0) {
-                    if (html) html += `<div style="height:8px; border-top:0.5px solid var(--border-subtle); margin-top:4px; padding-top:4px;"></div>`;
-                    html += `<div style="font-family:var(--font-data); font-size:0.7rem; font-weight:700; color:var(--nova-green); padding:4px 12px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:0.5px solid var(--border-subtle); margin-bottom:4px;">Players</div>`;
+                    if (html) html += `<div class="search-result-separator"></div>`;
+                    html += `<span class="search-result-label">Players</span>`;
                     results.players.forEach(p => {
                         const teamName = p.teams?.team_name || 'Free Agent';
-                        html += `<a href="/player-profile.html?id=${p.id}" style="display:flex; align-items:center; justify-content:space-between; padding:6px 12px; font-size:0.85rem; transition:background 0.2s;" onmouseover="this.style.background='rgba(108,182,4,0.06)'" onmouseout="this.style.background='none'">
+                        html += `<a href="/player-profile.html?id=${p.id}" class="search-result-item search-result-item-team">
                             <div>
-                                <span style="font-weight:700; color:var(--nova-green);">${p.professional_name}</span>
-                                <span style="color:var(--text-muted); font-size:0.75rem; margin-left:6px;">IGN: ${p.current_ign || p.professional_name}</span>
+                                <span class="search-result-name text-green">${p.professional_name}</span>
+                                <span class="search-result-meta">IGN: ${p.current_ign || p.professional_name}</span>
                             </div>
-                            <span class="badge badge-muted" style="font-size:0.6rem;">${teamName}</span>
+                            <span class="badge badge-muted">${teamName}</span>
                         </a>`;
                     });
                 }
                 
                 if (!html) {
-                    html = `<div style="padding:12px; text-align:center; font-size:0.8rem; color:var(--text-muted);">No matches found</div>`;
+                    html = `<div class="search-no-result">No matches found</div>`;
                 }
                 
                 searchResults.innerHTML = html;
@@ -298,6 +298,8 @@ export function injectLayout(activePageId, pageTitle, profile) {
     window.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
             closeBottomSheet();
+            searchResults?.classList.add('hidden');
+            searchInput?.blur();
         }
     });
 
