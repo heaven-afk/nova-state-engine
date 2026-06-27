@@ -282,7 +282,7 @@
                 currentData = {
                     session,
                     teams: Object.values(teamMap).sort((a,b) => b.points - a.points),
-                    players: players.slice(0, 10)
+                    players: players
                 };
 
                 // Prefill defaults if blank
@@ -412,11 +412,14 @@
 
                 // Table Layout Compilation
                 let bodyHTML = '';
+                const rowConfig = template.row;
+                const borderCol = rowConfig.borderBottom || '1px solid rgba(255,255,255,0.1)';
+
                 if (graphicType === 'team') {
                     // Column Header
                     const ch = template.columnHeader;
                     bodyHTML += `
-                        <div style="display: flex; background: ${ch.background}; padding: ${ch.paddingY} 12px; font-family: ${ch.font}; font-size: ${ch.fontSize}; font-weight: ${ch.fontWeight}; color: ${ch.color}; text-transform: ${ch.textTransform}; letter-spacing: ${ch.letterSpacing}; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; background: ${ch.background}; padding: ${ch.paddingY} 12px; font-family: ${ch.font}; font-size: ${ch.fontSize}; font-weight: ${ch.fontWeight}; color: ${ch.color}; text-transform: ${ch.textTransform}; letter-spacing: ${ch.letterSpacing}; border-bottom: ${borderCol};">
                             <div style="width: ${template.rank.width};">#</div>
                             <div style="flex: 1; text-align: left;">Team</div>
                             <div style="width: 80px; text-align: center;">Lobbies</div>
@@ -425,11 +428,9 @@
                         </div>
                     `;
 
-                    // Rows
-                    const limit = 10;
-                    currentData.teams.slice(0, limit).forEach((t, i) => {
+                    // Rows (NO LIMIT FOR TEAMS - render all teams)
+                    currentData.teams.forEach((t, i) => {
                         const rankNum = i + 1;
-                        const rowConfig = template.row;
                         const rankOverride = template.rankOverrides[rankNum] || {};
 
                         const rowBg = rankOverride.background || (rankNum % 2 !== 0 ? rowConfig.oddBackground : rowConfig.evenBackground);
@@ -440,7 +441,7 @@
 
                         const teamLogoHTML = t.team_logo 
                             ? `<img src="${t.team_logo}" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover; margin-right: 8px; vertical-align: middle;">`
-                            : `<iconify-icon icon="lucide:shield" style="font-size: 1.1rem; color: rgba(255,255,255,0.4); margin-right: 8px; vertical-align: middle;"></iconify-icon>`;
+                            : `<iconify-icon icon="lucide:shield" style="font-size: 1.1rem; color: ${rowConfig.color}; opacity: 0.4; margin-right: 8px; vertical-align: middle;"></iconify-icon>`;
 
                         bodyHTML += `
                             <div style="display: flex; align-items: center; background: ${rowBg}; border-bottom: ${rowConfig.borderBottom}; border-left: ${rowBorderLeft}; ${rowGlow} padding: ${rowConfig.paddingY} ${rowConfig.paddingX}; font-family: ${rowConfig.font}; font-size: ${rowConfig.fontSize}; font-weight: ${rowConfig.fontWeight}; color: ${rowConfig.color};">
@@ -451,9 +452,9 @@
                                     ${teamLogoHTML}
                                     <span style="font-weight: 700;">${escapeHTML(t.team_name)}</span>
                                 </div>
-                                <div style="width: 80px; text-align: center; font-family: var(--font-data); font-size: 1rem; color: rgba(255,255,255,0.7);">${t.lobbiesPlayed}</div>
-                                <div style="width: 80px; text-align: center; font-family: var(--font-data); font-size: 1rem; color: rgba(255,255,255,0.7);">${t.kills}</div>
-                                <div style="width: 100px; text-align: right; font-family: var(--font-display); font-weight: 700; color: var(--nova-green); font-size: 1.1rem;">${t.points}</div>
+                                <div style="width: 80px; text-align: center; font-family: var(--font-data); font-size: 1rem; color: ${rowConfig.color}; opacity: 0.85;">${t.lobbiesPlayed}</div>
+                                <div style="width: 80px; text-align: center; font-family: var(--font-data); font-size: 1rem; color: ${rowConfig.color}; opacity: 0.85;">${t.kills}</div>
+                                <div style="width: 100px; text-align: right; font-family: var(--font-display); font-weight: 700; color: ${rankColor || rowConfig.color}; font-size: 1.1rem;">${t.points}</div>
                             </div>
                         `;
                     });
@@ -461,7 +462,7 @@
                     // Player Rankings
                     const ch = template.columnHeader;
                     bodyHTML += `
-                        <div style="display: flex; background: ${ch.background}; padding: ${ch.paddingY} 12px; font-family: ${ch.font}; font-size: ${ch.fontSize}; font-weight: ${ch.fontWeight}; color: ${ch.color}; text-transform: ${ch.textTransform}; letter-spacing: ${ch.letterSpacing}; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; background: ${ch.background}; padding: ${ch.paddingY} 12px; font-family: ${ch.font}; font-size: ${ch.fontSize}; font-weight: ${ch.fontWeight}; color: ${ch.color}; text-transform: ${ch.textTransform}; letter-spacing: ${ch.letterSpacing}; border-bottom: ${borderCol};">
                             <div style="width: ${template.rank.width};">#</div>
                             <div style="flex: 1.2; text-align: left;">Name</div>
                             <div style="flex: 1; text-align: left;">IGN</div>
@@ -470,11 +471,9 @@
                         </div>
                     `;
 
-                    // Rows
-                    const limit = 10;
-                    currentData.players.slice(0, limit).forEach((p, i) => {
+                    // Rows (LIMITED TO TOP 10 PLAYERS)
+                    currentData.players.slice(0, 10).forEach((p, i) => {
                         const rankNum = i + 1;
-                        const rowConfig = template.row;
                         const rankOverride = template.rankOverrides[rankNum] || {};
 
                         const rowBg = rankOverride.background || (rankNum % 2 !== 0 ? rowConfig.oddBackground : rowConfig.evenBackground);
@@ -485,7 +484,7 @@
 
                         const teamLogoHTML = p.team_logo 
                             ? `<img src="${p.team_logo}" style="width: 18px; height: 18px; border-radius: 2px; object-fit: cover; margin-right: 6px; vertical-align: middle;">`
-                            : `<iconify-icon icon="lucide:shield" style="font-size: 0.95rem; color: rgba(255,255,255,0.3); margin-right: 6px; vertical-align: middle;"></iconify-icon>`;
+                            : `<iconify-icon icon="lucide:shield" style="font-size: 0.95rem; color: ${rowConfig.color}; opacity: 0.3; margin-right: 6px; vertical-align: middle;"></iconify-icon>`;
 
                         bodyHTML += `
                             <div style="display: flex; align-items: center; background: ${rowBg}; border-bottom: ${rowConfig.borderBottom}; border-left: ${rowBorderLeft}; ${rowGlow} padding: ${rowConfig.paddingY} ${rowConfig.paddingX}; font-family: ${rowConfig.font}; font-size: ${rowConfig.fontSize}; font-weight: ${rowConfig.fontWeight}; color: ${rowConfig.color};">
@@ -495,14 +494,14 @@
                                 <div style="flex: 1.2; text-align: left; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     ${escapeHTML(p.professional_name || p.player_name)}
                                 </div>
-                                <div style="flex: 1; text-align: left; font-family: var(--font-data); color: rgba(255,255,255,0.8);">
+                                <div style="flex: 1; text-align: left; font-family: var(--font-data); color: ${rowConfig.color}; opacity: 0.85;">
                                     ${escapeHTML(p.ign || p.player_name)}
                                 </div>
-                                <div style="flex: 1.2; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; color: rgba(255,255,255,0.7); font-size: 0.85rem;">
+                                <div style="flex: 1.2; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; color: ${rowConfig.color}; opacity: 0.8; font-size: 0.85rem;">
                                     ${teamLogoHTML}
                                     <span style="vertical-align: middle;">${escapeHTML(p.team_name)}</span>
                                 </div>
-                                <div style="width: 80px; text-align: right; font-family: var(--font-display); font-weight: 700; color: var(--nova-green); font-size: 1.1rem;">
+                                <div style="width: 80px; text-align: right; font-family: var(--font-display); font-weight: 700; color: ${rankColor || rowConfig.color}; font-size: 1.1rem;">
                                     ${p.kills}
                                 </div>
                             </div>
@@ -515,7 +514,7 @@
                 if (template.footer.enabled) {
                     const ft = template.footer;
                     footerHTML = `
-                        <div style="background: ${ft.background}; font-family: ${ft.font}; font-size: ${ft.fontSize}; color: ${ft.color}; padding-top: ${ft.paddingTop}; text-align: ${ft.layout}; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 16px;">
+                        <div style="background: ${ft.background}; font-family: ${ft.font}; font-size: ${ft.fontSize}; color: ${ft.color}; padding-top: ${ft.paddingTop}; text-align: ${ft.layout}; border-top: ${rowConfig.borderBottom || '1px solid rgba(255,255,255,0.05)'}; margin-top: 16px;">
                             ${escapeHTML(brandingVal)} • Powered by Nova Gaming Network
                         </div>
                     `;
