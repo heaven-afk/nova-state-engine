@@ -122,6 +122,20 @@
                     <input type="text" class="form-input" id="inp-branding" placeholder="e.g. @novagaming" value="@novagaming">
                 </div>
 
+                <!-- Graphic Logo Options -->
+                <div class="form-group">
+                    <label class="form-label">Graphic Logo</label>
+                    <select class="form-select" id="inp-logo-type" style="margin-bottom: 8px;">
+                        <option value="none">None</option>
+                        <option value="nova" selected>Nova Emblem</option>
+                        <option value="custom">Custom Upload</option>
+                    </select>
+                    <div id="logo-upload-wrap" style="display: none;">
+                        <input type="file" class="form-input" id="inp-logo-file" accept="image/*" style="padding: 6px 12px; font-size: 0.8rem; min-height: unset; height: auto;">
+                        <span class="text-muted" style="font-size: 0.65rem; margin-top: 4px; display: block;">PNG transparent recommended</span>
+                    </div>
+                </div>
+
                 <div style="margin-top: 24px; display:flex; flex-direction:column; gap:12px;">
                     <button class="btn btn-primary" id="btn-export">
                         <iconify-icon icon="lucide:image-down"></iconify-icon> EXPORT PNG
@@ -159,11 +173,15 @@
             let currentData = null;
             let graphicType = 'team'; // 'team' | 'player'
             let currentTemplateId = 'dark-ops';
+            let customLogoBase64 = null;
 
             const selectSession = document.getElementById('inp-session');
             const inpEventName = document.getElementById('inp-event-name');
             const inpRoundLabel = document.getElementById('inp-round-label');
             const inpBranding = document.getElementById('inp-branding');
+            const inpLogoType = document.getElementById('inp-logo-type');
+            const inpLogoFile = document.getElementById('inp-logo-file');
+            const logoUploadWrap = document.getElementById('logo-upload-wrap');
             
             const canvas = document.getElementById('gfx-canvas');
             const scaler = document.getElementById('preview-scaler');
@@ -191,7 +209,6 @@
                 const wrapper = document.getElementById('preview-wrapper');
                 const template = getTemplateById(currentTemplateId);
                 const w = template.canvas.width;
-                // Wait for layout calculation to find the actual canvas client height
                 const h = canvas.clientHeight || 550;
                 
                 const scale = Math.min((wrapper.clientWidth - 48) / w, (wrapper.clientHeight - 48) / h);
@@ -279,6 +296,15 @@
                 const eventNameVal = inpEventName.value || currentData.session.session_name || 'NOVA GAMING';
                 const roundLabelVal = inpRoundLabel.value || 'LEAGUE TABLE';
                 const brandingVal = inpBranding.value || '@novagaming';
+                const logoType = inpLogoType.value;
+
+                // Setup Logo HTML
+                let logoImgHTML = '';
+                if (logoType === 'nova') {
+                    logoImgHTML = `<img src="/assets/brand/nova_logo_nmark.png" style="height: 44px; width: auto; object-fit: contain; vertical-align: middle;">`;
+                } else if (logoType === 'custom' && customLogoBase64) {
+                    logoImgHTML = `<img src="${customLogoBase64}" style="height: 44px; width: auto; object-fit: contain; vertical-align: middle;">`;
+                }
 
                 // Apply canvas configuration
                 canvas.style.width = `${template.canvas.width}px`;
@@ -309,19 +335,23 @@
                     const sbSpacing = sb.letterSpacing || '0.25em';
 
                     headerHTML = `
-                        <div style="display: flex; gap: 24px; align-items: stretch; margin-bottom: 24px; text-align: left;">
-                            <div style="writing-mode: vertical-lr; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; color: ${sbColor}; font-family: ${sbFont}; font-size: ${sbSize}; font-weight: ${sbWeight}; letter-spacing: ${sbSpacing}; text-transform: uppercase; border-left: 2px solid ${sbColor}; padding-left: 8px; line-height: 1;">
-                                ${escapeHTML(sbText)}
+                        <div style="display: flex; gap: 24px; align-items: stretch; margin-bottom: 24px; text-align: left; justify-content: space-between;">
+                            <div style="display: flex; gap: 24px; align-items: stretch;">
+                                <div style="writing-mode: vertical-lr; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; color: ${sbColor}; font-family: ${sbFont}; font-size: ${sbSize}; font-weight: ${sbWeight}; letter-spacing: ${sbSpacing}; text-transform: uppercase; border-left: 2px solid ${sbColor}; padding-left: 8px; line-height: 1;">
+                                    ${escapeHTML(sbText)}
+                                </div>
+                                <div style="flex: 1;">
+                                    <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
+                                    <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 6px 0 0 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
+                                </div>
                             </div>
-                            <div style="flex: 1;">
-                                <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
-                                <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 6px 0 0 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
-                            </div>
+                            ${logoImgHTML ? `<div style="display: flex; align-items: center; margin-left: 24px; flex-shrink: 0;">${logoImgHTML}</div>` : ''}
                         </div>
                     `;
                 } else if (template.header.layout === 'centered') {
                     headerHTML = `
-                        <div style="text-align: center; width: 100%; margin-bottom: 24px;">
+                        <div style="text-align: center; width: 100%; margin-bottom: 24px; display: flex; flex-direction: column; align-items: center;">
+                            ${logoImgHTML ? `<div style="margin-bottom: 12px;">${logoImgHTML}</div>` : ''}
                             <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0 0 6px 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
                             <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
                         </div>
@@ -329,9 +359,12 @@
                 } else {
                     // top-banner layout
                     headerHTML = `
-                        <div style="background: ${template.header.background || 'rgba(255,255,255,0.03)'}; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 20px; width: 100%; margin-bottom: 24px; text-align: left;">
-                            <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
-                            <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 6px 0 0 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
+                        <div style="background: ${template.header.background || 'rgba(255,255,255,0.03)'}; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 20px; width: 100%; margin-bottom: 24px; text-align: left; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
+                                <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 6px 0 0 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
+                            </div>
+                            ${logoImgHTML ? `<div style="margin-left: 24px; display: flex; align-items: center; flex-shrink: 0;">${logoImgHTML}</div>` : ''}
                         </div>
                     `;
                 }
@@ -464,6 +497,34 @@
             inpEventName.addEventListener('input', renderPreview);
             inpRoundLabel.addEventListener('input', renderPreview);
             inpBranding.addEventListener('input', renderPreview);
+
+            inpLogoType.addEventListener('change', (e) => {
+                const val = e.target.value;
+                if (val === 'custom') {
+                    logoUploadWrap.style.display = 'block';
+                } else {
+                    logoUploadWrap.style.display = 'none';
+                }
+                renderPreview();
+            });
+
+            inpLogoFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 1 * 1024 * 1024) {
+                    showToast('Logo must be under 1MB.', 'error');
+                    inpLogoFile.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    customLogoBase64 = event.target.result;
+                    renderPreview();
+                };
+                reader.readAsDataURL(file);
+            });
 
             // Tab logic
             document.getElementById('tab-team').addEventListener('click', () => {
