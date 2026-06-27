@@ -275,7 +275,34 @@
         let currentUser = null;
         let avatarBase64 = null;
 
+        function showGlassLoader(text = 'Loading') {
+            let overlay = document.getElementById('glass-loader');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'glass-loader';
+                overlay.className = 'glass-loader-overlay';
+                overlay.innerHTML = `
+                    <div class="glass-loader-orb"></div>
+                    <div class="glass-loader-card">
+                        <div class="glass-spinner"></div>
+                        <div class="glass-loader-text">${text}</div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.offsetHeight; // force reflow
+            } else {
+                overlay.querySelector('.glass-loader-text').textContent = text;
+            }
+            overlay.classList.add('active');
+        }
+
+        function hideGlassLoader() {
+            const overlay = document.getElementById('glass-loader');
+            if (overlay) overlay.classList.remove('active');
+        }
+
         (async () => {
+            showGlassLoader('Initializing Setup...');
             // ── Auth Guard ──────────────────────────────────
             const session = await getSession();
             if (!session) {
@@ -347,6 +374,7 @@
         function setupStandaloneCard() {
             // Remove loading class
             document.getElementById('profile-card').classList.remove('loading');
+            hideGlassLoader();
 
             // Populate current values
             document.getElementById('inp-email').value = currentUser.email;
@@ -455,7 +483,8 @@
 
                 const btn = document.getElementById('btn-submit');
                 btn.disabled = true;
-                btn.textContent = 'SAVING...';
+                btn.innerHTML = '<span class="btn-loader"></span> SAVING...';
+                showGlassLoader('Saving Profile...');
 
                 try {
                     const updatePayload = {
@@ -475,6 +504,7 @@
 
                     successBox.textContent = 'Profile saved! Redirecting...';
                     successBox.style.display = 'block';
+                    showGlassLoader('Profile Saved! Syncing Portal...');
 
                     let role = await getUserRole(currentUser);
                     if (!role) role = await bootstrapOwner(currentUser);
@@ -486,6 +516,7 @@
                         else window.location.href = '/stats.html';
                     }, 1500);
                 } catch (err) {
+                    hideGlassLoader();
                     errBox.textContent = err.message || 'Failed to save profile.';
                     errBox.style.display = 'block';
                     btn.disabled = false;
@@ -586,6 +617,8 @@
                 email: currentUser.email
             });
 
+            hideGlassLoader();
+
             // Render existing avatar image
             if (avatarBase64) {
                 const imgEl = document.getElementById('db-avatar-img');
@@ -643,7 +676,8 @@
 
                 const submitBtn = document.getElementById('db-btn-submit');
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'SAVING...';
+                submitBtn.innerHTML = '<span class="btn-loader"></span> SAVING...';
+                showGlassLoader('Saving Changes...');
 
                 try {
                     const updatePayload = {
@@ -662,6 +696,7 @@
                     if (error) throw error;
 
                     showToast('Profile updated successfully!', 'success');
+                    showGlassLoader('Profile Updated! Reloading Portal...');
                     
                     // Reload after a brief delay to refresh layout details
                     setTimeout(() => {
@@ -669,6 +704,7 @@
                     }, 1200);
 
                 } catch (err) {
+                    hideGlassLoader();
                     showToast(err.message || 'Failed to update profile.', 'error');
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'SAVE PROFILE';

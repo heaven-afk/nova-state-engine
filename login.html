@@ -229,12 +229,39 @@
     <script type="module">
         import { signIn, signInWithGoogle, getSession, getUserRole, bootstrapOwner, resetPassword, onAuthStateChange, isProfileComplete, getAuthProvider } from '/src/auth.js';
 
+        function showGlassLoader(text = 'Loading') {
+            let overlay = document.getElementById('glass-loader');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'glass-loader';
+                overlay.className = 'glass-loader-overlay';
+                overlay.innerHTML = `
+                    <div class="glass-loader-orb"></div>
+                    <div class="glass-loader-card">
+                        <div class="glass-spinner"></div>
+                        <div class="glass-loader-text">${text}</div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.offsetHeight; // force reflow
+            } else {
+                overlay.querySelector('.glass-loader-text').textContent = text;
+            }
+            overlay.classList.add('active');
+        }
+
+        function hideGlassLoader() {
+            const overlay = document.getElementById('glass-loader');
+            if (overlay) overlay.classList.remove('active');
+        }
+
         // Handle OAuth redirects (Google Sign-In callback) and existing sessions
         let redirecting = false;
         const { data: { subscription } } = onAuthStateChange(async (event, session) => {
             if (redirecting) return;
             if (event === 'SIGNED_IN' && session) {
                 redirecting = true;
+                showGlassLoader('Signing In...');
                 // Clean hash fragments from URL left by OAuth redirect
                 let isInvite = false;
                 if (window.location.hash) {
@@ -247,6 +274,7 @@
                     await redirectByRole(session.user, isInvite);
                 } catch (err) {
                     redirecting = false;
+                    hideGlassLoader();
                     showError(err.message || 'Signed in, but failed to redirect.');
                 }
             }
@@ -255,12 +283,17 @@
         // Also check for an existing session on page load
         (async () => {
             try {
+                showGlassLoader('Checking Session...');
                 const session = await withTimeout(getSession(), 7000, 'Session check timed out. Try signing in again.');
                 if (session && !redirecting) {
                     redirecting = true;
+                    showGlassLoader('Signing In...');
                     await redirectByRole(session.user, false);
+                } else if (!session) {
+                    hideGlassLoader();
                 }
             } catch (err) {
+                hideGlassLoader();
                 showError(err.message || 'Could not check your session. You can still sign in below.');
             }
         })();
@@ -311,7 +344,8 @@
             const btn = document.getElementById('btn-submit');
             if (btn.disabled) return;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spin">⟳</span> SIGNING IN...';
+            btn.innerHTML = '<span class="btn-loader"></span> SIGNING IN...';
+            showGlassLoader('Authenticating...');
 
             const email = document.getElementById('inp-email').value.trim();
             const password = document.getElementById('inp-password').value;
@@ -319,8 +353,10 @@
             try {
                 if (!email || !password) throw new Error('empty');
                 const sessionData = await withTimeout(signIn(email, password), 15000, 'Sign in timed out. Check your connection and try again.');
+                showGlassLoader('Signing In...');
                 await redirectByRole(sessionData.user);
             } catch (err) {
+                hideGlassLoader();
                 const msg = err.message || '';
                 if (msg === 'empty') {
                     showError('Enter your email and password.');
@@ -329,7 +365,6 @@
                 } else {
                     showError('Incorrect email or password.');
                 }
-            } finally {
                 btn.disabled = false;
                 btn.textContent = 'SIGN IN';
             }
@@ -367,10 +402,12 @@
             e.preventDefault();
             const btn = document.getElementById('btn-google');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spin">⟳</span> REDIRECTING...';
+            btn.innerHTML = '<span class="btn-loader"></span> REDIRECTING...';
+            showGlassLoader('Connecting Google...');
             try {
                 await signInWithGoogle();
             } catch (err) {
+                hideGlassLoader();
                 showError(err.message || 'Google Sign In failed.');
                 btn.disabled = false;
                 btn.innerHTML = '<iconify-icon icon="logos:google-icon"></iconify-icon> SIGN IN WITH GOOGLE';
