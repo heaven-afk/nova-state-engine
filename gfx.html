@@ -7,19 +7,19 @@
     <title>GFX Generator — Nova Gaming Network</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&family=Bebas+Neue&family=Oswald:wght@400;700&family=Rajdhani:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
     <style>
         .studio-layout { display: flex; gap: 24px; align-items: flex-start; flex-direction: column; }
         @media (min-width: 1024px) { .studio-layout { flex-direction: row; } }
         
-        .panel-controls { flex: 0 0 320px; width: 100%; }
+        .panel-controls { flex: 0 0 340px; width: 100%; }
         .panel-preview { flex: 1; width: 100%; min-width: 0; }
         
         .preview-wrapper {
             background: var(--bg-card);
-            border: 0.5px solid var(--border-default);
+            border: 1px solid var(--border-default);
             border-radius: var(--radius);
             padding: 24px;
             display: flex;
@@ -30,91 +30,42 @@
             position: relative;
         }
 
-        /* ── GFX Render Container (Fixed Size) ── */
+        /* ── GFX Render Container (Fixed Width, Auto Height) ── */
         .gfx-canvas {
-            background: #0A0A0A;
-            color: #fff;
+            box-sizing: border-box;
             position: relative;
             overflow: hidden;
             transform-origin: top left;
             transition: transform 0.2s;
         }
-        
-        /* Render Target (invisible unless downloading, keeps high res) */
-        #gfx-render-target {
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-        }
 
-        .gfx-logo-bg {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%; height: 80%;
-            opacity: 0.03;
-            pointer-events: none;
-        }
-
-        .gfx-header {
-            padding: 60px 80px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
+        /* Template cards selector UI */
+        .template-card {
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            padding: 12px;
+            background: var(--elev-1);
+            text-align: center;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
-            z-index: 10;
+            overflow: hidden;
         }
-
-        .gfx-title {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            font-size: 5rem;
-            color: #6CB604;
-            letter-spacing: 0.05em;
-            line-height: 1;
-            text-transform: uppercase;
+        .template-card:hover {
+            border-color: var(--n-400);
+            transform: translateY(-2px);
+            background: var(--elev-2);
         }
-
-        .gfx-subtitle {
-            font-family: 'Barlow Condensed', sans-serif;
-            font-weight: 600;
-            font-size: 2.2rem;
-            color: rgba(255,255,255,0.7);
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin-top: 12px;
+        .template-card.active {
+            border-color: var(--nova-green) !important;
+            box-shadow: 0 0 12px var(--nova-glow);
+            background: var(--elev-3);
         }
-
-        .gfx-date {
-            font-family: 'Barlow', sans-serif;
-            font-size: 1.5rem;
-            color: rgba(255,255,255,0.5);
+        .btn-tab {
+            transition: all 0.2s;
         }
-
-        .gfx-body {
-            padding: 0 80px 60px;
-            position: relative;
-            z-index: 10;
+        .btn-tab:hover {
+            color: var(--n-100) !important;
         }
-
-        /* T01: Team Standings Row */
-        .gfx-row {
-            display: flex;
-            align-items: center;
-            background: rgba(15,15,15,0.8);
-            border-bottom: 2px solid rgba(108,182,4,0.2);
-            padding: 24px 40px;
-            margin-bottom: 8px;
-        }
-        .gfx-rank { width: 80px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.5rem; color: rgba(255,255,255,0.2); }
-        .gfx-team { flex: 1; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 2.5rem; text-transform: uppercase; }
-        .gfx-kills { width: 120px; font-family: 'Barlow', sans-serif; font-size: 1.8rem; color: rgba(255,255,255,0.5); text-align: center; }
-        .gfx-pts { width: 150px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 2.5rem; color: #6CB604; text-align: right; }
-
-        /* Podium variants */
-        .gfx-row.rank-1 .gfx-rank { color: #FFD700; }
-        .gfx-row.rank-2 .gfx-rank { color: #C0C0C0; }
-        .gfx-row.rank-3 .gfx-rank { color: #CD7F32; }
 
         @media (max-width: 768px) {
             .studio-layout { gap: 16px; }
@@ -134,13 +85,19 @@
         <div class="studio-layout">
             <!-- Controls -->
             <div class="panel-controls card card-body">
+                <!-- Toggle Graphic Type -->
                 <div class="form-group">
-                    <label class="form-label">Template</label>
-                    <select class="form-select" id="inp-template">
-                        <option value="t01">T01 - Team Standings</option>
-                        <option value="t02">T02 - Top Fraggers</option>
-                        <option value="t03">T03 - Match Summary</option>
-                    </select>
+                    <label class="form-label">Graphic Type</label>
+                    <div class="tab-toggle-container" style="display:flex; background:var(--elev-0); border:1px solid var(--border-default); border-radius:6px; padding:2px; margin-bottom:4px;">
+                        <button type="button" class="btn-tab active" id="tab-team" style="flex:1; background:var(--elev-2); border:none; border-radius:4px; padding:8px; color:var(--n-100); font-family:var(--font-data); font-weight:700; text-transform:uppercase; font-size:0.8rem; cursor:pointer;">Team Rankings</button>
+                        <button type="button" class="btn-tab" id="tab-player" style="flex:1; background:transparent; border:none; border-radius:4px; padding:8px; color:var(--n-300); font-family:var(--font-data); font-weight:700; text-transform:uppercase; font-size:0.8rem; cursor:pointer;">Player Rankings</button>
+                    </div>
+                </div>
+
+                <!-- Template Selector Cards -->
+                <div class="form-group">
+                    <label class="form-label">Select Theme</label>
+                    <div id="template-cards-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom:4px;"></div>
                 </div>
 
                 <div class="form-group">
@@ -151,25 +108,23 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Export Size</label>
-                    <select class="form-select" id="inp-size">
-                        <option value="1920x1080">1920 × 1080 (Landscape)</option>
-                        <option value="1080x1080">1080 × 1080 (Square)</option>
-                        <option value="1080x1920">1080 × 1920 (Portrait)</option>
-                    </select>
+                    <label class="form-label">Event Name</label>
+                    <input type="text" class="form-input" id="inp-event-name" placeholder="e.g. Scrims Finals">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Title Override</label>
-                    <input type="text" class="form-input" id="inp-title" placeholder="e.g. Scrims Finals">
+                    <label class="form-label">Round / Week</label>
+                    <input type="text" class="form-input" id="inp-round-label" placeholder="e.g. WEEK 1 - FINALS">
                 </div>
 
-                <div style="margin-top: 32px; display:flex; flex-direction:column; gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Branding Handle</label>
+                    <input type="text" class="form-input" id="inp-branding" placeholder="e.g. @novagaming" value="@novagaming">
+                </div>
+
+                <div style="margin-top: 24px; display:flex; flex-direction:column; gap:12px;">
                     <button class="btn btn-primary" id="btn-export">
                         <iconify-icon icon="lucide:image-down"></iconify-icon> EXPORT PNG
-                    </button>
-                    <button class="btn btn-secondary" id="btn-batch">
-                        <iconify-icon icon="lucide:file-archive"></iconify-icon> BATCH ZIP EXPORT
                     </button>
                 </div>
             </div>
@@ -179,30 +134,8 @@
                 <div class="preview-wrapper" id="preview-wrapper">
                     <!-- Scaled visible preview -->
                     <div id="preview-scaler" style="transform-origin: top left; transform: scale(0.4);">
-                        <div id="gfx-canvas" class="gfx-canvas" style="width: 1920px; height: 1080px;">
-                            <!-- SVG Dot-Grid Background -->
-                            <svg width="100%" height="100%" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0.15; z-index:1;">
-                                <defs>
-                                    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-                                        <circle cx="2" cy="2" r="1.5" fill="#6CB604" />
-                                    </pattern>
-                                </defs>
-                                <rect width="100%" height="100%" fill="url(#grid)" />
-                            </svg>
-                            <svg class="gfx-logo-bg" viewBox="0 0 28 28" fill="none">
-                                <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="#6CB604"/>
-                                <path d="M14 5L23 14L14 23L5 14L14 5Z" stroke="#6CB604" stroke-width="1.5"/>
-                            </svg>
-                            <div class="gfx-header">
-                                <div>
-                                    <div class="gfx-title" id="r-title">NOVA GAMING</div>
-                                    <div class="gfx-subtitle" id="r-subtitle">TEAM STANDINGS</div>
-                                </div>
-                                <div class="gfx-date" id="r-date">2026-05-15</div>
-                            </div>
-                            <div class="gfx-body" id="r-body">
-                                <!-- Data rendered here -->
-                            </div>
+                        <div id="gfx-canvas" class="gfx-canvas">
+                            <!-- Template-driven GFX rendered here -->
                         </div>
                     </div>
                 </div>
@@ -214,6 +147,7 @@
         import { requireRole } from '/src/auth.js';
         import { injectLayout, showToast } from '/src/layout.js';
         import { getAllSessions, getMatchResults, getPlayerStats } from '/src/db.js';
+        import { GFX_TEMPLATES, getTemplateById } from '/src/gfx-templates.js';
         import html2canvas from 'html2canvas';
 
         (async () => {
@@ -223,20 +157,18 @@
 
             let sessions = [];
             let currentData = null;
+            let graphicType = 'team'; // 'team' | 'player'
+            let currentTemplateId = 'dark-ops';
 
             const selectSession = document.getElementById('inp-session');
-            const selectSize = document.getElementById('inp-size');
-            const selectTemplate = document.getElementById('inp-template');
-            const inpTitle = document.getElementById('inp-title');
+            const inpEventName = document.getElementById('inp-event-name');
+            const inpRoundLabel = document.getElementById('inp-round-label');
+            const inpBranding = document.getElementById('inp-branding');
             
             const canvas = document.getElementById('gfx-canvas');
-            const rTitle = document.getElementById('r-title');
-            const rSubtitle = document.getElementById('r-subtitle');
-            const rDate = document.getElementById('r-date');
-            const rBody = document.getElementById('r-body');
             const scaler = document.getElementById('preview-scaler');
 
-            // FontFace preload (critical for html2canvas)
+            // FontFace preload (critical for html2canvas to render font styles correctly)
             async function preloadFonts() {
                 await document.fonts.ready;
                 console.log('Fonts preloaded.');
@@ -244,6 +176,8 @@
 
             async function init() {
                 await preloadFonts();
+                renderTemplateSelector();
+
                 sessions = await getAllSessions();
                 if (sessions.length > 0) {
                     selectSession.innerHTML = sessions.map(s => `<option value="${s.id}">${s.session_name}</option>`).join('');
@@ -255,10 +189,38 @@
 
             function updateScale() {
                 const wrapper = document.getElementById('preview-wrapper');
-                const [w, h] = selectSize.value.split('x').map(Number);
+                const template = getTemplateById(currentTemplateId);
+                const w = template.canvas.width;
+                // Wait for layout calculation to find the actual canvas client height
+                const h = canvas.clientHeight || 550;
+                
                 const scale = Math.min((wrapper.clientWidth - 48) / w, (wrapper.clientHeight - 48) / h);
                 scaler.style.transform = `scale(${scale})`;
                 wrapper.style.minHeight = `${h * scale + 48}px`;
+            }
+
+            function renderTemplateSelector() {
+                const container = document.getElementById('template-cards-container');
+                container.innerHTML = GFX_TEMPLATES.map(t => {
+                    const isActive = t.id === currentTemplateId ? 'active' : '';
+                    return `
+                        <div class="template-card ${isActive}" data-id="${t.id}" style="cursor:pointer;">
+                            <div style="font-family:var(--font-display); font-size:0.68rem; font-weight:700; color:var(--n-100); text-transform:uppercase; margin-bottom:8px;">${t.label}</div>
+                            <div style="display:flex; height:6px; border-radius:99px; overflow:hidden; gap:2px; background: rgba(255,255,255,0.05); padding:1px;">
+                                <div style="flex:2; background:${t.canvas.background}; border-radius:3px 0 0 3px;"></div>
+                                <div style="flex:1; background:${t.rankOverrides[1]?.borderLeft?.split(' ')[2] || '#fff'}; border-radius:0 3px 3px 0;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.querySelectorAll('.template-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        currentTemplateId = card.dataset.id;
+                        renderTemplateSelector();
+                        renderPreview();
+                    });
+                });
             }
 
             async function loadData(sessionId) {
@@ -272,9 +234,18 @@
                 // Aggregate teams
                 const teamMap = {};
                 results.forEach(r => {
-                    if (!teamMap[r.team_name]) teamMap[r.team_name] = { team_name: r.team_name, kills: 0, points: 0 };
+                    if (!teamMap[r.team_name]) {
+                        teamMap[r.team_name] = { 
+                            team_name: r.team_name, 
+                            kills: 0, 
+                            points: 0, 
+                            lobbiesPlayed: 0, 
+                            team_logo: r.teams?.team_logo || null 
+                        };
+                    }
                     teamMap[r.team_name].kills += r.kills;
                     teamMap[r.team_name].points += r.points;
+                    teamMap[r.team_name].lobbiesPlayed += 1;
                 });
                 
                 currentData = {
@@ -282,92 +253,265 @@
                     teams: Object.values(teamMap).sort((a,b) => b.points - a.points),
                     players: players.slice(0, 10)
                 };
+
+                // Prefill defaults if blank
+                inpEventName.value = session.session_name;
+                inpRoundLabel.value = 'WEEK 1';
                 
                 renderPreview();
             }
 
-            function renderPreview() {
-                if (!currentData) return;
-                
-                const [w, h] = selectSize.value.split('x').map(Number);
-                canvas.style.width = `${w}px`;
-                canvas.style.height = `${h}px`;
-                updateScale();
-
-                const t = selectTemplate.value;
-                rTitle.textContent = inpTitle.value || currentData.session.session_name || 'NOVA GAMING';
-                rDate.textContent = new Date(currentData.session.date).toLocaleDateString();
-
-                if (t === 't01') {
-                    rSubtitle.textContent = 'TEAM STANDINGS';
-                    const limit = h > 1080 ? 12 : 7;
-                    rBody.innerHTML = currentData.teams.slice(0, limit).map((t, i) => `
-                        <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
-                            <div class="gfx-rank">${i+1}</div>
-                            <div class="gfx-team">${t.team_name}</div>
-                            <div class="gfx-kills">${t.kills} KILLS</div>
-                            <div class="gfx-pts">${t.points} PTS</div>
-                        </div>
-                    `).join('');
-                } 
-                else if (t === 't02') {
-                    rSubtitle.textContent = 'TOP FRAGGERS';
-                    const limit = h > 1080 ? 12 : 7;
-                    rBody.innerHTML = currentData.players.slice(0, limit).map((p, i) => `
-                        <div class="gfx-row ${i<3 ? 'rank-'+(i+1) : ''}">
-                            <div class="gfx-rank">${i+1}</div>
-                            <div class="gfx-team">${p.player_name} <span style="font-size:1.2rem;color:rgba(255,255,255,0.4);margin-left:12px;">${p.team_name}</span></div>
-                            <div class="gfx-pts" style="color:var(--nova-green);">${p.kills} KILLS</div>
-                        </div>
-                    `).join('');
-                }
+            // HTML escape helper
+            function escapeHTML(str) {
+                if (!str) return '';
+                return str
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
             }
 
-            selectSession.addEventListener('change', e => loadData(e.target.value));
-            selectSize.addEventListener('change', renderPreview);
-            selectTemplate.addEventListener('change', renderPreview);
-            inpTitle.addEventListener('input', renderPreview);
+            function renderPreview() {
+                if (!currentData) return;
 
+                const template = getTemplateById(currentTemplateId);
+                const eventNameVal = inpEventName.value || currentData.session.session_name || 'NOVA GAMING';
+                const roundLabelVal = inpRoundLabel.value || 'LEAGUE TABLE';
+                const brandingVal = inpBranding.value || '@novagaming';
+
+                // Apply canvas configuration
+                canvas.style.width = `${template.canvas.width}px`;
+                canvas.style.background = template.canvas.background;
+                canvas.style.padding = template.canvas.padding;
+                canvas.style.height = 'auto';
+
+                // Header layout compilation
+                let headerHTML = '';
+                const titleFont = template.header.titleFont || 'Rajdhani, sans-serif';
+                const titleSize = template.header.titleSize || '32px';
+                const titleWeight = template.header.titleWeight || '700';
+                const titleColor = template.header.titleColor || '#ffffff';
+                const titleTransform = template.header.titleTransform || 'uppercase';
+                const subtitleFont = template.header.subtitleFont || 'Inter, sans-serif';
+                const subtitleSize = template.header.subtitleSize || '11px';
+                const subtitleColor = template.header.subtitleColor || '#9b9bb4';
+                const subtitleTransform = template.header.subtitleTransform || 'uppercase';
+                const subtitleLetterSpacing = template.header.subtitleLetterSpacing || '0.2em';
+
+                if (template.header.layout === 'sidebar-left') {
+                    const sb = template.header.sidebar || {};
+                    const sbText = sb.text || eventNameVal;
+                    const sbColor = sb.color || '#c0392b';
+                    const sbFont = sb.font || 'Rajdhani, sans-serif';
+                    const sbSize = sb.fontSize || '13px';
+                    const sbWeight = sb.fontWeight || '700';
+                    const sbSpacing = sb.letterSpacing || '0.25em';
+
+                    headerHTML = `
+                        <div style="display: flex; gap: 24px; align-items: stretch; margin-bottom: 24px; text-align: left;">
+                            <div style="writing-mode: vertical-lr; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; color: ${sbColor}; font-family: ${sbFont}; font-size: ${sbSize}; font-weight: ${sbWeight}; letter-spacing: ${sbSpacing}; text-transform: uppercase; border-left: 2px solid ${sbColor}; padding-left: 8px; line-height: 1;">
+                                ${escapeHTML(sbText)}
+                            </div>
+                            <div style="flex: 1;">
+                                <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
+                                <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 6px 0 0 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
+                            </div>
+                        </div>
+                    `;
+                } else if (template.header.layout === 'centered') {
+                    headerHTML = `
+                        <div style="text-align: center; width: 100%; margin-bottom: 24px;">
+                            <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0 0 6px 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
+                            <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
+                        </div>
+                    `;
+                } else {
+                    // top-banner layout
+                    headerHTML = `
+                        <div style="background: ${template.header.background || 'rgba(255,255,255,0.03)'}; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 20px; width: 100%; margin-bottom: 24px; text-align: left;">
+                            <h1 style="font-family: ${titleFont}; font-size: ${titleSize}; font-weight: ${titleWeight}; color: ${titleColor}; text-transform: ${titleTransform}; margin: 0; line-height: 1.1;">${escapeHTML(eventNameVal)}</h1>
+                            <p style="font-family: ${subtitleFont}; font-size: ${subtitleSize}; color: ${subtitleColor}; text-transform: ${subtitleTransform}; letter-spacing: ${subtitleLetterSpacing}; margin: 6px 0 0 0; line-height: 1;">${escapeHTML(roundLabelVal)}</p>
+                        </div>
+                    `;
+                }
+
+                // Table Layout Compilation
+                let bodyHTML = '';
+                if (graphicType === 'team') {
+                    // Column Header
+                    const ch = template.columnHeader;
+                    bodyHTML += `
+                        <div style="display: flex; background: ${ch.background}; padding: ${ch.paddingY} 12px; font-family: ${ch.font}; font-size: ${ch.fontSize}; font-weight: ${ch.fontWeight}; color: ${ch.color}; text-transform: ${ch.textTransform}; letter-spacing: ${ch.letterSpacing}; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <div style="width: ${template.rank.width};">#</div>
+                            <div style="flex: 1; text-align: left;">Team</div>
+                            <div style="width: 80px; text-align: center;">Lobbies</div>
+                            <div style="width: 80px; text-align: center;">Kills</div>
+                            <div style="width: 100px; text-align: right;">Pts</div>
+                        </div>
+                    `;
+
+                    // Rows
+                    const limit = 10;
+                    currentData.teams.slice(0, limit).forEach((t, i) => {
+                        const rankNum = i + 1;
+                        const rowConfig = template.row;
+                        const rankOverride = template.rankOverrides[rankNum] || {};
+
+                        const rowBg = rankOverride.background || (rankNum % 2 !== 0 ? rowConfig.oddBackground : rowConfig.evenBackground);
+                        const rowBorderLeft = rankOverride.borderLeft || 'none';
+                        const rowGlow = rankOverride.glowEffect ? `box-shadow: ${rankOverride.glowEffect};` : '';
+                        const rankColor = rankOverride.rankColor || template.rank.color || rowConfig.color;
+                        const rankWeight = rankOverride.rankFontWeight || template.rank.fontWeight || rowConfig.fontWeight;
+
+                        const teamLogoHTML = t.team_logo 
+                            ? `<img src="${t.team_logo}" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover; margin-right: 8px; vertical-align: middle;">`
+                            : `<iconify-icon icon="lucide:shield" style="font-size: 1.1rem; color: rgba(255,255,255,0.4); margin-right: 8px; vertical-align: middle;"></iconify-icon>`;
+
+                        bodyHTML += `
+                            <div style="display: flex; align-items: center; background: ${rowBg}; border-bottom: ${rowConfig.borderBottom}; border-left: ${rowBorderLeft}; ${rowGlow} padding: ${rowConfig.paddingY} ${rowConfig.paddingX}; font-family: ${rowConfig.font}; font-size: ${rowConfig.fontSize}; font-weight: ${rowConfig.fontWeight}; color: ${rowConfig.color};">
+                                <div style="width: ${template.rank.width}; font-family: ${template.rank.font}; font-size: ${template.rank.fontSize}; font-weight: ${rankWeight}; color: ${rankColor};">
+                                    ${rankNum}
+                                </div>
+                                <div style="flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center;">
+                                    ${teamLogoHTML}
+                                    <span style="font-weight: 700;">${escapeHTML(t.team_name)}</span>
+                                </div>
+                                <div style="width: 80px; text-align: center; font-family: var(--font-data); font-size: 1rem; color: rgba(255,255,255,0.7);">${t.lobbiesPlayed}</div>
+                                <div style="width: 80px; text-align: center; font-family: var(--font-data); font-size: 1rem; color: rgba(255,255,255,0.7);">${t.kills}</div>
+                                <div style="width: 100px; text-align: right; font-family: var(--font-display); font-weight: 700; color: var(--nova-green); font-size: 1.1rem;">${t.points}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // Player Rankings
+                    const ch = template.columnHeader;
+                    bodyHTML += `
+                        <div style="display: flex; background: ${ch.background}; padding: ${ch.paddingY} 12px; font-family: ${ch.font}; font-size: ${ch.fontSize}; font-weight: ${ch.fontWeight}; color: ${ch.color}; text-transform: ${ch.textTransform}; letter-spacing: ${ch.letterSpacing}; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <div style="width: ${template.rank.width};">#</div>
+                            <div style="flex: 1.2; text-align: left;">Name</div>
+                            <div style="flex: 1; text-align: left;">IGN</div>
+                            <div style="flex: 1.2; text-align: left;">Team</div>
+                            <div style="width: 80px; text-align: right;">Kills</div>
+                        </div>
+                    `;
+
+                    // Rows
+                    const limit = 10;
+                    currentData.players.slice(0, limit).forEach((p, i) => {
+                        const rankNum = i + 1;
+                        const rowConfig = template.row;
+                        const rankOverride = template.rankOverrides[rankNum] || {};
+
+                        const rowBg = rankOverride.background || (rankNum % 2 !== 0 ? rowConfig.oddBackground : rowConfig.evenBackground);
+                        const rowBorderLeft = rankOverride.borderLeft || 'none';
+                        const rowGlow = rankOverride.glowEffect ? `box-shadow: ${rankOverride.glowEffect};` : '';
+                        const rankColor = rankOverride.rankColor || template.rank.color || rowConfig.color;
+                        const rankWeight = rankOverride.rankFontWeight || template.rank.fontWeight || rowConfig.fontWeight;
+
+                        const teamLogoHTML = p.team_logo 
+                            ? `<img src="${p.team_logo}" style="width: 18px; height: 18px; border-radius: 2px; object-fit: cover; margin-right: 6px; vertical-align: middle;">`
+                            : `<iconify-icon icon="lucide:shield" style="font-size: 0.95rem; color: rgba(255,255,255,0.3); margin-right: 6px; vertical-align: middle;"></iconify-icon>`;
+
+                        bodyHTML += `
+                            <div style="display: flex; align-items: center; background: ${rowBg}; border-bottom: ${rowConfig.borderBottom}; border-left: ${rowBorderLeft}; ${rowGlow} padding: ${rowConfig.paddingY} ${rowConfig.paddingX}; font-family: ${rowConfig.font}; font-size: ${rowConfig.fontSize}; font-weight: ${rowConfig.fontWeight}; color: ${rowConfig.color};">
+                                <div style="width: ${template.rank.width}; font-family: ${template.rank.font}; font-size: ${template.rank.fontSize}; font-weight: ${rankWeight}; color: ${rankColor};">
+                                    ${rankNum}
+                                </div>
+                                <div style="flex: 1.2; text-align: left; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${escapeHTML(p.professional_name || p.player_name)}
+                                </div>
+                                <div style="flex: 1; text-align: left; font-family: var(--font-data); color: rgba(255,255,255,0.8);">
+                                    ${escapeHTML(p.ign || p.player_name)}
+                                </div>
+                                <div style="flex: 1.2; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; color: rgba(255,255,255,0.7); font-size: 0.85rem;">
+                                    ${teamLogoHTML}
+                                    <span style="vertical-align: middle;">${escapeHTML(p.team_name)}</span>
+                                </div>
+                                <div style="width: 80px; text-align: right; font-family: var(--font-display); font-weight: 700; color: var(--nova-green); font-size: 1.1rem;">
+                                    ${p.kills}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Footer Compilation
+                let footerHTML = '';
+                if (template.footer.enabled) {
+                    const ft = template.footer;
+                    footerHTML = `
+                        <div style="background: ${ft.background}; font-family: ${ft.font}; font-size: ${ft.fontSize}; color: ${ft.color}; padding-top: ${ft.paddingTop}; text-align: ${ft.layout}; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 16px;">
+                            ${escapeHTML(brandingVal)} • Powered by Nova Gaming Network
+                        </div>
+                    `;
+                }
+
+                // Assemble everything inside the canvas container
+                canvas.innerHTML = `
+                    <div style="position: relative; z-index: 2;">
+                        ${headerHTML}
+                        ${bodyHTML}
+                        ${footerHTML}
+                    </div>
+                `;
+
+                updateScale();
+            }
+
+            // Controls listeners
+            selectSession.addEventListener('change', e => loadData(e.target.value));
+            inpEventName.addEventListener('input', renderPreview);
+            inpRoundLabel.addEventListener('input', renderPreview);
+            inpBranding.addEventListener('input', renderPreview);
+
+            // Tab logic
+            document.getElementById('tab-team').addEventListener('click', () => {
+                graphicType = 'team';
+                document.getElementById('tab-team').classList.add('active');
+                document.getElementById('tab-team').style.background = 'var(--elev-2)';
+                document.getElementById('tab-team').style.color = 'var(--n-100)';
+                document.getElementById('tab-player').classList.remove('active');
+                document.getElementById('tab-player').style.background = 'transparent';
+                document.getElementById('tab-player').style.color = 'var(--n-300)';
+                renderPreview();
+            });
+
+            document.getElementById('tab-player').addEventListener('click', () => {
+                graphicType = 'player';
+                document.getElementById('tab-player').classList.add('active');
+                document.getElementById('tab-player').style.background = 'var(--elev-2)';
+                document.getElementById('tab-player').style.color = 'var(--n-100)';
+                document.getElementById('tab-team').classList.remove('active');
+                document.getElementById('tab-team').style.background = 'transparent';
+                document.getElementById('tab-team').style.color = 'var(--n-300)';
+                renderPreview();
+            });
+
+            // Export logic
             document.getElementById('btn-export').addEventListener('click', async () => {
                 if (!currentData) return;
                 const btn = document.getElementById('btn-export');
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spin">⟳</span> RENDERING...';
+                btn.innerHTML = '<span class="btn-loader"></span> GENERATING...';
                 
                 try {
-                    // Ensure full scale before capture
-                    const target = document.getElementById('gfx-canvas');
-                    const canvasRender = await html2canvas(target, {
-                        scale: 2, // Retina export
+                    const template = getTemplateById(currentTemplateId);
+                    
+                    // html2canvas capture configuration
+                    const canvasRender = await html2canvas(canvas, {
+                        scale: 2, 
                         useCORS: true,
-                        backgroundColor: '#0A0A0A',
-                        logging: false,
-                        onclone: (clonedDoc) => {
-                            const scaler = clonedDoc.getElementById('preview-scaler');
-                            if (scaler) {
-                                scaler.style.transform = 'none';
-                                scaler.style.width = 'auto';
-                                scaler.style.height = 'auto';
-                                scaler.style.padding = '0';
-                                scaler.style.margin = '0';
-                            }
-                            const cl = clonedDoc.getElementById('gfx-canvas');
-                            if (cl) {
-                                cl.style.transform = 'none';
-                                cl.style.position = 'absolute';
-                                cl.style.top = '0';
-                                cl.style.left = '0';
-                                cl.style.margin = '0';
-                                clonedDoc.body.appendChild(cl);
-                            }
-                        }
+                        backgroundColor: template.canvas.background,
+                        logging: false
                     });
                     
                     const link = document.createElement('a');
-                    link.download = `Nova_GFX_${selectTemplate.value}_${currentData.session.date}.png`;
+                    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
+                    link.download = `CODM_${graphicType}_${currentTemplateId}_${timestamp}.png`;
                     link.href = canvasRender.toDataURL('image/png');
                     link.click();
-                    showToast('Export successful!', 'success');
+                    showToast('Downloaded!', 'success');
                 } catch (err) {
                     console.error(err);
                     showToast('Failed to export image', 'error');

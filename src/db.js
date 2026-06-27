@@ -182,6 +182,8 @@ export async function getPlayerStats(sessionId) {
         if (!playerMap[name]) {
             playerMap[name] = { 
                 player_name: name, 
+                professional_name: p.professional_name || p.player_name,
+                ign: p.player_name,
                 team_name: p.team_name, 
                 kills: 0,
                 team_logo: p.teams?.team_logo || null
