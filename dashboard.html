@@ -11,75 +11,119 @@
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
+<body class="dashboard-page">
     <div class="page-body">
-        <!-- Metric Cards -->
-        <div class="metrics-grid" id="metrics-grid">
-            <div class="metric-card stat-card">
-                <div class="metric-label">Total Sessions</div>
-                <div class="metric-value" id="m-sessions">--</div>
+        <!-- Dashboard Layout Wrapper -->
+        <div class="dashboard-layout" style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Welcome Banner Hero -->
+            <div class="card stat-card welcome-banner" style="background-image: linear-gradient(135deg, rgba(108,182,4,0.08) 0%, rgba(20,20,20,0.6) 100%); border-left: 4px solid var(--nova-green); padding: 24px; position: relative; overflow: hidden;">
+                <div style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 5rem; color: rgba(108,182,4,0.05); font-family: var(--font-display); font-weight: 900; user-select: none; pointer-events: none;">NOVA</div>
+                <h2 style="font-family: var(--font-display); font-size: 1.4rem; color: var(--n-50); text-transform: uppercase; margin-bottom: 4px; border: none; letter-spacing: 0.05em;">Welcome back, <span id="welcome-username" style="color: var(--nova-green);">Staff</span></h2>
+                <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 600px;">Managing Call of Duty Mobile esports results and generator exports. System status is normal. Database sync is active.</p>
             </div>
-            <div class="metric-card stat-card">
-                <div class="metric-label">Total Kills</div>
-                <div class="metric-value" id="m-kills">--</div>
-            </div>
-            <div class="metric-card stat-card metric-hero">
-                <div class="metric-label">Active Players</div>
-                <div class="metric-value" id="m-players">--</div>
-                <div class="metric-sub">Registered across all teams</div>
-            </div>
-            <div class="metric-card stat-card">
-                <div class="metric-label">Latest Session</div>
-                <div class="metric-value" id="m-latest">--</div>
-            </div>
-        </div>
 
-        <!-- Recent Sessions -->
-        <div class="card mb-md stat-card">
-            <div class="card-header">
-                <span class="card-title">RECENT SESSIONS</span>
-                <a href="/weekly.html" class="btn btn-secondary btn-sm">View All</a>
-            </div>
-            <div class="card-body">
-                <div class="table-wrap">
-                    <table class="data-table" id="recent-table">
-                        <thead>
-                            <tr>
-                                <th>Session</th>
-                                <th>Date</th>
-                                <th>Lobbies</th>
-                                <th class="hide-mobile">Status</th>
-                                <th id="th-actions" class="hidden">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-tbody">
-                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
-                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-80"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
-                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
-                        </tbody>
-                    </table>
+            <div class="dashboard-grid-container">
+                <!-- Main Column -->
+                <div class="dashboard-col-main">
+                    <!-- Metric Cards -->
+                    <div class="metrics-grid" id="metrics-grid" style="margin-bottom: 0;">
+                        <!-- Sessions -->
+                        <div class="metric-card stat-card" style="position: relative; overflow: hidden;">
+                            <div style="position: absolute; right: 16px; top: 16px; font-size: 1.8rem; color: rgba(255,255,255,0.04);"><iconify-icon icon="lucide:calendar-days"></iconify-icon></div>
+                            <div class="metric-label">Total Sessions</div>
+                            <div class="metric-value" id="m-sessions">--</div>
+                        </div>
+                        <!-- Kills -->
+                        <div class="metric-card stat-card" style="position: relative; overflow: hidden;">
+                            <div style="position: absolute; right: 16px; top: 16px; font-size: 1.8rem; color: rgba(255,255,255,0.04);"><iconify-icon icon="lucide:swords"></iconify-icon></div>
+                            <div class="metric-label">Total Kills</div>
+                            <div class="metric-value" id="m-kills">--</div>
+                        </div>
+                        <!-- Active Players -->
+                        <div class="metric-card stat-card metric-hero" style="position: relative; overflow: hidden;">
+                            <div style="position: absolute; right: 16px; top: 16px; font-size: 1.8rem; color: rgba(108,182,4,0.1);"><iconify-icon icon="lucide:users"></iconify-icon></div>
+                            <div class="metric-label">Active Players</div>
+                            <div class="metric-value" id="m-players">--</div>
+                            <div class="metric-sub">Registered across all teams</div>
+                        </div>
+                        <!-- Latest Session -->
+                        <div class="metric-card stat-card" style="position: relative; overflow: hidden;">
+                            <div style="position: absolute; right: 16px; top: 16px; font-size: 1.8rem; color: rgba(255,255,255,0.04);"><iconify-icon icon="lucide:award"></iconify-icon></div>
+                            <div class="metric-label">Latest Session</div>
+                            <div class="metric-value" id="m-latest" style="font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 8px;">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Sessions Table -->
+                    <div class="card mb-md stat-card" style="margin-bottom: 0;">
+                        <div class="card-header">
+                            <span class="card-title" style="display:flex; align-items:center; gap:8px;"><iconify-icon icon="lucide:history" style="color:var(--nova-green);"></iconify-icon> RECENT SCRIM SESSIONS</span>
+                            <a href="/weekly.html" class="btn btn-secondary btn-sm">View All</a>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-wrap">
+                                <table class="data-table" id="recent-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Session Name</th>
+                                            <th>Date</th>
+                                            <th>Lobbies</th>
+                                            <th class="hide-mobile">Status</th>
+                                            <th id="th-actions" class="hidden">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-tbody">
+                                        <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
+                                        <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-80"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
+                                        <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td><td class="hide-mobile"><div class="skeleton skeleton-cell w-40"></div></td><td></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Quick Kill Leaderboard -->
-        <div class="card stat-card">
-            <div class="card-header">
-                <span class="card-title">TOP FRAGGERS — LATEST SESSION</span>
-                <a href="/matches.html" class="btn btn-secondary btn-sm">Full Board</a>
-            </div>
-            <div class="card-body">
-                <div class="table-wrap">
-                    <table class="data-table" id="kills-table">
-                        <thead>
-                            <tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr>
-                        </thead>
-                        <tbody id="kills-tbody">
-                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
-                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-80"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
-                            <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
-                        </tbody>
-                    </table>
+                <!-- Right Sidebar Column -->
+                <div class="dashboard-col-side">
+                    <!-- Top Fraggers -->
+                    <div class="card stat-card" style="height: fit-content; margin-bottom: 0;">
+                        <div class="card-header">
+                            <span class="card-title" style="display:flex; align-items:center; gap:8px;"><iconify-icon icon="lucide:trophy" style="color:var(--gold);"></iconify-icon> TOP FRAGGERS — LATEST SESSION</span>
+                            <a href="/matches.html" class="btn btn-secondary btn-sm">Full Board</a>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-wrap">
+                                <table class="data-table" id="kills-table">
+                                    <thead>
+                                        <tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr>
+                                    </thead>
+                                    <tbody id="kills-tbody">
+                                        <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
+                                        <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-80"></div></td><td><div class="skeleton skeleton-cell w-40"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
+                                        <tr class="skeleton-row"><td><div class="skeleton skeleton-cell w-20"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-60"></div></td><td><div class="skeleton skeleton-cell w-20"></div></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Utilities -->
+                    <div class="card stat-card" style="height: fit-content; margin-bottom: 0;">
+                        <div class="card-header">
+                            <span class="card-title" style="display:flex; align-items:center; gap:8px;"><iconify-icon icon="lucide:zap" style="color:var(--nova-green);"></iconify-icon> QUICK UTILITIES</span>
+                        </div>
+                        <div class="card-body" style="display: flex; flex-direction: column; gap: 10px; padding: 16px;">
+                            <a href="/upload.html" class="btn btn-secondary btn-block" style="justify-content: flex-start; text-transform: none; border-color: rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); font-family: var(--font-body); font-weight: 500; font-size: 0.85rem;">
+                                <iconify-icon icon="lucide:upload" style="color: var(--nova-green); font-size: 1.1rem; margin-right: 4px;"></iconify-icon> Upload Scrim Placements
+                            </a>
+                            <a href="/gfx.html" class="btn btn-secondary btn-block" style="justify-content: flex-start; text-transform: none; border-color: rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); font-family: var(--font-body); font-weight: 500; font-size: 0.85rem;">
+                                <iconify-icon icon="lucide:palette" style="color: var(--accent-blue); font-size: 1.1rem; margin-right: 4px;"></iconify-icon> Launch GFX Studio
+                            </a>
+                            <a href="/teams.html" class="btn btn-secondary btn-block" style="justify-content: flex-start; text-transform: none; border-color: rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); font-family: var(--font-body); font-weight: 500; font-size: 0.85rem;">
+                                <iconify-icon icon="lucide:shield" style="color: var(--gold); font-size: 1.1rem; margin-right: 4px;"></iconify-icon> View Team Registry
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -96,6 +140,7 @@
             injectLayout('dashboard', 'DASHBOARD', profile);
 
             const isAdminOrOwner = profile.role === 'admin' || profile.role === 'owner';
+            document.getElementById('welcome-username').textContent = profile.displayName || 'Staff';
 
             async function loadDashboardData() {
                 try {

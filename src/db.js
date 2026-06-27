@@ -276,12 +276,19 @@ export async function getDashboardStats() {
 
 /* ── PUBLIC STATS ──────────────────────────────── */
 
-export async function getLatestSessionStats() {
-    const { data: sessions } = await supabase.from('scrims_sessions')
-        .select('*').order('date', { ascending: false }).limit(1);
-
-    if (!sessions || sessions.length === 0) return null;
-    const session = sessions[0];
+export async function getLatestSessionStats(sessionId = null) {
+    let session;
+    if (sessionId) {
+        const { data, error } = await supabase.from('scrims_sessions')
+            .select('*').eq('id', sessionId).maybeSingle();
+        if (error) throw error;
+        session = data;
+    } else {
+        const { data: sessions } = await supabase.from('scrims_sessions')
+            .select('*').order('date', { ascending: false }).limit(1);
+        if (!sessions || sessions.length === 0) return null;
+        session = sessions[0];
+    }
 
     const [resultsRes, playersRes] = await Promise.all([
         supabase.from('match_results').select('*, teams(team_logo)').eq('session_id', session.id).order('points', { ascending: false }),

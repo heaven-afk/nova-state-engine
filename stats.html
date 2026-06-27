@@ -38,6 +38,18 @@
 
             <!-- Tab Panel 1: Scrims (Leaderboards) -->
             <div id="tab-content-scrims" class="tab-panel">
+                <!-- Session Selector -->
+                <div class="card mb-md" id="pub-session-selector-card" style="display:none; border:1px solid var(--border-default); background:var(--bg-card);">
+                    <div class="card-body" style="padding:16px;">
+                        <div class="form-group" style="margin:0; display:flex; flex-direction:column; gap:8px;">
+                            <label class="form-label" style="font-family:var(--font-display); font-weight:700; text-transform:uppercase; font-size:0.75rem; color:var(--text-muted);">Select Session History</label>
+                            <select class="form-select" id="inp-pub-session" style="background:var(--elev-1); border:1px solid var(--border-default); color:var(--text-primary); border-radius:var(--radius); padding:10px 14px; font-family:var(--font-data); font-size:0.85rem; cursor:pointer; width:100%;">
+                                <option value="">Loading sessions...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Latest Session Summary -->
                 <div class="card mb-md" id="session-card" style="display:none;">
                     <div class="card-header">
@@ -282,16 +294,25 @@
     </script>
 
     <script type="module">
-        import { getLatestSessionStats, getAllTeams, getAllPlayers, getTeamStats, getPlayerCareerStats } from '/src/db.js';
+        import { getLatestSessionStats, getAllTeams, getAllPlayers, getTeamStats, getPlayerCareerStats, getAllSessions } from '/src/db.js';
 
         let allTeams = [];
         let allPlayers = [];
+        let allSessions = [];
         let activeCompareType = 'players'; // 'players' | 'teams'
 
-        async function loadPublicStats() {
+        const selectPubSession = document.getElementById('inp-pub-session');
+
+        async function loadPublicStats(sessionId = null) {
             try {
-                const data = await getLatestSessionStats();
-                if (!data) return;
+                const data = await getLatestSessionStats(sessionId);
+                if (!data) {
+                    document.getElementById('empty-state').style.display = 'block';
+                    document.getElementById('session-card').style.display = 'none';
+                    document.getElementById('team-card').style.display = 'none';
+                    document.getElementById('player-card').style.display = 'none';
+                    return;
+                }
 
                 document.getElementById('empty-state').style.display = 'none';
 
@@ -319,6 +340,8 @@
                             <td class="text-green font-data" style="font-weight:700;">${t.total_points}</td>
                         </tr>`;
                     }).join('');
+                } else {
+                    document.getElementById('team-card').style.display = 'none';
                 }
 
                 // Players
@@ -339,6 +362,8 @@
                             <td class="text-green font-data" style="font-size:1.1rem;font-weight:700;">${p.kills}</td>
                         </tr>`;
                     }).join('');
+                } else {
+                    document.getElementById('player-card').style.display = 'none';
                 }
 
                 document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()}`;
@@ -379,138 +404,104 @@
             
             if (allTeams.length === 0) {
                 emptyState.classList.remove('hidden');
-                container.innerHTML = '';
+                container.classList.add('hidden');
                 return;
             }
+            
             emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
             
             container.innerHTML = allTeams.map(t => {
                 const logoHTML = t.team_logo 
-                    ? `<img src="${t.team_logo}" alt="${escapeHTML(t.team_name)} Logo" style="width:100%; height:100%; object-fit:cover;">`
-                    : `<iconify-icon icon="lucide:shield" style="font-size:1.8rem; color:var(--text-muted);"></iconify-icon>`;
-                
-                const rosterCount = allPlayers.filter(p => p.team_id === t.id).length;
-
+                    ? `<img src="${t.team_logo}" alt="Logo" class="team-grid-logo" style="width:48px; height:48px; border-radius:var(--radius); object-fit:cover; border:1px solid var(--border-subtle);">`
+                    : `<div class="team-grid-logo" style="width:48px; height:48px; border-radius:var(--radius); background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; border:1px solid var(--border-subtle);"><iconify-icon icon="lucide:shield" style="font-size:1.5rem; color:var(--text-muted);"></iconify-icon></div>`;
                 return `
-                <div class="card metric-card" style="cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; min-height:140px;" data-team-id="${t.id}">
-                    <div style="display:flex; gap:14px; align-items:center; margin-bottom:12px;">
-                        <div style="width:48px; height:48px; border-radius:var(--radius); border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--bg-elevated); flex-shrink:0;">
-                            ${logoHTML}
-                        </div>
-                        <div style="min-width:0; flex:1;">
-                            <h4 style="font-size:0.95rem; color:var(--text-primary); text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(t.team_name)}</h4>
-                            <div class="text-muted" style="font-size:0.75rem;">Mgr: ${escapeHTML(t.team_manager || 'None')}</div>
-                        </div>
+                <div class="card team-grid-card" data-id="${t.id}" style="cursor:pointer; display:flex; align-items:center; gap:16px; padding:16px; transition:all 0.2s;">
+                    ${logoHTML}
+                    <div style="flex:1;">
+                        <h4 style="font-family:var(--font-display); font-weight:900; color:var(--text-primary); text-transform:uppercase; margin-bottom:2px; font-size:0.95rem;">${escapeHTML(t.team_name)}</h4>
+                        <span class="text-muted" style="font-size:0.75rem;">Manager: ${escapeHTML(t.team_manager || 'None')}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:0.5px solid var(--border-subtle); padding-top:10px; margin-top:10px;">
-                        <span class="badge badge-green" style="font-size:0.6rem;">${rosterCount} PLAYERS</span>
-                        <span class="text-green" style="font-size:0.72rem; font-family:var(--font-display); font-weight:700; display:flex; align-items:center; gap:4px;">
-                            ROSTER <iconify-icon icon="lucide:chevron-right"></iconify-icon>
-                        </span>
-                    </div>
+                    <iconify-icon icon="lucide:chevron-right" style="color:var(--text-muted); font-size:1.2rem;"></iconify-icon>
                 </div>`;
             }).join('');
-            
-            // Add click listeners
-            container.querySelectorAll('[data-team-id]').forEach(card => {
+
+            // Click events
+            container.querySelectorAll('.team-grid-card').forEach(card => {
                 card.addEventListener('click', () => {
-                    const teamId = card.getAttribute('data-team-id');
-                    openTeamRoster(teamId);
+                    showTeamRosterModal(card.dataset.id);
                 });
             });
         }
 
-        async function openTeamRoster(teamId) {
+        async function showTeamRosterModal(teamId) {
             const modal = document.getElementById('public-roster-modal');
-            const team = allTeams.find(t => t.id === teamId);
-            if (!team) return;
-            
-            // Populate team headers
-            document.getElementById('modal-team-name').textContent = team.team_name;
-            document.getElementById('modal-team-manager').textContent = `Manager: ${team.team_manager || 'None'}`;
-            const logoBox = document.getElementById('modal-team-logo');
-            if (team.team_logo) {
-                logoBox.innerHTML = `<img src="${team.team_logo}" alt="${escapeHTML(team.team_name)}" style="width:100%; height:100%; object-fit:cover;">`;
-            } else {
-                logoBox.innerHTML = `<iconify-icon icon="lucide:shield" style="font-size:1.2rem; color:var(--text-muted);"></iconify-icon>`;
-            }
-            
+            const teamName = document.getElementById('modal-team-name');
+            const teamLogo = document.getElementById('modal-team-logo');
+            const teamMgr = document.getElementById('modal-team-manager');
             const tbody = document.getElementById('pub-roster-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:30px;"><span class="spin" style="display:inline-block; animation: exportSpin 1s linear infinite;">⟳</span> Loading roster stats...</td></tr>';
-            modal.classList.add('show');
+            
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px;"><span class="spin">⟳</span> Fetching roster...</td></tr>';
+            modal.style.display = 'flex';
             
             try {
+                const team = allTeams.find(t => t.id === teamId);
+                teamName.textContent = team.team_name;
+                teamMgr.textContent = `Manager: ${team.team_manager || 'None'}`;
+                if (team.team_logo) {
+                    teamLogo.innerHTML = `<img src="${team.team_logo}" style="width:100%; height:100%; object-fit:cover;">`;
+                } else {
+                    teamLogo.innerHTML = `<iconify-icon icon="lucide:shield" style="font-size:1.2rem; color:var(--text-muted);"></iconify-icon>`;
+                }
+                
+                // Get roster players
                 const teamPlayers = allPlayers.filter(p => p.team_id === teamId);
                 if (teamPlayers.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:20px;">No registered players on this roster.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">No players registered in roster.</td></tr>';
                     return;
                 }
                 
-                // Fetch stats for all in parallel
-                const statsPromises = teamPlayers.map(p => getPlayerCareerStats(p.id));
-                const results = await Promise.all(statsPromises);
-                
-                tbody.innerHTML = teamPlayers.map((p, idx) => {
-                    const ps = results[idx];
-                    const statusBadge = p.status === 'active'
-                        ? '<span class="badge badge-green" style="font-size:0.55rem; padding:1px 4px;">ACTIVE</span>'
-                        : '<span class="badge badge-muted" style="font-size:0.55rem; padding:1px 4px;">INACTIVE</span>';
-                    
+                const rows = await Promise.all(teamPlayers.map(async p => {
+                    const stats = await getPlayerCareerStats(p.id);
                     return `
                     <tr>
-                        <td class="text-green" style="font-weight:700;">${escapeHTML(p.professional_name)}</td>
-                        <td class="text-secondary">${escapeHTML(p.current_ign || p.professional_name)}</td>
-                        <td>${statusBadge}</td>
-                        <td style="text-align:center;" class="font-data">${ps.matches}</td>
-                        <td style="text-align:center;" class="font-data">${ps.kills}</td>
-                        <td style="text-align:center;" class="font-data text-green" style="font-weight:700;">${ps.kdRatio}</td>
+                        <td style="font-weight:700; color:var(--text-primary);">${escapeHTML(p.professional_name)}</td>
+                        <td class="text-muted">${escapeHTML(p.current_ign || '--')}</td>
+                        <td><span class="badge ${p.status === 'active' ? 'badge-green' : 'badge-red'}">${p.status.toUpperCase()}</span></td>
+                        <td style="text-align:center;" class="font-data">${stats.matches}</td>
+                        <td style="text-align:center;" class="font-data">${stats.kills}</td>
+                        <td style="text-align:center; font-weight:700;" class="text-green font-data">${stats.kdRatio}</td>
                     </tr>`;
-                }).join('');
+                }));
+                
+                tbody.innerHTML = rows.join('');
             } catch (err) {
-                console.error('Error fetching roster player stats:', err);
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-red" style="padding:20px;">Failed to load player stats.</td></tr>';
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-danger); padding:32px;">Failed to load roster.</td></tr>';
             }
         }
 
         function setupRosterModal() {
             const modal = document.getElementById('public-roster-modal');
-            const closeBtn = document.getElementById('btn-close-pub-roster');
-            
-            const closeModal = () => modal.classList.remove('show');
-            closeBtn.addEventListener('click', closeModal);
-            
+            document.getElementById('btn-close-pub-roster').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal();
+                if (e.target === modal) modal.style.display = 'none';
             });
         }
 
-        function populateComparisonDropdowns() {
+        function setupComparison() {
             const playerA = document.getElementById('comp-player-a');
             const playerB = document.getElementById('comp-player-b');
             const teamA = document.getElementById('comp-team-a');
             const teamB = document.getElementById('comp-team-b');
             
-            playerA.innerHTML = '<option value="">-- Choose Player --</option>' +
-                allPlayers.map(p => `<option value="${p.id}">${escapeHTML(p.professional_name)} (${escapeHTML(p.teams?.team_name || 'Free Agent')})</option>`).join('');
-            playerB.innerHTML = '<option value="">-- Choose Player --</option>' +
-                allPlayers.map(p => `<option value="${p.id}">${escapeHTML(p.professional_name)} (${escapeHTML(p.teams?.team_name || 'Free Agent')})</option>`).join('');
-                
-            teamA.innerHTML = '<option value="">-- Choose Team --</option>' +
-                allTeams.map(t => `<option value="${t.id}">${escapeHTML(t.team_name)}</option>`).join('');
-            teamB.innerHTML = '<option value="">-- Choose Team --</option>' +
-                allTeams.map(t => `<option value="${t.id}">${escapeHTML(t.team_name)}</option>`).join('');
-        }
-
-        function setupComparison() {
             const btnPlayers = document.getElementById('btn-compare-type-players');
             const btnTeams = document.getElementById('btn-compare-type-teams');
+            
             const panelPlayers = document.getElementById('compare-players-controls');
             const panelTeams = document.getElementById('compare-teams-controls');
-            
-            const playerA = document.getElementById('comp-player-a');
-            const playerB = document.getElementById('comp-player-b');
-            const teamA = document.getElementById('comp-team-a');
-            const teamB = document.getElementById('comp-team-b');
             
             btnPlayers.addEventListener('click', () => {
                 activeCompareType = 'players';
@@ -711,6 +702,23 @@
             }
         }
 
+        function populateComparisonDropdowns() {
+            const playerA = document.getElementById('comp-player-a');
+            const playerB = document.getElementById('comp-player-b');
+            const teamA = document.getElementById('comp-team-a');
+            const teamB = document.getElementById('comp-team-b');
+            
+            playerA.innerHTML = '<option value="">-- Choose Player --</option>' + 
+                allPlayers.map(p => `<option value="${p.id}">${escapeHTML(p.professional_name)}</option>`).join('');
+            playerB.innerHTML = '<option value="">-- Choose Player --</option>' + 
+                allPlayers.map(p => `<option value="${p.id}">${escapeHTML(p.professional_name)}</option>`).join('');
+                
+            teamA.innerHTML = '<option value="">-- Choose Team --</option>' + 
+                allTeams.map(t => `<option value="${t.id}">${escapeHTML(t.team_name)}</option>`).join('');
+            teamB.innerHTML = '<option value="">-- Choose Team --</option>' + 
+                allTeams.map(t => `<option value="${t.id}">${escapeHTML(t.team_name)}</option>`).join('');
+        }
+
         function escapeHTML(str) {
             if (!str) return '';
             return String(str)
@@ -722,7 +730,22 @@
         }
 
         (async () => {
-            await loadPublicStats();
+            // Fetch sessions list first
+            try {
+                allSessions = await getAllSessions();
+                if (allSessions.length > 0) {
+                    document.getElementById('pub-session-selector-card').style.display = '';
+                    selectPubSession.innerHTML = allSessions.map(s => `<option value="${s.id}">${s.session_name} (${new Date(s.date).toLocaleDateString()})</option>`).join('');
+                    selectPubSession.value = allSessions[0].id;
+                    await loadPublicStats(allSessions[0].id);
+                } else {
+                    selectPubSession.innerHTML = '<option value="">No sessions available</option>';
+                    await loadPublicStats(null);
+                }
+            } catch (err) {
+                console.error('Error fetching sessions:', err);
+                await loadPublicStats(null);
+            }
             
             // Fetch registry databases
             try {
@@ -738,6 +761,12 @@
             setupTabs();
             setupRosterModal();
             setupComparison();
+
+            selectPubSession.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    loadPublicStats(e.target.value);
+                }
+            });
         })();
     </script>
 </body>

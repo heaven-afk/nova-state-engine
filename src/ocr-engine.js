@@ -161,22 +161,28 @@ function resolveDuplicates(records, ocrType = 'players') {
         for (let i = 0; i < unique.length; i++) {
             const existing = unique[i];
             
-            let dist;
             if (ocrType === 'teams') {
-                dist = calculateSimilarity(
-                    current.teamSlot.toLowerCase(),
-                    existing.teamSlot.toLowerCase()
-                );
+                const num1 = current.teamSlot.match(/\d+/)?.[0];
+                const num2 = existing.teamSlot.match(/\d+/)?.[0];
+                if (num1 || num2) {
+                    isMatch = (num1 === num2);
+                } else {
+                    const dist = calculateSimilarity(
+                        current.teamSlot.toLowerCase().trim(),
+                        existing.teamSlot.toLowerCase().trim()
+                    );
+                    isMatch = (dist >= THRESHOLD);
+                }
             } else {
-                dist = calculateSimilarity(
+                const dist = calculateSimilarity(
                     current.normalizedName.toLowerCase(),
                     existing.normalizedName.toLowerCase()
                 );
+                isMatch = (dist >= THRESHOLD);
             }
 
             // If key field is very similar, it is a duplicate!
-            if (dist >= THRESHOLD) {
-                isMatch = true;
+            if (isMatch) {
                 // Merge duplicate entries: keep the one with higher confidence, or more kills if confidence is equal
                 const currentVal = ocrType === 'teams' ? current.kills : current.normalizedKills;
                 const existingVal = ocrType === 'teams' ? existing.kills : existing.normalizedKills;
